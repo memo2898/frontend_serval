@@ -135,7 +135,7 @@ export class MesasFeature {
       ]);
       this._zonasOptions = filterExcluded(zonasRaw).map((item: any) => ({
         value: item.id,
-        label: item.sucursal_id ?? String(item.id),
+        label: item.nombre?? String(item.id),
       }));
     } catch (_err) {
       // Si falla la carga de opciones, se continúa sin ellas
@@ -234,12 +234,12 @@ export class MesasFeature {
 
         try {
           const data: MesasCreateDTO = {
-            zona_id: result.body['zona_id'] as number,
+            zona_id: Number(result.body['zona_id']),
             nombre: result.body['nombre'] as string,
-            capacidad: result.body['capacidad'] as number,
-            mesa_principal_id: result.body['mesa_principal_id'] as number,
-            posicion_x: result.body['posicion_x'] as number,
-            posicion_y: result.body['posicion_y'] as number,
+            capacidad: Number(result.body['capacidad']),
+            mesa_principal_id: result.body['mesa_principal_id'] != null ? Number(result.body['mesa_principal_id']) : undefined as any,
+            posicion_x: result.body['posicion_x'] != null ? Number(result.body['posicion_x']) : undefined as any,
+            posicion_y: result.body['posicion_y'] != null ? Number(result.body['posicion_y']) : undefined as any,
           };
 
           if (isEdit) {

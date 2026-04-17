@@ -47,46 +47,46 @@ export function getMesasFields(
         restrictions: [{ type: 'onlyNumbers' }],
       },
     }),
-    InputX({
-      name: 'mesa_principal_id',
-      label: 'Mesa Principal Id',
-      placeholder: 'Ingrese mesa principal id',
-      type: 'number',
-      defaultValue: initialData?.mesa_principal_id != null ? String(initialData.mesa_principal_id) : '',
-      rules: {
-        validations: [
-          { type: 'required', message: 'Mesa Principal Id es obligatorio' },
-          { type: 'positive' },
-          { type: 'integer' },
-        ],
-        restrictions: [{ type: 'onlyNumbers' }],
-      },
-    }),
-    InputX({
-      name: 'posicion_x',
-      label: 'Posicion X',
-      placeholder: 'Ingrese posicion x',
-      type: 'number',
-      defaultValue: initialData?.posicion_x != null ? String(initialData.posicion_x) : '',
-      rules: {
-        validations: [
-          { type: 'required', message: 'Posicion X es obligatorio' },
-        ],
-        restrictions: [{ type: 'onlyNumbers' }],
-      },
-    }),
-    InputX({
-      name: 'posicion_y',
-      label: 'Posicion Y',
-      placeholder: 'Ingrese posicion y',
-      type: 'number',
-      defaultValue: initialData?.posicion_y != null ? String(initialData.posicion_y) : '',
-      rules: {
-        validations: [
-          { type: 'required', message: 'Posicion Y es obligatorio' },
-        ],
-        restrictions: [{ type: 'onlyNumbers' }],
-      },
-    }),
+    // InputX({
+    //   name: 'mesa_principal_id',
+    //   label: 'Mesa Principal Id',
+    //   placeholder: 'Ingrese mesa principal id',
+    //   type: 'number',
+    //   defaultValue: initialData?.mesa_principal_id != null ? String(initialData.mesa_principal_id) : '',
+    //   rules: {
+    //     validations: [
+    //       { type: 'required', message: 'Mesa Principal Id es obligatorio' },
+    //       { type: 'positive' },
+    //       { type: 'integer' },
+    //     ],
+    //     restrictions: [{ type: 'onlyNumbers' }],
+    //   },
+    // }),
+    // InputX({
+    //   name: 'posicion_x',
+    //   label: 'Posicion X',
+    //   placeholder: 'Ingrese posicion x',
+    //   type: 'number',
+    //   defaultValue: initialData?.posicion_x != null ? String(initialData.posicion_x) : '',
+    //   rules: {
+    //     validations: [
+    //       { type: 'required', message: 'Posicion X es obligatorio' },
+    //     ],
+    //     restrictions: [{ type: 'onlyNumbers' }],
+    //   },
+    // }),
+    // InputX({
+    //   name: 'posicion_y',
+    //   label: 'Posicion Y',
+    //   placeholder: 'Ingrese posicion y',
+    //   type: 'number',
+    //   defaultValue: initialData?.posicion_y != null ? String(initialData.posicion_y) : '',
+    //   rules: {
+    //     validations: [
+    //       { type: 'required', message: 'Posicion Y es obligatorio' },
+    //     ],
+    //     restrictions: [{ type: 'onlyNumbers' }],
+    //   },
+    // }),
   ];
 }

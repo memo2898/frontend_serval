@@ -42,17 +42,18 @@ const actionButtonStyles = `
 
 export const toMesasGridRow = (mesas: Mesas, handlers: MesasHandlers): MesasGridRow => ({
   id: mesas.id,
-  zona_id: mesas.zona_id,
+  //zona_id: mesas.zona_id,
+  zona: mesas.zona.nombre,
   nombre: mesas.nombre,
   capacidad: mesas.capacidad,
   mesa_principal_id: mesas.mesa_principal_id,
   posicion_x: mesas.posicion_x,
   posicion_y: mesas.posicion_y,
-  estado: mesas.estado,
-  agregado_en: mesas.agregado_en,
-  agregado_por: mesas.agregado_por,
-  actualizado_en: mesas.actualizado_en,
-  actualizado_por: mesas.actualizado_por,
+  // estado: mesas.estado,
+  // agregado_en: mesas.agregado_en,
+  // agregado_por: mesas.agregado_por,
+  // actualizado_en: mesas.actualizado_en,
+  // actualizado_por: mesas.actualizado_por,
   actions: [
     {
       content: `

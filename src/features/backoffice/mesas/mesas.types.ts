@@ -13,6 +13,7 @@ export interface Mesas {
   agregado_por?: number;
   actualizado_en?: string;
   actualizado_por?: number;
+  zona?:{ nombre: string }
 }
 
 export interface MesasGridRow {
@@ -29,6 +30,7 @@ export interface MesasGridRow {
   actualizado_en?: string;
   actualizado_por?: number;
   actions: GridieCellAction[];
+  zona?:string;
 }
 
 export interface MesasCreateDTO {

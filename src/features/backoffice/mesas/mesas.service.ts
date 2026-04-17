@@ -17,7 +17,7 @@ export const getById = async (id: number) => {
 };
 
 export const create = async (data: MesasCreateDTO) => {
-  return await http.post<Mesas>(BASE, withCreateMeta(data));
+  return await http.post<Mesas>(BASE, withCreateMeta(data, 'libre'));
 };
 
 export const update = async (id: number, data: MesasUpdateDTO) => {
