@@ -22,9 +22,9 @@ export const ADMIN_OPTIONS: MenuItem[] = [
       { text: 'Tipo Documentos',      href: '/tipodocumentos' },
       { text: 'Empresas',             href: '/empresas' },
       { text: 'Sucursales',           href: '/sucursales' },
-      { text: 'Config. Sucursal',     href: '/configuracionsucursal' },
-      { text: 'Terminales',           href: '/terminales' },
-      { text: 'Destinos Impresión',   href: '/destinosimpresion' },
+      // { text: 'Config. Sucursal',     href: '/configuracionsucursal' },
+      // { text: 'Terminales',           href: '/terminales' },
+      // { text: 'Destinos Impresión',   href: '/destinosimpresion' },
     ],
   },
 

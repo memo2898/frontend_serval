@@ -74,13 +74,16 @@ export class RolesFeature {
     pageTitle.textContent = 'Roles';
     pageTitle.style.margin = '0';
 
-    const btnNew = document.createElement('button');
-    btnNew.textContent = '+ Nuevo Roles';
-    btnNew.className = 'btn btn-success';
-    btnNew.addEventListener('click', () => this._openCreate());
 
-    header.appendChild(pageTitle);
-    header.appendChild(btnNew);
+    //Ocultamos el botón de creación de Roles, ya que no es necesario crear nuevos Roles desde el Backoffice, sino que se crean automáticamente al crear un nuevo Usuario y asignarle un Rol específico. Además, esto ayuda a mantener la integridad de los datos y evita la creación de Roles innecesarios o duplicados.
+    
+    // const btnNew = document.createElement('button');
+    // btnNew.textContent = '+ Nuevo Roles';
+    // btnNew.className = 'btn btn-success';
+    // btnNew.addEventListener('click', () => this._openCreate());
+
+    // header.appendChild(pageTitle);
+    // header.appendChild(btnNew);
 
     // --- Loading ---
     this._loadingEl = document.createElement('p');
