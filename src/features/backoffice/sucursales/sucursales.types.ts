@@ -1,5 +1,18 @@
 import type { GridieCellAction } from '@/lib/gridie';
 
+export interface SucursalEmpresa {
+  id?: number;
+  nombre?: string;
+  tipo_documento_id?: number;
+  numero_documento?: string;
+  logo?: string;
+  estado?: string;
+  agregado_en?: string;
+  agregado_por?: number;
+  actualizado_en?: string;
+  actualizado_por?: number | null;
+}
+
 export interface Sucursales {
   id?: number;
   empresa_id?: number;
@@ -10,12 +23,13 @@ export interface Sucursales {
   agregado_en?: string;
   agregado_por?: number;
   actualizado_en?: string;
-  actualizado_por?: number;
+  actualizado_por?: number | null;
+  empresa?: SucursalEmpresa;
 }
 
 export interface SucursalesGridRow {
   id?: number;
-  empresa_id?: number;
+  empresa?: string;
   nombre?: string;
   direccion?: string;
   telefono?: string;

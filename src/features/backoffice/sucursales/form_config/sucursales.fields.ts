@@ -54,6 +54,9 @@ export function getSucursalesFields(
         validations: [
           { type: 'maxLength', value: 255 },
         ],
+        restrictions:[
+          { type: 'onlyNumbers' },
+        ]
       },
     }),
   ];

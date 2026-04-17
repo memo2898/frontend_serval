@@ -42,7 +42,8 @@ const actionButtonStyles = `
 
 export const toSucursalesGridRow = (sucursales: Sucursales, handlers: SucursalesHandlers): SucursalesGridRow => ({
   id: sucursales.id,
-  empresa_id: sucursales.empresa_id,
+  //empresa_id: sucursales.empresa_id,
+  empresa:sucursales.empresa.nombre,
   nombre: sucursales.nombre,
   direccion: sucursales.direccion,
   telefono: sucursales.telefono,
