@@ -10,11 +10,20 @@ export interface Subfamilias {
   agregado_por?: number;
   actualizado_en?: string;
   actualizado_por?: number;
+  familia?: {
+    id: number;
+    nombre: string;
+    color?: string;
+    icono?: string;
+    orden_visual?: number;
+    destino_impresion?: string;
+    estado?: string;
+  };
 }
 
 export interface SubfamiliasGridRow {
   id?: number;
-  familia_id?: number;
+  familia?: string;
   nombre?: string;
   orden_visual?: number;
   estado?: string;

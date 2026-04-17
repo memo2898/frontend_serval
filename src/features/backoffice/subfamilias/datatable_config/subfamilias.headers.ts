@@ -8,9 +8,12 @@ export const subfamiliasHeaders: GridieHeaderConfig[] = [
     width: '80px',
   },
   {
-    label: 'Familia Id',
-    type: 'number',
+    label: 'Familia',
+    type: 'string',
     sortable: true,
+    filters: {
+      headerFilter: { visible: true, showCount: true },
+    },
   },
   {
     label: 'Nombre',
@@ -20,11 +23,11 @@ export const subfamiliasHeaders: GridieHeaderConfig[] = [
       filterRow: { visible: true },
     },
   },
-  {
-    label: 'Orden Visual',
-    type: 'number',
-    sortable: true,
-  },
+  // {
+  //   label: 'Orden Visual',
+  //   type: 'number',
+  //   sortable: true,
+  // },
   {
     label: 'Estado',
     type: 'string',

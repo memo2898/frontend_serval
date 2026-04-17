@@ -42,9 +42,10 @@ const actionButtonStyles = `
 
 export const toSubfamiliasGridRow = (subfamilias: Subfamilias, handlers: SubfamiliasHandlers): SubfamiliasGridRow => ({
   id: subfamilias.id,
-  familia_id: subfamilias.familia_id,
+  //familia_id: subfamilias.familia_id,
+  familia: subfamilias.familia?.nombre,
   nombre: subfamilias.nombre,
-  orden_visual: subfamilias.orden_visual,
+  // orden_visual: subfamilias.orden_visual,
   estado: subfamilias.estado,
   agregado_en: subfamilias.agregado_en,
   agregado_por: subfamilias.agregado_por,

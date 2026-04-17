@@ -135,7 +135,7 @@ export class SubfamiliasFeature {
       ]);
       this._familiasOptions = filterExcluded(familiasRaw).map((item: any) => ({
         value: item.id,
-        label: item.sucursal_id ?? String(item.id),
+        label: item.nombre ?? String(item.id),
       }));
     } catch (_err) {
       // Si falla la carga de opciones, se continúa sin ellas
@@ -236,7 +236,7 @@ export class SubfamiliasFeature {
           const data: SubfamiliasCreateDTO = {
             familia_id: result.body['familia_id'] as number,
             nombre: result.body['nombre'] as string,
-            orden_visual: result.body['orden_visual'] as number,
+            orden_visual: (result.body['orden_visual'] as number) ?? 0,
           };
 
           if (isEdit) {

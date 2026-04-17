@@ -2,7 +2,7 @@
 // Utils — filterExcluded
 // ============================================
 
-const EXCLUDED_VALUES = ['deleted', 'borrado', 'inactivo', 'excluido'];
+const EXCLUDED_VALUES = ['deleted', 'borrado', 'inactivo', 'excluido','eliminado'];
 
 /**
  * Filtra del array los registros cuyo campo `estado` (u otro campo string)

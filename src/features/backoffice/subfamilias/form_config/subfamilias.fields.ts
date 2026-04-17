@@ -34,18 +34,18 @@ export function getSubfamiliasFields(
         ],
       },
     }),
-    InputX({
-      name: 'orden_visual',
-      label: 'Orden Visual',
-      placeholder: 'Ingrese orden visual',
-      type: 'number',
-      defaultValue: initialData?.orden_visual != null ? String(initialData.orden_visual) : '',
-      rules: {
-        validations: [
-          { type: 'required', message: 'Orden Visual es obligatorio' },
-        ],
-        restrictions: [{ type: 'onlyNumbers' }],
-      },
-    }),
+    // InputX({
+    //   name: 'orden_visual',
+    //   label: 'Orden Visual',
+    //   placeholder: 'Ingrese orden visual',
+    //   type: 'number',
+    //   defaultValue: initialData?.orden_visual != null ? String(initialData.orden_visual) : '',
+    //   rules: {
+    //     validations: [
+    //       { type: 'required', message: 'Orden Visual es obligatorio' },
+    //     ],
+    //     restrictions: [{ type: 'onlyNumbers' }],
+    //   },
+    // }),
   ];
 }
