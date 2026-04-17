@@ -37,9 +37,9 @@ export const ADMIN_OPTIONS: MenuItem[] = [
     submenu: [
       { text: 'Roles',        href: '/roles' },
       { text: 'Permisos',     href: '/permisos' },
-      { text: 'Rol Permisos', href: '/rolpermiso' },
+      //{ text: 'Rol Permisos', href: '/rolpermiso' },
       { text: 'Usuarios',     href: '/usuarios' },
-      { text: 'Usuario Rol',  href: '/usuariorol' },
+     
     ],
   },
 

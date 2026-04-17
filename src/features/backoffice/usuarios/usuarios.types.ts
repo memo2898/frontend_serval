@@ -1,5 +1,11 @@
 import type { GridieCellAction } from '@/lib/gridie';
 
+export interface Rol {
+  id: number;
+  nombre: string;
+  descripcion: string;
+}
+
 export interface Usuarios {
   id?: number;
   sucursal_id?: number;
@@ -13,6 +19,8 @@ export interface Usuarios {
   agregado_por?: number;
   actualizado_en?: string;
   actualizado_por?: number;
+  sucursal?: any;
+  roles?: Rol[];
 }
 
 export interface UsuariosGridRow {

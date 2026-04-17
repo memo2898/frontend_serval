@@ -15,6 +15,7 @@ import { buildDeleteBody } from './form_config/usuarios.delete';
 import type { Usuarios, UsuariosCreateDTO } from './usuarios.types';
 import * as sucursalesService from '@/features/backoffice/sucursales/sucursales.service';
 import * as rolesService from '@/features/backoffice/roles/roles.service';
+import * as usuarioRolService from '@/features/backoffice/usuariorol/usuariorol.service';
 
 
 // ---- Helper ----
@@ -46,6 +47,7 @@ export class UsuariosFeature {
   private readonly _modalCreate: ModalXInstance;
   private readonly _modalEdit: ModalXInstance;
   private readonly _modalDelete: ModalXInstance;
+  private readonly _modalRoles: ModalXInstance;
 
   constructor() {
     this._modalCreate = ModalX({
@@ -64,6 +66,12 @@ export class UsuariosFeature {
       title: 'Eliminar Usuarios',
       size: 'sm',
       onClose: () => this._modalDelete.close(),
+    });
+
+    this._modalRoles = ModalX({
+      title: 'Asignar Roles',
+      size: 'md',
+      onClose: () => this._modalRoles.close(),
     });
   }
 
@@ -173,6 +181,7 @@ export class UsuariosFeature {
       toUsuariosGridRows(this._usuarios, {
         onEdit:   (item) => this._openEdit(item),
         onDelete: (item) => this._openDelete(item),
+        onRoles:  (item) => this._openRoles(item),
       }),
     );
   }
@@ -198,6 +207,154 @@ export class UsuariosFeature {
     this._modalDelete.setBody(buildDeleteBody(item));
     this._modalDelete.setFooter(this._buildDeleteFooter());
     this._modalDelete.open();
+  }
+
+  private async _openRoles(item: Usuarios): Promise<void> {
+    this._selectedUsuarios = item;
+
+    // Loader mientras carga
+    const loadingDiv = document.createElement('div');
+    loadingDiv.style.cssText = 'padding:24px;text-align:center;color:#6b7280';
+    loadingDiv.textContent = 'Cargando roles...';
+    this._modalRoles.setBody(loadingDiv);
+    this._modalRoles.open();
+
+    let allRoles: { id: number; nombre: string; descripcion: string }[] = [];
+    try {
+      allRoles = (await rolesService.getAll()) as typeof allRoles;
+    } catch {
+      toastx.error('No se pudieron cargar los roles');
+      this._modalRoles.close();
+      return;
+    }
+
+    // IDs de roles actuales del usuario
+    const assignedIds = new Set<number>((item.roles ?? []).map((r) => r.id));
+
+    // ---- Contenedor principal ----
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display:flex;flex-direction:column;gap:16px';
+
+    // Subtítulo
+    const subtitle = document.createElement('p');
+    subtitle.style.cssText = 'margin:0;font-size:14px;color:#6b7280';
+    subtitle.textContent = `Usuario: ${item.nombre ?? ''} ${item.apellido ?? ''}`;
+    wrapper.appendChild(subtitle);
+
+    // Grid de cards
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(2,1fr);gap:12px';
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .rol-card {
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 14px 16px;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        background: #fff;
+        user-select: none;
+      }
+      .rol-card:hover { border-color: #a78bfa; background: #faf5ff; }
+      .rol-card.selected { border-color: #7c3aed; background: #f5f3ff; }
+      .rol-card .rol-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .rol-card.selected .rol-name { color: #7c3aed; }
+      .rol-card .rol-desc { font-size: 12px; color: #9ca3af; line-height: 1.4; }
+      .rol-check {
+        width: 18px; height: 18px; flex-shrink: 0;
+        border: 2px solid #d1d5db; border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        transition: all 0.18s;
+      }
+      .rol-card.selected .rol-check {
+        background: #7c3aed; border-color: #7c3aed;
+      }
+    `;
+    wrapper.appendChild(style);
+
+    const selected = new Set<number>(assignedIds);
+
+    allRoles.forEach((rol) => {
+      const card = document.createElement('div');
+      card.className = `rol-card${selected.has(rol.id) ? ' selected' : ''}`;
+
+      card.innerHTML = `
+        <div class="rol-name">
+          <span class="rol-check">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="2">
+              <polyline points="1.5 5 4 7.5 8.5 2.5"/>
+            </svg>
+          </span>
+          ${rol.nombre}
+        </div>
+        <div class="rol-desc">${rol.descripcion}</div>
+      `;
+
+      card.addEventListener('click', () => {
+        if (selected.has(rol.id)) {
+          selected.delete(rol.id);
+          card.classList.remove('selected');
+        } else {
+          selected.add(rol.id);
+          card.classList.add('selected');
+        }
+      });
+
+      grid.appendChild(card);
+    });
+
+    wrapper.appendChild(grid);
+    this._modalRoles.setBody(wrapper);
+
+    // Footer con acciones
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-secondary';
+    cancelBtn.textContent = 'Cancelar';
+    cancelBtn.addEventListener('click', () => this._modalRoles.close());
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-primary';
+    saveBtn.textContent = 'Guardar';
+
+    saveBtn.addEventListener('click', async () => {
+      if (this._saving || !this._selectedUsuarios?.id) return;
+      this._saving = true;
+      saveBtn.disabled = true;
+      cancelBtn.disabled = true;
+      saveBtn.textContent = 'Guardando...';
+
+      try {
+        const userId = this._selectedUsuarios.id;
+        const toAdd = [...selected].filter((id) => !assignedIds.has(id));
+        const toRemove = [...assignedIds].filter((id) => !selected.has(id));
+
+        await Promise.all([
+          ...toAdd.map((rolId) => usuarioRolService.create({ usuario_id: userId, rol_id: rolId })),
+          ...toRemove.map((rolId) => usuarioRolService.deleteCustom(userId, rolId)),
+        ]);
+        toastx.success('Roles actualizados correctamente');
+        this._modalRoles.close();
+        await this._fetch();
+      } catch (err) {
+        toastx.error(getErrorMessage(err));
+        saveBtn.disabled = false;
+        cancelBtn.disabled = false;
+        saveBtn.textContent = 'Guardar';
+      } finally {
+        this._saving = false;
+      }
+    });
+
+    this._modalRoles.setFooter([cancelBtn, saveBtn]);
   }
 
   // ---- Create / Edit form ----

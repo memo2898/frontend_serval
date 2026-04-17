@@ -12,11 +12,7 @@ export const usuariosHeaders: GridieHeaderConfig[] = [
     type: 'number',
     sortable: true,
   },
-  {
-    label: 'Rol Id',
-    type: 'number',
-    sortable: true,
-  },
+ 
   {
     label: 'Nombre',
     type: 'string',
@@ -35,46 +31,46 @@ export const usuariosHeaders: GridieHeaderConfig[] = [
     type: 'string',
     sortable: true,
   },
-  {
-    label: 'Pin',
-    type: 'string',
-    sortable: true,
-  },
-  {
-    label: 'Estado',
-    type: 'string',
-    sortable: true,
-    width: '100px',
-    filters: {
-      headerFilter: { visible: true, showCount: true },
-    },
-  },
-  {
-    label: 'Agregado En',
-    type: 'string',
-    sortable: true,
-    width: '140px',
-  },
-  {
-    label: 'Agregado Por',
-    type: 'number',
-    sortable: true,
-    width: '120px',
-  },
-  {
-    label: 'Actualizado En',
-    type: 'string',
-    sortable: true,
-    width: '140px',
-  },
-  {
-    label: 'Actualizado Por',
-    type: 'number',
-    sortable: true,
-    width: '120px',
-  },
+  // {
+  //   label: 'Pin',
+  //   type: 'string',
+  //   sortable: true,
+  // },
+  // {
+  //   label: 'Estado',
+  //   type: 'string',
+  //   sortable: true,
+  //   width: '100px',
+  //   filters: {
+  //     headerFilter: { visible: true, showCount: true },
+  //   },
+  // },
+  // {
+  //   label: 'Agregado En',
+  //   type: 'string',
+  //   sortable: true,
+  //   width: '140px',
+  // },
+  // {
+  //   label: 'Agregado Por',
+  //   type: 'number',
+  //   sortable: true,
+  //   width: '120px',
+  // },
+  // {
+  //   label: 'Actualizado En',
+  //   type: 'string',
+  //   sortable: true,
+  //   width: '140px',
+  // },
+  // {
+  //   label: 'Actualizado Por',
+  //   type: 'number',
+  //   sortable: true,
+  //   width: '120px',
+  // },
   {
     label: 'Acciones',
-    width: '240px',
+    width: '360px',
   },
 ];

@@ -135,7 +135,7 @@ export class FamiliasFeature {
       ]);
       this._sucursalesOptions = filterExcluded(sucursalesRaw).map((item: any) => ({
         value: item.id,
-        label: item.empresa_id ?? String(item.id),
+        label: item.nombre ?? String(item.id),
       }));
     } catch (_err) {
       // Si falla la carga de opciones, se continúa sin ellas

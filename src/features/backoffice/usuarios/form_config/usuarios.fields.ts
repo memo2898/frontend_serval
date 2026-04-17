@@ -1,5 +1,5 @@
 import { InputX } from '@/lib/uiX/components/InputX';
-import { SelectX } from '@/lib/uiX/components/SelectX';
+// import { SelectX } from '@/lib/uiX/components/SelectX';
 import type { Usuarios } from '../usuarios.types';
 
 export function getUsuariosFields(
@@ -10,30 +10,8 @@ export function getUsuariosFields(
   }
 ): HTMLElement[] {
   return [
-    SelectX({
-      name: 'sucursal_id',
-      label: 'Sucursal Id',
-      placeholder: 'Seleccionar...',
-      options: options.sucursalesOptions ?? [],
-      defaultValue: initialData?.sucursal_id != null ? String(initialData.sucursal_id) : '',
-      rules: {
-        validations: [
-          { type: 'required', message: 'Sucursal Id es obligatorio' },
-        ],
-      },
-    }),
-    SelectX({
-      name: 'rol_id',
-      label: 'Rol Id',
-      placeholder: 'Seleccionar...',
-      options: options.rolesOptions ?? [],
-      defaultValue: initialData?.rol_id != null ? String(initialData.rol_id) : '',
-      rules: {
-        validations: [
-          { type: 'required', message: 'Rol Id es obligatorio' },
-        ],
-      },
-    }),
+ 
+   
     InputX({
       name: 'nombre',
       label: 'Nombre',

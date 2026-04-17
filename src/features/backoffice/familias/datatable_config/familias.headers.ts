@@ -7,11 +7,11 @@ export const familiasHeaders: GridieHeaderConfig[] = [
     sortable: true,
     width: '80px',
   },
-  {
-    label: 'Sucursal Id',
-    type: 'number',
-    sortable: true,
-  },
+  // {
+  //   label: 'Sucursal Id',
+  //   type: 'number',
+  //   sortable: true,
+  // },
   {
     label: 'Nombre',
     type: 'string',
@@ -20,35 +20,39 @@ export const familiasHeaders: GridieHeaderConfig[] = [
       filterRow: { visible: true },
     },
   },
-  {
-    label: 'Color',
-    type: 'string',
-    sortable: true,
-  },
-  {
-    label: 'Icono',
-    type: 'string',
-    sortable: true,
-  },
-  {
-    label: 'Orden Visual',
-    type: 'number',
-    sortable: true,
-  },
+  // {
+  //   label: 'Color',
+  //   type: 'string',
+  //   sortable: true,
+  // },
+  // {
+  //   label: 'Icono',
+  //   type: 'string',
+  //   sortable: true,
+  // },
+  // {
+  //   label: 'Orden Visual',
+  //   type: 'number',
+  //   sortable: true,
+  // },
   {
     label: 'Destino Impresion',
     type: 'string',
     sortable: true,
-  },
-  {
-    label: 'Estado',
-    type: 'string',
-    sortable: true,
-    width: '100px',
     filters: {
+      filterRow: { visible: true },
       headerFilter: { visible: true, showCount: true },
     },
   },
+  // {
+  //   label: 'Estado',
+  //   type: 'string',
+  //   sortable: true,
+  //   width: '100px',
+  //   filters: {
+  //     headerFilter: { visible: true, showCount: true },
+  //   },
+  // },
   {
     label: 'Agregado En',
     type: 'string',

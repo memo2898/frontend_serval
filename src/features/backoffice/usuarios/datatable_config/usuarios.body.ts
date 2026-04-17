@@ -3,6 +3,7 @@ import type { Usuarios, UsuariosGridRow } from '../usuarios.types';
 export interface UsuariosHandlers {
   onEdit: (usuarios: Usuarios) => void;
   onDelete: (usuarios: Usuarios) => void;
+  onRoles: (usuarios: Usuarios) => void;
 }
 
 const actionButtonStyles = `
@@ -30,6 +31,9 @@ const actionButtonStyles = `
     .btn-edit   { color: #2563eb; border-color: #dbeafe; background: #eff6ff; }
     .btn-edit:hover   { background: #dbeafe; border-color: #93c5fd; }
     .btn-edit:active  { background: #bfdbfe; }
+    .btn-roles  { color: #7c3aed; border-color: #ede9fe; background: #f5f3ff; }
+    .btn-roles:hover  { background: #ede9fe; border-color: #c4b5fd; }
+    .btn-roles:active { background: #ddd6fe; }
     .btn-delete { color: #dc2626; border-color: #fee2e2; background: #fef2f2; }
     .btn-delete:hover   { background: #fee2e2; border-color: #fecaca; }
     .btn-delete:active  { background: #fecaca; }
@@ -43,16 +47,16 @@ const actionButtonStyles = `
 export const toUsuariosGridRow = (usuarios: Usuarios, handlers: UsuariosHandlers): UsuariosGridRow => ({
   id: usuarios.id,
   sucursal_id: usuarios.sucursal_id,
-  rol_id: usuarios.rol_id,
+
   nombre: usuarios.nombre,
   apellido: usuarios.apellido,
   username: usuarios.username,
-  pin: usuarios.pin,
-  estado: usuarios.estado,
-  agregado_en: usuarios.agregado_en,
-  agregado_por: usuarios.agregado_por,
-  actualizado_en: usuarios.actualizado_en,
-  actualizado_por: usuarios.actualizado_por,
+  //pin: usuarios.pin,
+ // estado: usuarios.estado,
+  // agregado_en: usuarios.agregado_en,
+  // agregado_por: usuarios.agregado_por,
+  // actualizado_en: usuarios.actualizado_en,
+  // actualizado_por: usuarios.actualizado_por,
   actions: [
     {
       content: `
@@ -67,6 +71,21 @@ export const toUsuariosGridRow = (usuarios: Usuarios, handlers: UsuariosHandlers
       `,
       event: 'click',
       funct: () => handlers.onEdit(usuarios),
+    },
+    {
+      content: `
+        <button class="btn-action btn-roles" title="Roles">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span>Roles</span>
+        </button>
+      `,
+      event: 'click',
+      funct: () => handlers.onRoles(usuarios),
     },
     {
       content: `
