@@ -68,7 +68,7 @@ export const ADMIN_OPTIONS: MenuItem[] = [
     submenu: [
       { text: 'Grupos Modificadores',          href: '/gruposmodificadores' },
       { text: 'Modificadores',                 href: '/modificadores' },
-      { text: 'Artículo Grupos Modificadores', href: '/articulogruposmodificadores' },
+     // { text: 'Artículo Grupos Modificadores', href: '/articulogruposmodificadores' },
     ],
   },
 
@@ -93,9 +93,9 @@ export const ADMIN_OPTIONS: MenuItem[] = [
     submenu: [
       { text: 'Monedas',           href: '/monedas' },
       { text: 'Impuestos',        href: '/impuestos' },
-      { text: 'Tarifas',          href: '/tarifas' },
-      { text: 'Precios por Tarifa', href: '/preciosportarifa' },
-      { text: 'Descuentos',       href: '/descuentos' },
+      //{ text: 'Tarifas',          href: '/tarifas' },
+      //{ text: 'Precios por Tarifa', href: '/preciosportarifa' },
+     // { text: 'Descuentos',       href: '/descuentos' },
     ],
   },
 

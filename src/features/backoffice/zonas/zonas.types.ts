@@ -10,6 +10,10 @@ export interface Zonas {
   agregado_por?: number;
   actualizado_en?: string;
   actualizado_por?: number;
+  sucursal?: {
+    id: number;
+    nombre: string;
+  };
 }
 
 export interface ZonasGridRow {
@@ -23,6 +27,7 @@ export interface ZonasGridRow {
   actualizado_en?: string;
   actualizado_por?: number;
   actions: GridieCellAction[];
+  sucursal?: string;
 }
 
 export interface ZonasCreateDTO {
