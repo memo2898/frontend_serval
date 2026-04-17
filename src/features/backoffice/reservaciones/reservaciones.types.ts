@@ -19,6 +19,14 @@ export interface Reservaciones {
   agregado_por?: number;
   actualizado_en?: string;
   actualizado_por?: number;
+  sucursal?: {
+    id: number;
+    nombre: string;
+  };
+  mesa?: {
+    id: number;
+    nombre: string;
+  };
 }
 
 export interface ReservacionesGridRow {
@@ -41,7 +49,11 @@ export interface ReservacionesGridRow {
   actualizado_en?: string;
   actualizado_por?: number;
   actions: GridieCellAction[];
+  sucursal?: string;
+  mesa?: string;
 }
+
+export type EstadoReservacion = 'pendiente' | 'confirmada' | 'sentada' | 'cancelada' | 'no_show' | 'eliminado';
 
 export interface ReservacionesCreateDTO {
   sucursal_id?: number;
@@ -52,6 +64,7 @@ export interface ReservacionesCreateDTO {
   fecha_hora?: string;
   duracion_min?: number;
   num_personas?: number;
+  estado?: EstadoReservacion;
   notas?: string;
   cancelada_en?: string;
   cancelada_por?: number;
@@ -67,6 +80,7 @@ export interface ReservacionesUpdateDTO {
   fecha_hora?: string;
   duracion_min?: number;
   num_personas?: number;
+  estado?: EstadoReservacion;
   notas?: string;
   cancelada_en?: string;
   cancelada_por?: number;

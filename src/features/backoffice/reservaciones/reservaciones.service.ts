@@ -17,7 +17,7 @@ export const getById = async (id: number) => {
 export const create = async (data: ReservacionesCreateDTO) => {
   const payload = {
     ...data,
-    estado: 'ACTIVO',
+    estado: data.estado ?? 'pendiente',
     agregado_en: new Date().toISOString(),
   };
   return await http.post<Reservaciones>(BASE, payload);
@@ -34,7 +34,7 @@ export const update = async (id: number, data: ReservacionesUpdateDTO) => {
 export const remove = async (id: number, softDelete = IS_SOFT_DELETE) => {
   if (softDelete) {
     return await http.patch<void>(`${BASE}/${id}`, {
-      estado: 'ELIMINADO',
+      estado: 'eliminado',
       actualizado_en: new Date().toISOString(),
     });
   }

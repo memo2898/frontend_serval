@@ -120,7 +120,7 @@ export const ADMIN_OPTIONS: MenuItem[] = [
     href: '#',
     submenu: [
       { text: 'Clientes',      href: '/clientes' },
-      { text: 'Formas de Pago', href: '/formaspago' },
+      
     ],
   },
 
@@ -131,6 +131,7 @@ export const ADMIN_OPTIONS: MenuItem[] = [
     text: 'Caja',
     href: '#',
     submenu: [
+      { text: 'Formas de Pago', href: '/formaspago' },
       { text: 'Turnos de Caja',      href: '/turnoscaja' },
       { text: 'Movimientos de Caja', href: '/movimientoscaja' },
     ],

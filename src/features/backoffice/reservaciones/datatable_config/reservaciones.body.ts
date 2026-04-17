@@ -42,8 +42,10 @@ const actionButtonStyles = `
 
 export const toReservacionesGridRow = (reservaciones: Reservaciones, handlers: ReservacionesHandlers): ReservacionesGridRow => ({
   id: reservaciones.id,
-  sucursal_id: reservaciones.sucursal_id,
-  mesa_id: reservaciones.mesa_id,
+  //sucursal_id: reservaciones.sucursal_id,
+  sucursal:reservaciones.sucursal.nombre,
+  //mesa_id: reservaciones.mesa_id,
+  mesa:reservaciones.mesa.nombre,
   cliente_id: reservaciones.cliente_id,
   nombre_contacto: reservaciones.nombre_contacto,
   telefono: reservaciones.telefono,

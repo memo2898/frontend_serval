@@ -1,6 +1,15 @@
 import { InputX } from '@/lib/uiX/components/InputX';
 import { SelectX } from '@/lib/uiX/components/SelectX';
+import type { SelectXElement } from '@/lib/uiX/components/SelectX/SelectX';
 import type { Reservaciones } from '../reservaciones.types';
+
+const ESTADOS_OPTIONS = [
+  { value: 'pendiente',  label: 'Pendiente'  },
+  { value: 'confirmada', label: 'Confirmada' },
+  { value: 'sentada',    label: 'Sentada'    },
+  { value: 'cancelada',  label: 'Cancelada'  },
+  { value: 'no_show',    label: 'No show'    },
+];
 
 export function getReservacionesFields(
   initialData: Reservaciones | null,
@@ -8,42 +17,38 @@ export function getReservacionesFields(
     sucursalesOptions: Array<{ value: number; label: string }>;
     mesasOptions: Array<{ value: number; label: string }>;
     clientesOptions: Array<{ value: number; label: string }>;
+    onSucursalChange?: (sucursalId: number | null, mesaEl: SelectXElement) => void;
   }
 ): HTMLElement[] {
+  const hasSucursal = initialData?.sucursal_id != null;
+
+  const mesaEl = SelectX({
+    name: 'mesa_id',
+    label: 'Mesa',
+    placeholder: hasSucursal ? 'Seleccionar...' : 'Seleccione una sucursal primero',
+    options: options.mesasOptions ?? [],
+    defaultValue: initialData?.mesa_id != null ? String(initialData.mesa_id) : '',
+    disabled: !hasSucursal,
+    rules: {
+      validations: [{ type: 'required' }],
+    },
+  });
+
   return [
     SelectX({
       name: 'sucursal_id',
-      label: 'Sucursal Id',
+      label: 'Sucursal',
       placeholder: 'Seleccionar...',
       options: options.sucursalesOptions ?? [],
       defaultValue: initialData?.sucursal_id != null ? String(initialData.sucursal_id) : '',
       rules: {
-        validations: [
-        ],
+        validations: [{ type: 'required' }],
+      },
+      onChange: (value) => {
+        options.onSucursalChange?.(value != null ? Number(value) : null, mesaEl);
       },
     }),
-    SelectX({
-      name: 'mesa_id',
-      label: 'Mesa Id',
-      placeholder: 'Seleccionar...',
-      options: options.mesasOptions ?? [],
-      defaultValue: initialData?.mesa_id != null ? String(initialData.mesa_id) : '',
-      rules: {
-        validations: [
-        ],
-      },
-    }),
-    SelectX({
-      name: 'cliente_id',
-      label: 'Cliente Id',
-      placeholder: 'Seleccionar...',
-      options: options.clientesOptions ?? [],
-      defaultValue: initialData?.cliente_id != null ? String(initialData.cliente_id) : '',
-      rules: {
-        validations: [
-        ],
-      },
-    }),
+    mesaEl,
     InputX({
       name: 'nombre_contacto',
       label: 'Nombre Contacto',
@@ -52,6 +57,7 @@ export function getReservacionesFields(
       defaultValue: initialData?.nombre_contacto != null ? String(initialData.nombre_contacto) : '',
       rules: {
         validations: [
+          { type: 'required' },
           { type: 'maxLength', value: 255 },
         ],
       },
@@ -64,32 +70,19 @@ export function getReservacionesFields(
       defaultValue: initialData?.telefono != null ? String(initialData.telefono) : '',
       rules: {
         validations: [
+          { type: 'required' },
           { type: 'maxLength', value: 255 },
         ],
       },
     }),
     InputX({
       name: 'fecha_hora',
-      label: 'Fecha Hora',
-      placeholder: 'Ingrese fecha hora',
-      type: 'text',
+      label: 'Fecha y hora',
+      placeholder: '',
+      type: 'datetime-local',
       defaultValue: initialData?.fecha_hora != null ? String(initialData.fecha_hora) : '',
       rules: {
-        validations: [
-          { type: 'maxLength', value: 255 },
-        ],
-      },
-    }),
-    InputX({
-      name: 'duracion_min',
-      label: 'Duracion Min',
-      placeholder: 'Ingrese duracion min',
-      type: 'number',
-      defaultValue: initialData?.duracion_min != null ? String(initialData.duracion_min) : '',
-      rules: {
-        validations: [
-        ],
-        restrictions: [{ type: 'onlyNumbers' }],
+        validations: [{ type: 'required' }],
       },
     }),
     InputX({
@@ -99,10 +92,17 @@ export function getReservacionesFields(
       type: 'number',
       defaultValue: initialData?.num_personas != null ? String(initialData.num_personas) : '',
       rules: {
-        validations: [
-        ],
+        validations: [{ type: 'required' }],
         restrictions: [{ type: 'onlyNumbers' }],
       },
+    }),
+    SelectX({
+      name: 'estado',
+      label: 'Estado',
+      placeholder: 'Seleccionar...',
+      options: ESTADOS_OPTIONS,
+      defaultValue: initialData?.estado ?? 'pendiente',
+      rules: { validations: [{ type: 'required' }] },
     }),
     InputX({
       name: 'notas',
@@ -110,42 +110,6 @@ export function getReservacionesFields(
       placeholder: 'Ingrese notas',
       type: 'text',
       defaultValue: initialData?.notas != null ? String(initialData.notas) : '',
-      rules: {
-        validations: [
-          { type: 'maxLength', value: 255 },
-        ],
-      },
-    }),
-    InputX({
-      name: 'cancelada_en',
-      label: 'Cancelada En',
-      placeholder: 'Ingrese cancelada en',
-      type: 'text',
-      defaultValue: initialData?.cancelada_en != null ? String(initialData.cancelada_en) : '',
-      rules: {
-        validations: [
-          { type: 'maxLength', value: 255 },
-        ],
-      },
-    }),
-    InputX({
-      name: 'cancelada_por',
-      label: 'Cancelada Por',
-      placeholder: 'Ingrese cancelada por',
-      type: 'number',
-      defaultValue: initialData?.cancelada_por != null ? String(initialData.cancelada_por) : '',
-      rules: {
-        validations: [
-        ],
-        restrictions: [{ type: 'onlyNumbers' }],
-      },
-    }),
-    InputX({
-      name: 'motivo_cancelacion',
-      label: 'Motivo Cancelacion',
-      placeholder: 'Ingrese motivo cancelacion',
-      type: 'text',
-      defaultValue: initialData?.motivo_cancelacion != null ? String(initialData.motivo_cancelacion) : '',
       rules: {
         validations: [
           { type: 'maxLength', value: 255 },

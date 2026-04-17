@@ -16,6 +16,9 @@ import type { Reservaciones, ReservacionesCreateDTO } from './reservaciones.type
 import * as sucursalesService from '@/features/backoffice/sucursales/sucursales.service';
 import * as mesasService from '@/features/backoffice/mesas/mesas.service';
 import * as clientesService from '@/features/backoffice/clientes/clientes.service';
+import * as zonasService from '@/features/backoffice/zonas/zonas.service';
+import type { Mesas } from '@/features/backoffice/mesas/mesas.types';
+import type { Zonas } from '@/features/backoffice/zonas/zonas.types';
 
 
 // ---- Helper ----
@@ -37,8 +40,9 @@ export class ReservacionesFeature {
   private _saving = false;
   private _selectedReservaciones: Reservaciones | null = null;
   private _sucursalesOptions: Array<{ value: number; label: string }> = [];
-  private _mesasOptions: Array<{ value: number; label: string }> = [];
   private _clientesOptions: Array<{ value: number; label: string }> = [];
+  private _mesasRaw: Mesas[] = [];
+  private _zonasRaw: Zonas[] = [];
 
   // DOM refs
   private _loadingEl!: HTMLElement;
@@ -134,26 +138,36 @@ export class ReservacionesFeature {
 
   private async _fetchRelatedOptions(): Promise<void> {
     try {
-      const [sucursalesRaw, mesasRaw, clientesRaw] = await Promise.all([
+      const [sucursalesRaw, mesasRaw, clientesRaw, zonasRaw] = await Promise.all([
         sucursalesService.getAll(),
         mesasService.getAll(),
         clientesService.getAll(),
+        zonasService.getAll(),
       ]);
       this._sucursalesOptions = filterExcluded(sucursalesRaw).map((item: any) => ({
         value: item.id,
-        label: item.empresa_id ?? String(item.id),
+        label: item.nombre ?? String(item.id),
       }));
-      this._mesasOptions = filterExcluded(mesasRaw).map((item: any) => ({
-        value: item.id,
-        label: item.zona_id ?? String(item.id),
-      }));
+      this._mesasRaw = filterExcluded(mesasRaw) as Mesas[];
+      this._zonasRaw = filterExcluded(zonasRaw) as Zonas[];
       this._clientesOptions = filterExcluded(clientesRaw).map((item: any) => ({
         value: item.id,
-        label: item.empresa_id ?? String(item.id),
+        label: item.nombre ?? String(item.id),
       }));
     } catch (_err) {
       // Si falla la carga de opciones, se continúa sin ellas
     }
+  }
+
+  private _getMesasForSucursal(sucursalId: number): Array<{ value: number; label: string }> {
+    const zonaIds = new Set(
+      this._zonasRaw
+        .filter(z => z.sucursal_id === sucursalId)
+        .map(z => z.id!),
+    );
+    return this._mesasRaw
+      .filter(m => m.zona_id != null && zonaIds.has(m.zona_id!))
+      .map(m => ({ value: m.id!, label: m.nombre ?? String(m.id) }));
   }
 
   /** Pre-selecciona los SelectX de FK cuando se abre el modal de edición */
@@ -247,18 +261,20 @@ export class ReservacionesFeature {
         submitBtn.textContent = 'Guardando...';
 
         try {
+          const toNum = (v: unknown) => v != null && v !== '' ? Number(v) : undefined;
           const data: ReservacionesCreateDTO = {
-            sucursal_id: result.body['sucursal_id'] as number,
-            mesa_id: result.body['mesa_id'] as number,
-            cliente_id: result.body['cliente_id'] as number,
+            sucursal_id: toNum(result.body['sucursal_id']),
+            mesa_id: toNum(result.body['mesa_id']),
+            cliente_id: toNum(result.body['cliente_id']),
             nombre_contacto: result.body['nombre_contacto'] as string,
             telefono: result.body['telefono'] as string,
             fecha_hora: result.body['fecha_hora'] as string,
-            duracion_min: result.body['duracion_min'] as number,
-            num_personas: result.body['num_personas'] as number,
+            duracion_min: toNum(result.body['duracion_min']),
+            num_personas: toNum(result.body['num_personas']),
+            estado: (result.body['estado'] as string || 'pendiente') as ReservacionesCreateDTO['estado'],
             notas: result.body['notas'] as string,
             cancelada_en: result.body['cancelada_en'] as string,
-            cancelada_por: result.body['cancelada_por'] as number,
+            cancelada_por: toNum(result.body['cancelada_por']),
             motivo_cancelacion: result.body['motivo_cancelacion'] as string,
           };
 
@@ -284,8 +300,28 @@ export class ReservacionesFeature {
       children: [
         ...getReservacionesFields(initialData, {
           sucursalesOptions: this._sucursalesOptions,
-          mesasOptions: this._mesasOptions,
+          mesasOptions: initialData?.sucursal_id != null
+            ? this._getMesasForSucursal(initialData.sucursal_id)
+            : [],
           clientesOptions: this._clientesOptions,
+          onSucursalChange: (sucursalId, mesaEl) => {
+            const sel = mesaEl as any;
+            // Limpiar selección de mesa
+            sel._selectedOption = null;
+            sel._searchText = '';
+            if (sel._inputEl) sel._inputEl.value = '';
+            sel._updateClearBtn?.();
+
+            if (sucursalId == null) {
+              mesaEl.options = [];
+              mesaEl.setAttribute('disabled', '');
+              mesaEl.setAttribute('placeholder', 'Seleccione una sucursal primero');
+            } else {
+              mesaEl.options = this._getMesasForSucursal(sucursalId);
+              mesaEl.removeAttribute('disabled');
+              mesaEl.setAttribute('placeholder', 'Seleccionar...');
+            }
+          },
         }),
         errorMsg,
         actions,

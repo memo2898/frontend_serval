@@ -8,12 +8,12 @@ export const reservacionesHeaders: GridieHeaderConfig[] = [
     width: '80px',
   },
   {
-    label: 'Sucursal Id',
+    label: 'Sucursal',
     type: 'number',
     sortable: true,
   },
   {
-    label: 'Mesa Id',
+    label: 'Mesa',
     type: 'number',
     sortable: true,
   },
