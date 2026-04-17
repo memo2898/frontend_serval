@@ -24,8 +24,8 @@ interface ClientToServerEvents {
   'mesa:mesas_unidas':         (data: { principal_id: number; mesas_ids: number[] }) => void;
   'orden:enviar_a_cocina':     (data: { orden_id: number; linea_ids: number[] }) => void;
   'orden:linea_sincronizada':  (data: OrdenLineaSincronizadaPayload) => void;
-  'kds:linea_en_preparacion':  (data: { orden_linea_id: number }) => void;
-  'kds:linea_lista':           (data: { orden_linea_id: number }) => void;
+  'kds:linea_en_preparacion':  (data: { kds_orden_id: number }) => void;
+  'kds:linea_lista':           (data: { kds_orden_id: number }) => void;
 }
 
 // Servidor → Cliente
@@ -110,12 +110,12 @@ export class PosSocketService {
     this._socket?.emit('orden:linea_sincronizada', data);
   }
 
-  emitLineaEnPreparacion(ordenLineaId: number): void {
-    this._socket?.emit('kds:linea_en_preparacion', { orden_linea_id: ordenLineaId });
+  emitLineaEnPreparacion(kdsOrdenId: number): void {
+    this._socket?.emit('kds:linea_en_preparacion', { kds_orden_id: kdsOrdenId });
   }
 
-  emitLineaLista(ordenLineaId: number): void {
-    this._socket?.emit('kds:linea_lista', { orden_linea_id: ordenLineaId });
+  emitLineaLista(kdsOrdenId: number): void {
+    this._socket?.emit('kds:linea_lista', { kds_orden_id: kdsOrdenId });
   }
 
   // ─── Suscripciones (Servidor → Cliente) ──────────────────────────────────

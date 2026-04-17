@@ -27,6 +27,7 @@ function btnCls(estado: EstadoComanda): string {
 export class KdsModule {
   private readonly _config: KdsConfig;
   private _comandas: Comanda[] = [];
+  private _despachadas = new Set<number>(); // kds_orden_ids marcados como listos localmente
   private _filtroActivo: string;
   private _tickTimer: ReturnType<typeof setInterval> | null = null;
   private _pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -45,6 +46,9 @@ export class KdsModule {
     this._render();
     this._tick();
     this._tickTimer = setInterval(() => this._tick(), 1000);
+
+    // Event delegation permanente — se registra una sola vez
+    document.getElementById('kds-grid')?.addEventListener('click', this._onGridClick);
 
     // Polling como fallback (reducido cuando el socket está activo)
     const pollMs = this._config.pollIntervalMs ?? 8000;
@@ -120,52 +124,36 @@ export class KdsModule {
   private _connectSocket(): void {
     import('@/global/session.service').then(({ getToken }) => {
       const tk = getToken();
-      if (tk) posSocket.connect(tk, this._config.sucursalId, 'cocina');
+      if (tk) posSocket.connect(tk, this._config.sucursalId, this._config.rol);
     });
 
-    // Nueva línea de cocina — convertir en comanda o agregar a una existente
     posSocket.onKdsNuevaLinea(payload => {
-      if (payload.destino_id !== this._config.destinoId) return;
-
-      const existente = this._comandas.find(c => c.id === String(payload.orden_id));
-      if (existente) {
-        existente.lineas.push({
-          id:     payload.orden_linea_id,
-          nombre: payload.articulo_nombre,
-          qty:    payload.cantidad,
-          mods:   payload.modificadores.map(m => m.nombre).join(', '),
-          nota:   payload.notas_linea ?? '',
-          done:   false,
-        });
-      } else {
-        this._comandas.unshift({
-          id:     String(payload.orden_id),
-          numero: '#' + String(payload.orden_id).padStart(4, '0'),
-          mesa:   payload.mesa_nombre,
-          tipo:   'mesa',
-          estado: 'pendiente',
-          abierta: Date.now(),
-          lineas: [{
-            id:     payload.orden_linea_id,
-            nombre: payload.articulo_nombre,
-            qty:    payload.cantidad,
-            mods:   payload.modificadores.map(m => m.nombre).join(', '),
-            nota:   payload.notas_linea ?? '',
-            done:   false,
-          }],
-        });
-      }
+      // Cada envío a cocina es una tarjeta separada, aunque sea la misma mesa
+      this._comandas.unshift({
+        kds_orden_id: payload.kds_orden_id,
+        orden_id:     payload.orden_id,
+        numero:       '#' + String(payload.numero_orden).padStart(4, '0'),
+        mesa:         payload.mesa,
+        tipo:         payload.tipo_servicio as Comanda['tipo'],
+        estado:       'pendiente',
+        abierta:      new Date(payload.tiempo_recibido).getTime(),
+        lineas:       payload.lineas.map(l => ({
+          kds_orden_id:   l.kds_orden_id,
+          orden_linea_id: l.orden_linea_id,
+          nombre:         l.articulo,
+          qty:            l.cantidad,
+          mods:           Array.isArray(l.modificadores) ? l.modificadores.join(', ') : '',
+          nota:           l.notas_linea ?? '',
+          done:           false,
+        })),
+      });
       this._render();
-      toast(`Nueva comanda: Mesa ${payload.mesa_nombre}`, 'info');
+      toast(`Nueva comanda: ${payload.mesa}`, 'info');
     });
 
-    // Orden completa — marcar como lista
     posSocket.onKdsOrdenCompleta(({ orden_id }) => {
-      const c = this._comandas.find(x => x.id === String(orden_id));
-      if (c) {
-        c.estado = 'listo';
-        this._render();
-      }
+      const c = this._comandas.find(x => x.orden_id === orden_id);
+      if (c) { c.estado = 'listo'; this._render(); }
     });
   }
 
@@ -174,10 +162,52 @@ export class KdsModule {
   private async _fetchComandas(): Promise<void> {
     try {
       const { fetchComandas } = await import('./kds.service');
-      this._comandas = await fetchComandas(this._config);
+      const fromServer = await fetchComandas(this._config);
+
+      const filtered = fromServer.filter(c =>
+        !this._despachadas.has(c.kds_orden_id) &&
+        !c.lineas.every(l => this._despachadas.has(l.kds_orden_id))
+      );
+
+      const localIds  = new Set(this._comandas.map(c => c.kds_orden_id));
+      const serverIds = new Set(filtered.map(c => c.kds_orden_id));
+      const hayNuevas = filtered.some(c => !localIds.has(c.kds_orden_id));
+      // Solo cuenta como eliminada si no está en listo local (las listas se mantienen hasta despachar)
+      const hayElim   = this._comandas.some(c =>
+        !serverIds.has(c.kds_orden_id) &&
+        !this._despachadas.has(c.kds_orden_id) &&
+        c.estado !== 'listo'
+      );
+
+      if (!hayNuevas && !hayElim) return;
+
+      // Cards marcadas listo localmente que el servidor ya no devuelve (están listas en DB)
+      const listasLocales = this._comandas.filter(c =>
+        c.estado === 'listo' &&
+        !serverIds.has(c.kds_orden_id) &&
+        !this._despachadas.has(c.kds_orden_id)
+      );
+
+      this._comandas = [
+        ...filtered.map(serverComanda => {
+          const local = this._comandas.find(l => l.kds_orden_id === serverComanda.kds_orden_id);
+          if (!local) return serverComanda;
+          return {
+            ...serverComanda,
+            estado:   local.estado,
+            iniciado: local.iniciado,
+            lineas: serverComanda.lineas.map(sl => {
+              const ll = local.lineas.find(l => l.kds_orden_id === sl.kds_orden_id);
+              return ll ? { ...sl, done: ll.done } : sl;
+            }),
+          };
+        }),
+        ...listasLocales,
+      ];
+
       this._render();
     } catch {
-      // Silencioso en producción; en dev se puede loggear
+      // Silencioso en producción
     }
   }
 
@@ -204,9 +234,16 @@ export class KdsModule {
 
   // ─── Acciones ────────────────────────────────────────────────────────────────
 
-  private _cambiarEstado(id: string): void {
-    const c = this._comandas.find(x => x.id === id);
+  private _cambiarEstado(kdsOrdenId: number): void {
+    const c = this._comandas.find(x => x.kds_orden_id === kdsOrdenId);
     if (!c) return;
+
+    // Bloquear "marcar listo" si hay líneas sin check
+    if (c.estado === 'en_preparacion' && c.lineas.some(l => !l.done)) {
+      toast('Marca todas las líneas antes de marcar como listo', 'error');
+      return;
+    }
+
     const next: Record<EstadoComanda, EstadoComanda | null> = {
       pendiente:      'en_preparacion',
       en_preparacion: 'listo',
@@ -215,37 +252,35 @@ export class KdsModule {
     const nuevoEstado = next[c.estado];
     if (nuevoEstado) {
       c.estado = nuevoEstado;
-      const label = nuevoEstado === 'en_preparacion' ? 'en preparación' : 'lista ✓';
-      toast(`Comanda ${c.numero} — ${label}`, 'info');
+      if (nuevoEstado === 'en_preparacion') {
+        c.iniciado = Date.now();
+        // Marcar todas las líneas en preparación
+        c.lineas.forEach(l => posSocket.emitLineaEnPreparacion(l.kds_orden_id));
+      } else {
+        // Marcar todas las líneas como listas
+        c.lineas.forEach(l => posSocket.emitLineaLista(l.kds_orden_id));
+      }
+      toast(`Comanda ${c.numero} — ${nuevoEstado === 'en_preparacion' ? 'en preparación' : 'lista ✓'}`, 'info');
     } else {
-      this._comandas = this._comandas.filter(x => x.id !== id);
+      // Registrar todos los IDs como despachados para que el polling no los reviva
+      c.lineas.forEach(l => this._despachadas.add(l.kds_orden_id));
+      this._despachadas.add(kdsOrdenId);
+      this._comandas = this._comandas.filter(x => x.kds_orden_id !== kdsOrdenId);
       toast(`Comanda ${c.numero} entregada`, 'success');
     }
     this._render();
-    // Emitir por socket + sincronizar con backend
-    const numericId = Number(id);
-    if (!isNaN(numericId)) {
-      if (nuevoEstado === 'en_preparacion') posSocket.emitLineaEnPreparacion(numericId);
-      else if (nuevoEstado === 'listo')     posSocket.emitLineaLista(numericId);
-    }
-    import('./kds.service').then(({ patchEstadoComanda }) => {
-      patchEstadoComanda(id, nuevoEstado ?? 'entregada').catch(() => { /* ignorar */ });
-    });
   }
 
-  private _toggleLinea(cmdId: string, lineaId: number): void {
-    const c = this._comandas.find(x => x.id === cmdId);
+  private _toggleLinea(cmdKdsId: number, lineaKdsId: number): void {
+    const c = this._comandas.find(x => x.kds_orden_id === cmdKdsId);
     if (!c) return;
-    const l = c.lineas.find(x => x.id === lineaId);
+    const l = c.lineas.find(x => x.kds_orden_id === lineaKdsId);
     if (l) l.done = !l.done;
     this._render();
-    import('./kds.service').then(({ patchEstadoLinea }) => {
-      patchEstadoLinea(cmdId, lineaId, l?.done ?? false).catch(() => { /* ignorar */ });
-    });
   }
 
-  private _reimprimir(id: string): void {
-    const c = this._comandas.find(x => x.id === id);
+  private _reimprimir(kdsOrdenId: number): void {
+    const c = this._comandas.find(x => x.kds_orden_id === kdsOrdenId);
     if (c) toast(`Reimprimiendo ${c.numero}…`, 'info');
   }
 
@@ -275,20 +310,28 @@ export class KdsModule {
 
     grid.innerHTML = vis.map(c => {
       const elapsed = now - c.abierta;
-      const tc = this._timerClass(elapsed, c.estado);
+      const tc      = this._timerClass(elapsed, c.estado);
+      const enPrep  = c.estado === 'en_preparacion';
+      const prepMs  = enPrep && c.iniciado ? now - c.iniciado : 0;
       return `
-        <div class="comanda estado-${c.estado}" data-id="${c.id}">
+        <div class="comanda estado-${c.estado}" data-kds="${c.kds_orden_id}">
           <div class="comanda-header">
             <span class="comanda-num">${c.numero}</span>
             <span class="comanda-mesa">${c.tipo === 'mesa' ? 'Mesa ' + c.mesa : ''}</span>
             <span class="comanda-tipo tipo-${c.tipo}">${TIPO_LABEL[c.tipo]}</span>
             <div class="comanda-spacer"></div>
-            <span class="timer ${tc}" data-abierta="${c.abierta}">${tiempoStr(elapsed)}</span>
+            <span class="timer-wrap">
+              <span class="timer-label">⏱</span>
+              <span class="timer ${tc}" data-abierta="${c.abierta}">${tiempoStr(elapsed)}</span>
+              ${enPrep ? `<span class="timer-label" style="margin-left:8px">🍳</span>
+              <span class="timer timer-prep" data-iniciado="${c.iniciado ?? ''}">${tiempoStr(prepMs)}</span>` : ''}
+            </span>
           </div>
           <div class="comanda-lineas">
             ${c.lineas.map(l => `
               <div class="linea-kds">
-                <div class="linea-check ${l.done ? 'checked' : ''}" data-cmd="${c.id}" data-linea="${l.id}"></div>
+                <div class="linea-check ${l.done ? 'checked' : ''} ${!enPrep ? 'disabled' : ''}"
+                  data-cmd="${c.kds_orden_id}" data-linea="${l.kds_orden_id}"></div>
                 <div class="linea-info">
                   <div class="linea-nombre ${l.done ? 'done' : ''}">
                     <span class="linea-qty">${l.qty}x</span>${l.nombre}
@@ -303,15 +346,14 @@ export class KdsModule {
             `).join('')}
           </div>
           <div class="comanda-footer">
-            <button class="btn-accion btn-reimprimir" data-reimprimir="${c.id}">⎙</button>
-            <button class="btn-accion ${btnCls(c.estado)}" data-accion="${c.id}">${btnLabel(c.estado)}</button>
+            <button class="btn-accion btn-reimprimir" data-reimprimir="${c.kds_orden_id}">⎙</button>
+            <button class="btn-accion ${btnCls(c.estado)}${enPrep && c.lineas.some(l => !l.done) ? ' btn-disabled' : ''}"
+              data-accion="${c.kds_orden_id}">${btnLabel(c.estado)}</button>
           </div>
         </div>
       `;
     }).join('');
 
-    // Event delegation (evita inline onclick)
-    grid.addEventListener('click', this._onGridClick, { once: true });
   }
 
   // ─── Event delegation ─────────────────────────────────────────────────────────
@@ -320,13 +362,15 @@ export class KdsModule {
     const target = e.target as HTMLElement;
 
     const accion = target.closest<HTMLElement>('[data-accion]');
-    if (accion) { this._cambiarEstado(accion.dataset.accion!); return; }
+    if (accion) { this._cambiarEstado(Number(accion.dataset.accion)); return; }
 
     const reimp = target.closest<HTMLElement>('[data-reimprimir]');
-    if (reimp) { this._reimprimir(reimp.dataset.reimprimir!); return; }
+    if (reimp) { this._reimprimir(Number(reimp.dataset.reimprimir)); return; }
 
     const check = target.closest<HTMLElement>('[data-linea]');
-    if (check) { this._toggleLinea(check.dataset.cmd!, Number(check.dataset.linea)); }
+    if (check && !check.classList.contains('disabled')) {
+      this._toggleLinea(Number(check.dataset.cmd), Number(check.dataset.linea));
+    }
   };
 
   // ─── Reloj + timers ───────────────────────────────────────────────────────────
@@ -340,12 +384,18 @@ export class KdsModule {
         String(now.getMinutes()).padStart(2, '0') + ':' +
         String(now.getSeconds()).padStart(2, '0');
     }
+    const nowMs = Date.now();
     document.querySelectorAll<HTMLElement>('.timer[data-abierta]').forEach(el => {
-      const elapsed = Date.now() - parseInt(el.dataset.abierta!);
+      const elapsed = nowMs - parseInt(el.dataset.abierta!);
       el.textContent = tiempoStr(elapsed);
-      const cmdEl = el.closest<HTMLElement>('[data-id]');
-      const cmd = cmdEl ? this._comandas.find(c => c.id === cmdEl.dataset.id) : undefined;
+      const cmdEl = el.closest<HTMLElement>('[data-kds]');
+      const cmd = cmdEl ? this._comandas.find(c => c.kds_orden_id === Number(cmdEl.dataset.kds)) : undefined;
       el.className = 'timer ' + this._timerClass(elapsed, cmd?.estado ?? 'pendiente');
+    });
+    document.querySelectorAll<HTMLElement>('.timer-prep[data-iniciado]').forEach(el => {
+      const ts = parseInt(el.dataset.iniciado!);
+      if (!ts) return;
+      el.textContent = tiempoStr(nowMs - ts);
     });
   }
 

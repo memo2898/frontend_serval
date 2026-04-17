@@ -275,6 +275,9 @@
 .orden-linea { padding: 10px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
 .orden-linea:hover { background: var(--surface2); }
 .orden-linea.selected { background: rgba(var(--accent-rgb),0.08); border-left: 2px solid var(--accent); }
+.orden-linea.enviada  { opacity: 0.6; cursor: default; }
+.orden-linea.enviada .linea-nombre { color: var(--text2); }
+.linea-lock { font-size: 10px; margin-left: 4px; opacity: 0.5; }
 .linea-top    { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .linea-nombre { font-size: 13px; font-weight: 500; flex: 1; }
 .linea-precio { font-size: 13px; font-weight: 700; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }

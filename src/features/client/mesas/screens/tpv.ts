@@ -76,17 +76,19 @@ export class TpvScreen {
         const badge    = splitMode
           ? `<span class="cuenta-badge ${badgeCls}" data-ciclar="${l.id}">C${cn}</span>`
           : '';
+        const bloqueada = l.enviado_a_cocina;
         return `
-          <div class="orden-linea ${sel ? 'selected' : ''}" data-linea-select="${l.id}">
+          <div class="orden-linea ${sel ? 'selected' : ''} ${bloqueada ? 'enviada' : ''}" data-linea-select="${l.id}">
             <div class="linea-top">
               ${badge}
               <span class="linea-nombre">${l.cantidad}x ${l.nombre_articulo}</span>
               <span class="linea-precio">${fmt(l.subtotal_linea)}</span>
+              ${bloqueada ? '<span class="linea-lock" title="Enviada a cocina">🔒</span>' : ''}
             </div>
             ${l.modificadores.map(m => `
               <div class="linea-mod">└─ ${m.nombre_modificador}${m.precio_extra ? ' +' + fmt(m.precio_extra) : ''}</div>
             `).join('')}
-            ${sel ? `
+            ${sel && !bloqueada ? `
             <div class="linea-controls">
               <button class="qty-btn" data-qty="${l.id}" data-delta="-1">−</button>
               <span class="qty-num">${l.cantidad}</span>

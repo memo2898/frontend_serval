@@ -159,15 +159,25 @@ export interface MesaEstadoCambioPayload {
   mesa_principal_id?: number;
 }
 
-export interface KdsNuevaLineaPayload {
+export interface KdsLineaPayload {
+  kds_orden_id: number;
   orden_linea_id: number;
-  orden_id: number;
-  mesa_nombre: string;
-  articulo_nombre: string;
+  articulo: string;
   cantidad: number;
-  notas_linea?: string;
-  modificadores: Array<{ nombre: string; precio_extra: number }>;
-  destino_id: number;
+  modificadores: string[];
+  notas_linea: string;
+  tiempo_preparacion: number | null;
+  estado: string;
+}
+
+export interface KdsNuevaLineaPayload {
+  kds_orden_id: number;
+  orden_id: number;
+  numero_orden: number;
+  mesa: string;
+  tipo_servicio: string;
+  tiempo_recibido: string;
+  lineas: KdsLineaPayload[];
 }
 
 export interface KdsOrdenCompletaPayload {

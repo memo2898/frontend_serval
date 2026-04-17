@@ -121,10 +121,14 @@ export const patchMesaData = (mesaId: number, data: Partial<{ estado: string; me
 export const getOrden = (ordenId: number) =>
   http.get<Orden>(`${BASE}/ordenes/${ordenId}`);
 
-/** Devuelve la orden activa de una mesa (estado abierta o en_preparacion). */
-export const getOrdenActivaMesa = (mesaId: number) =>
-  http.get<Paginado<Orden> | Orden[]>(`${BASE}/ordenes?mesa_id=${mesaId}&estado=abierta`)
-    .then(unwrap<Orden>);
+/** Devuelve la orden activa de una mesa (abierta o en_preparacion). */
+export const getOrdenActivaMesa = async (mesaId: number): Promise<Orden[]> => {
+  const [abierta, enPrep] = await Promise.all([
+    http.get<Paginado<Orden> | Orden[]>(`${BASE}/ordenes?mesa_id=${mesaId}&estado=abierta`).then(unwrap<Orden>),
+    http.get<Paginado<Orden> | Orden[]>(`${BASE}/ordenes?mesa_id=${mesaId}&estado=en_preparacion`).then(unwrap<Orden>),
+  ]);
+  return [...abierta, ...enPrep];
+};
 
 export const createOrden = (data: {
   sucursal_id: number;

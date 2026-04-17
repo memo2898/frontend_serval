@@ -216,6 +216,11 @@ export class MesasStore {
     return tempId;
   }
 
+  /** Marca una línea persistida como pendiente de enviar a cocina. */
+  marcarComoNueva(lineaId: number): void {
+    this._state.lineasNuevasIds.add(lineaId);
+  }
+
   /** Reemplaza el ID temporal de una línea por el ID real devuelto por la BD. */
   confirmarLineaPersistida(tempId: number, lineaReal: LineaOrden): void {
     const idx = this._state.lineas.findIndex(l => l.id === tempId);

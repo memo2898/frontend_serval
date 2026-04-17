@@ -722,15 +722,15 @@ class MesasPage {
   // ─── Acciones TPV ────────────────────────────────────────────────────────
 
   private _enviarCocina(): void {
-    const { lineas, ordenId, lineasNuevasIds } = this._store.state;
+    const { lineas, ordenId } = this._store.state;
 
-    // Líneas aún con ID temporal (la BD call está en vuelo, ver Task-2)
+    // Líneas aún con ID temporal (la BD call está en vuelo)
     if (lineas.some(l => l.id < 0)) {
       toast('Guardando artículos, espera un momento...');
       return;
     }
 
-    const nuevas = lineas.filter(l => lineasNuevasIds.has(l.id));
+    const nuevas = lineas.filter(l => !l.enviado_a_cocina);
     if (!nuevas.length) { toast('No hay artículos nuevos pendientes'); return; }
     if (!ordenId) return;
 
@@ -848,6 +848,8 @@ class MesasPage {
 
     // 2a. Línea agrupada con una ya persistida en BD → PATCH cantidad
     if (idUsado > 0) {
+      // Asegurar que quede en lineasNuevasIds para que _enviarCocina la incluya
+      this._store.marcarComoNueva(idUsado);
       updateLinea(ordenId, idUsado, {
         cantidad:       linea.cantidad,
         subtotal_linea: linea.subtotal_linea,
