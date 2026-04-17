@@ -4,27 +4,35 @@ export interface Paises {
   id?: number;
   nombre?: string;
   codigo_iso?: string;
-  moneda_defecto?: string;
+  moneda_id?: number;
+  moneda?: Moneda
+}
+
+interface Moneda {
+  id?: number;
+  nombre?: string;
+  simbolo?: string;
 }
 
 export interface PaisesGridRow {
   id?: number;
   nombre?: string;
   codigo_iso?: string;
-  moneda_defecto?: string;
+  moneda_id?: number;
+  moneda?: string;
   actions: GridieCellAction[];
 }
 
 export interface PaisesCreateDTO {
   nombre?: string;
   codigo_iso?: string;
-  moneda_defecto?: string;
+  moneda_id?: number;
 }
 
 export interface PaisesUpdateDTO {
   nombre?: string;
   codigo_iso?: string;
-  moneda_defecto?: string;
+  moneda_id?: number;
 }
 
 export interface PaisesFilters {
@@ -34,7 +42,7 @@ export interface PaisesFilters {
   id?: number;
   nombre?: string;
   codigo_iso?: string;
-  moneda_defecto?: string;
+  moneda_id?: number;
 }
 
 export interface PaginatedMeta {

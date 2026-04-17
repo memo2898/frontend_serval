@@ -1,6 +1,6 @@
 import type { GridieHeaderConfig } from '@/lib/gridie';
 
-export const paisesHeaders: GridieHeaderConfig[] = [
+export const usuarioRolHeaders: GridieHeaderConfig[] = [
   {
     label: 'Id',
     type: 'number',
@@ -8,20 +8,12 @@ export const paisesHeaders: GridieHeaderConfig[] = [
     width: '80px',
   },
   {
-    label: 'Nombre',
-    type: 'string',
-    sortable: true,
-    filters: {
-      filterRow: { visible: true },
-    },
-  },
-  {
-    label: 'Codigo Iso',
-    type: 'string',
+    label: 'Usuario Id',
+    type: 'number',
     sortable: true,
   },
   {
-    label: 'Moneda',
+    label: 'Rol Id',
     type: 'number',
     sortable: true,
   },

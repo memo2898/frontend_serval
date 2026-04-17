@@ -1,6 +1,6 @@
 import type { GridieHeaderConfig } from '@/lib/gridie';
 
-export const empresasHeaders: GridieHeaderConfig[] = [
+export const reservacionesHeaders: GridieHeaderConfig[] = [
   {
     label: 'Id',
     type: 'number',
@@ -8,7 +8,22 @@ export const empresasHeaders: GridieHeaderConfig[] = [
     width: '80px',
   },
   {
-    label: 'Nombre',
+    label: 'Sucursal Id',
+    type: 'number',
+    sortable: true,
+  },
+  {
+    label: 'Mesa Id',
+    type: 'number',
+    sortable: true,
+  },
+  {
+    label: 'Cliente Id',
+    type: 'number',
+    sortable: true,
+  },
+  {
+    label: 'Nombre Contacto',
     type: 'string',
     sortable: true,
     filters: {
@@ -16,20 +31,24 @@ export const empresasHeaders: GridieHeaderConfig[] = [
     },
   },
   {
-    label: 'Tipo Documento Id',
+    label: 'Telefono',
+    type: 'string',
+    sortable: true,
+  },
+  {
+    label: 'Fecha Hora',
+    type: 'string',
+    sortable: true,
+  },
+  {
+    label: 'Duracion Min',
     type: 'number',
     sortable: true,
   },
   {
-    label: 'Numero Documento',
-    type: 'string',
+    label: 'Num Personas',
+    type: 'number',
     sortable: true,
-  },
-  {
-    label: 'Logo',
-    type: 'string',
-    sortable: false,
-    width: '80px',
   },
   {
     label: 'Estado',
@@ -39,6 +58,28 @@ export const empresasHeaders: GridieHeaderConfig[] = [
     filters: {
       headerFilter: { visible: true, showCount: true },
     },
+  },
+  {
+    label: 'Notas',
+    type: 'string',
+    sortable: true,
+  },
+  {
+    label: 'Cancelada En',
+    type: 'string',
+    sortable: true,
+    width: '140px',
+  },
+  {
+    label: 'Cancelada Por',
+    type: 'number',
+    sortable: true,
+    width: '120px',
+  },
+  {
+    label: 'Motivo Cancelacion',
+    type: 'string',
+    sortable: true,
   },
   {
     label: 'Agregado En',

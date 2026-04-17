@@ -13,6 +13,7 @@ import { toPaisesGridRows } from './datatable_config/paises.body';
 import { getPaisesFields } from './form_config/paises.fields';
 import { buildDeleteBody } from './form_config/paises.delete';
 import type { Paises, PaisesCreateDTO } from './paises.types';
+import * as monedasService from '@/features/backoffice/monedas/monedas.service';
 
 
 // ---- Helper ----
@@ -33,6 +34,7 @@ export class PaisesFeature {
   private _paises: Paises[] = [];
   private _saving = false;
   private _selectedPaises: Paises | null = null;
+  private _monedasOptions: Array<{ value: number; label: string }> = [];
 
   // DOM refs
   private _loadingEl!: HTMLElement;
@@ -109,7 +111,7 @@ export class PaisesFeature {
     container.appendChild(this._loadingEl);
     container.appendChild(this._gridie);
 
-    this._fetch();
+    this._fetchRelatedOptions().then(() => this._fetch());
   }
 
   // ---- Data ----
@@ -124,6 +126,39 @@ export class PaisesFeature {
     } finally {
       this._loadingEl.style.display = 'none';
     }
+  }
+
+  private async _fetchRelatedOptions(): Promise<void> {
+    try {
+      const [monedasRaw] = await Promise.all([
+        monedasService.getAll(),
+      ]);
+      this._monedasOptions = filterExcluded(monedasRaw).map((item: any) => ({
+        value: item.id,
+        label: item.codigo ?? String(item.id),
+      }));
+    } catch (_err) {
+      // Si falla la carga de opciones, se continúa sin ellas
+    }
+  }
+
+  /** Pre-selecciona los SelectX de FK cuando se abre el modal de edición */
+  private _preSelectFKValues(form: HTMLElement, data: Paises): void {
+    requestAnimationFrame(() => {
+      form.querySelectorAll('select-x').forEach((el) => {
+        const selEl = el as any;
+        const fieldName = selEl.getAttribute('name') as string | null;
+        if (!fieldName) return;
+        const rawVal = (data as any)[fieldName];
+        if (rawVal == null) return;
+        const match = (selEl._options as Array<{ value: any; label: string }> | undefined)
+          ?.find((o) => String(o.value) === String(rawVal));
+        if (!match) return;
+        selEl._selectedOption = match;
+        if (selEl._inputEl) selEl._inputEl.value = match.label;
+        selEl._updateClearBtn?.();
+      });
+    });
   }
 
   private _refreshGrid(): void {
@@ -148,6 +183,7 @@ export class PaisesFeature {
     const editForm = this._buildForm(item, this._modalEdit);
     this._modalEdit.setBody(editForm);
     this._modalEdit.open();
+    this._preSelectFKValues(editForm, item);
   }
 
   private _openDelete(item: Paises): void {
@@ -200,7 +236,7 @@ export class PaisesFeature {
           const data: PaisesCreateDTO = {
             nombre: result.body['nombre'] as string,
             codigo_iso: result.body['codigo_iso'] as string,
-            moneda_defecto: result.body['moneda_defecto'] as string,
+            moneda_id: result.body['moneda_id'] as number,
           };
 
           if (isEdit) {
@@ -223,7 +259,9 @@ export class PaisesFeature {
         }
       },
       children: [
-        ...getPaisesFields(initialData),
+        ...getPaisesFields(initialData, {
+          monedasOptions: this._monedasOptions,
+        }),
         errorMsg,
         actions,
       ],

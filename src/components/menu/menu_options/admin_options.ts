@@ -39,6 +39,7 @@ export const ADMIN_OPTIONS: MenuItem[] = [
       { text: 'Permisos',     href: '/permisos' },
       { text: 'Rol Permisos', href: '/rolpermiso' },
       { text: 'Usuarios',     href: '/usuarios' },
+      { text: 'Usuario Rol',  href: '/usuariorol' },
     ],
   },
 
@@ -90,6 +91,7 @@ export const ADMIN_OPTIONS: MenuItem[] = [
     text: 'Precios',
     href: '#',
     submenu: [
+      { text: 'Monedas',           href: '/monedas' },
       { text: 'Impuestos',        href: '/impuestos' },
       { text: 'Tarifas',          href: '/tarifas' },
       { text: 'Precios por Tarifa', href: '/preciosportarifa' },
@@ -104,8 +106,9 @@ export const ADMIN_OPTIONS: MenuItem[] = [
     text: 'Salón',
     href: '#',
     submenu: [
-      { text: 'Zonas', href: '/zonas' },
-      { text: 'Mesas', href: '/mesas' },
+      { text: 'Zonas',        href: '/zonas' },
+      { text: 'Mesas',        href: '/mesas' },
+      { text: 'Reservaciones', href: '/reservaciones' },
     ],
   },
 

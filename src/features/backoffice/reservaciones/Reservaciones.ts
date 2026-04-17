@@ -1,5 +1,5 @@
 // ============================================
-// Feature: Empresas — CRUD (Vanilla TS)
+// Feature: Reservaciones — CRUD (Vanilla TS)
 // ============================================
 
 import { Gridie } from '@/lib/gridie';
@@ -7,14 +7,16 @@ import { ModalXInstance, ModalX } from '@/lib/uiX/components/ModalX';
 import { FormX } from '@/lib/uiX/components/FormX';
 import { toastx } from '@/lib/uiX/components/ToastX';
 import { filterExcluded } from '@/utils/filterExcluded';
-import * as empresasService from './empresas.service';
-import { empresasHeaders } from './datatable_config/empresas.headers';
-import { toEmpresasGridRows } from './datatable_config/empresas.body';
-import { getEmpresasFields } from './form_config/empresas.fields';
-import { buildDeleteBody } from './form_config/empresas.delete';
-import type { Empresas } from './empresas.types';
-import * as tipoDocumentosService from '@/features/backoffice/tipodocumentos/tipodocumentos.service';
-import { uploadImage, deleteFile } from '@/features/backoffice/uploads/uploads.service';
+import * as reservacionesService from './reservaciones.service';
+import { reservacionesHeaders } from './datatable_config/reservaciones.headers';
+import { toReservacionesGridRows } from './datatable_config/reservaciones.body';
+import { getReservacionesFields } from './form_config/reservaciones.fields';
+import { buildDeleteBody } from './form_config/reservaciones.delete';
+import type { Reservaciones, ReservacionesCreateDTO } from './reservaciones.types';
+import * as sucursalesService from '@/features/backoffice/sucursales/sucursales.service';
+import * as mesasService from '@/features/backoffice/mesas/mesas.service';
+import * as clientesService from '@/features/backoffice/clientes/clientes.service';
+
 
 // ---- Helper ----
 
@@ -29,12 +31,14 @@ const getErrorMessage = (error: unknown): string => {
 
 // ---- Feature class ----
 
-export class EmpresasFeature {
+export class ReservacionesFeature {
   // State
-  private _empresas: Empresas[] = [];
+  private _reservaciones: Reservaciones[] = [];
   private _saving = false;
-  private _selectedEmpresas: Empresas | null = null;
-  private _tipoDocumentosOptions: Array<{ value: number; label: string }> = [];
+  private _selectedReservaciones: Reservaciones | null = null;
+  private _sucursalesOptions: Array<{ value: number; label: string }> = [];
+  private _mesasOptions: Array<{ value: number; label: string }> = [];
+  private _clientesOptions: Array<{ value: number; label: string }> = [];
 
   // DOM refs
   private _loadingEl!: HTMLElement;
@@ -47,19 +51,19 @@ export class EmpresasFeature {
 
   constructor() {
     this._modalCreate = ModalX({
-      title: 'Crear Empresas',
+      title: 'Crear Reservaciones',
       size: 'md',
       onClose: () => this._modalCreate.close(),
     });
 
     this._modalEdit = ModalX({
-      title: 'Editar Empresas',
+      title: 'Editar Reservaciones',
       size: 'md',
       onClose: () => this._modalEdit.close(),
     });
 
     this._modalDelete = ModalX({
-      title: 'Eliminar Empresas',
+      title: 'Eliminar Reservaciones',
       size: 'sm',
       onClose: () => this._modalDelete.close(),
     });
@@ -73,11 +77,11 @@ export class EmpresasFeature {
     header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:20px';
 
     const pageTitle = document.createElement('h1');
-    pageTitle.textContent = 'Empresas';
+    pageTitle.textContent = 'Reservaciones';
     pageTitle.style.margin = '0';
 
     const btnNew = document.createElement('button');
-    btnNew.textContent = '+ Nuevo Empresas';
+    btnNew.textContent = '+ Nuevo Reservaciones';
     btnNew.className = 'btn btn-success';
     btnNew.addEventListener('click', () => this._openCreate());
 
@@ -91,9 +95,9 @@ export class EmpresasFeature {
 
     // --- Gridie ---
     this._gridie = new Gridie({
-      id: 'empresas-table',
+      id: 'reservaciones-table',
       identityField: 'id',
-      headers: empresasHeaders,
+      headers: reservacionesHeaders,
       body: [],
       enableSort: true,
       enableFilter: true,
@@ -119,7 +123,7 @@ export class EmpresasFeature {
   private async _fetch(): Promise<void> {
     this._loadingEl.style.display = 'block';
     try {
-      this._empresas = filterExcluded(await empresasService.getAll());
+      this._reservaciones = filterExcluded(await reservacionesService.getAll());
       this._refreshGrid();
     } catch (err) {
       toastx.error(getErrorMessage(err));
@@ -130,12 +134,22 @@ export class EmpresasFeature {
 
   private async _fetchRelatedOptions(): Promise<void> {
     try {
-      const [tipoDocumentosRaw] = await Promise.all([
-        tipoDocumentosService.getAll(),
+      const [sucursalesRaw, mesasRaw, clientesRaw] = await Promise.all([
+        sucursalesService.getAll(),
+        mesasService.getAll(),
+        clientesService.getAll(),
       ]);
-      this._tipoDocumentosOptions = filterExcluded(tipoDocumentosRaw).map((item: any) => ({
+      this._sucursalesOptions = filterExcluded(sucursalesRaw).map((item: any) => ({
         value: item.id,
-        label: item.tipo ?? String(item.id),
+        label: item.empresa_id ?? String(item.id),
+      }));
+      this._mesasOptions = filterExcluded(mesasRaw).map((item: any) => ({
+        value: item.id,
+        label: item.zona_id ?? String(item.id),
+      }));
+      this._clientesOptions = filterExcluded(clientesRaw).map((item: any) => ({
+        value: item.id,
+        label: item.empresa_id ?? String(item.id),
       }));
     } catch (_err) {
       // Si falla la carga de opciones, se continúa sin ellas
@@ -143,7 +157,7 @@ export class EmpresasFeature {
   }
 
   /** Pre-selecciona los SelectX de FK cuando se abre el modal de edición */
-  private _preSelectFKValues(form: HTMLElement, data: Empresas): void {
+  private _preSelectFKValues(form: HTMLElement, data: Reservaciones): void {
     requestAnimationFrame(() => {
       form.querySelectorAll('select-x').forEach((el) => {
         const selEl = el as any;
@@ -163,7 +177,7 @@ export class EmpresasFeature {
 
   private _refreshGrid(): void {
     this._gridie.setBody(
-      toEmpresasGridRows(this._empresas, {
+      toReservacionesGridRows(this._reservaciones, {
         onEdit:   (item) => this._openEdit(item),
         onDelete: (item) => this._openDelete(item),
       }),
@@ -173,21 +187,21 @@ export class EmpresasFeature {
   // ---- Open modals ----
 
   private _openCreate(): void {
-    this._selectedEmpresas = null;
+    this._selectedReservaciones = null;
     this._modalCreate.setBody(this._buildForm(null, this._modalCreate));
     this._modalCreate.open();
   }
 
-  private _openEdit(item: Empresas): void {
-    this._selectedEmpresas = item;
+  private _openEdit(item: Reservaciones): void {
+    this._selectedReservaciones = item;
     const editForm = this._buildForm(item, this._modalEdit);
     this._modalEdit.setBody(editForm);
     this._modalEdit.open();
     this._preSelectFKValues(editForm, item);
   }
 
-  private _openDelete(item: Empresas): void {
-    this._selectedEmpresas = item;
+  private _openDelete(item: Reservaciones): void {
+    this._selectedReservaciones = item;
     this._modalDelete.setBody(buildDeleteBody(item));
     this._modalDelete.setFooter(this._buildDeleteFooter());
     this._modalDelete.open();
@@ -195,7 +209,7 @@ export class EmpresasFeature {
 
   // ---- Create / Edit form ----
 
-  private _buildForm(initialData: Empresas | null, modal: ModalXInstance): HTMLElement {
+  private _buildForm(initialData: Reservaciones | null, modal: ModalXInstance): HTMLElement {
     const isEdit = initialData !== null;
 
     const errorMsg = document.createElement('div');
@@ -218,84 +232,66 @@ export class EmpresasFeature {
     actions.appendChild(cancelBtn);
     actions.appendChild(submitBtn);
 
-  const form = FormX({
-  validateOn: 'blur',
-  onSubmit: async (result) => {
-    if (!result.general_validation) {
-      errorMsg.style.display = 'flex';
-      return;
-    }
-    errorMsg.style.display = 'none';
-    if (this._saving) return;
-    this._saving = true;
-    submitBtn.disabled = true;
-    cancelBtn.disabled = true;
-    submitBtn.textContent = 'Guardando...';
+    const form = FormX({
+      validateOn: 'blur',
+      onSubmit: async (result) => {
+        if (!result.general_validation) {
+          errorMsg.style.display = 'flex';
+          return;
+        }
+        errorMsg.style.display = 'none';
+        if (this._saving) return;
+        this._saving = true;
+        submitBtn.disabled = true;
+        cancelBtn.disabled = true;
+        submitBtn.textContent = 'Guardando...';
 
-    try {
-      const logoFiles = result.body['logo'] as File[];
-      const baseFields = {
-        nombre:            result.body['nombre']            as string,
-        tipo_documento_id: result.body['tipo_documento_id'] as number,
-        numero_documento:  result.body['numero_documento']  as string,
-      };
+        try {
+          const data: ReservacionesCreateDTO = {
+            sucursal_id: result.body['sucursal_id'] as number,
+            mesa_id: result.body['mesa_id'] as number,
+            cliente_id: result.body['cliente_id'] as number,
+            nombre_contacto: result.body['nombre_contacto'] as string,
+            telefono: result.body['telefono'] as string,
+            fecha_hora: result.body['fecha_hora'] as string,
+            duracion_min: result.body['duracion_min'] as number,
+            num_personas: result.body['num_personas'] as number,
+            notas: result.body['notas'] as string,
+            cancelada_en: result.body['cancelada_en'] as string,
+            cancelada_por: result.body['cancelada_por'] as number,
+            motivo_cancelacion: result.body['motivo_cancelacion'] as string,
+          };
 
-      if (isEdit) {
-        // ── Edición ────────────────────────────────────────────────
-        let logoUrl: string = initialData.logo ?? '';
-
-        if (logoFiles && logoFiles.length > 0) {
-          // Eliminar logo anterior si existe
-          if (initialData.logo) {
-            const uploadsMarker = '/api/uploads/';
-            const markerIdx = initialData.logo.indexOf(uploadsMarker);
-            if (markerIdx !== -1) {
-              const oldPath = initialData.logo.slice(markerIdx + uploadsMarker.length);
-              await deleteFile(oldPath).catch(() => { /* ignorar si ya no existe */ });
-            }
+          if (isEdit) {
+            await reservacionesService.update(initialData.id, data);
+            toastx.success('Reservaciones actualizado correctamente');
+          } else {
+            await reservacionesService.create(data);
+            toastx.success('Reservaciones creado correctamente');
           }
-          const uploaded = await uploadImage(`empresas/${initialData.id}/logo`, logoFiles[0]);
-          logoUrl = uploaded.url;
+
+          modal.close();
+          await this._fetch();
+        } catch (err) {
+          toastx.error(getErrorMessage(err));
+          submitBtn.disabled = false;
+          cancelBtn.disabled = false;
+          submitBtn.textContent = isEdit ? 'Actualizar' : 'Crear';
+        } finally {
+          this._saving = false;
         }
+      },
+      children: [
+        ...getReservacionesFields(initialData, {
+          sucursalesOptions: this._sucursalesOptions,
+          mesasOptions: this._mesasOptions,
+          clientesOptions: this._clientesOptions,
+        }),
+        errorMsg,
+        actions,
+      ],
+    });
 
-        await empresasService.update(initialData.id, { ...baseFields, logo: logoUrl });
-        toastx.success('Empresa actualizada correctamente');
-      } else {
-        // ── Creación ───────────────────────────────────────────────
-        // 1. Crear empresa para obtener el ID
-        const created = await empresasService.create({ ...baseFields, logo: '', estado: '' });
-
-        // 2. Subir logo si se seleccionó uno
-        if (logoFiles && logoFiles.length > 0) {
-          const uploaded = await uploadImage(`empresas/${created.id}/logo`, logoFiles[0]);
-          await empresasService.update(created.id, { logo: uploaded.url });
-        }
-
-        toastx.success('Empresa creada correctamente');
-      }
-
-      modal.close();
-      await this._fetch();
-    } catch (err) {
-      toastx.error(getErrorMessage(err));
-      submitBtn.disabled = false;
-      cancelBtn.disabled = false;
-      submitBtn.textContent = isEdit ? 'Actualizar' : 'Crear';
-    } finally {
-      this._saving = false;
-    }
-  },
-  children: [
-    ...getEmpresasFields(initialData, {
-      tipoDocumentosOptions: this._tipoDocumentosOptions,
-    }),
-    errorMsg,
-    actions,
-  ],
-});
-
-
-//=========================
     return form;
   }
 
@@ -312,15 +308,15 @@ export class EmpresasFeature {
     deleteBtn.textContent = 'Eliminar';
 
     deleteBtn.addEventListener('click', async () => {
-      if (!this._selectedEmpresas || this._saving) return;
+      if (!this._selectedReservaciones || this._saving) return;
       this._saving = true;
       deleteBtn.disabled = true;
       cancelBtn.disabled = true;
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await empresasService.remove(this._selectedEmpresas.id);
-        toastx.success('Empresas eliminado correctamente');
+        await reservacionesService.remove(this._selectedReservaciones.id);
+        toastx.success('Reservaciones eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();
       } catch (err) {
@@ -339,8 +335,8 @@ export class EmpresasFeature {
 
 // ---- Factory ----
 
-export function Empresas(container: HTMLElement): EmpresasFeature {
-  const feature = new EmpresasFeature();
+export function Reservaciones(container: HTMLElement): ReservacionesFeature {
+  const feature = new ReservacionesFeature();
   feature.mount(container);
   return feature;
 }

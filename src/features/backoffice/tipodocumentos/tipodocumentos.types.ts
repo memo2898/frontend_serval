@@ -35,18 +35,20 @@ export interface TipoDocumentosCreateDTO {
   tipo: string;
   aplica_a: string;
   tipo_validacion: string;
-  regex_validacion: string;
-  funcion_validacion: string;
-  formato_ejemplo: string;
+  regex_validacion?: string | null;
+  funcion_validacion?: string | null;
+  formato_ejemplo?: string | null;
+  estado: string;
 }
 
 export interface TipoDocumentosUpdateDTO {
   tipo?: string;
   aplica_a?: string;
   tipo_validacion?: string;
-  regex_validacion?: string;
-  funcion_validacion?: string;
-  formato_ejemplo?: string;
+  regex_validacion?: string | null;
+  funcion_validacion?: string | null;
+  formato_ejemplo?: string | null;
+  estado?: string;
 }
 
 export interface TipoDocumentosFilters {

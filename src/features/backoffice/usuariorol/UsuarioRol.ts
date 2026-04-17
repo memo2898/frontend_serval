@@ -1,5 +1,5 @@
 // ============================================
-// Feature: Empresas — CRUD (Vanilla TS)
+// Feature: UsuarioRols — CRUD (Vanilla TS)
 // ============================================
 
 import { Gridie } from '@/lib/gridie';
@@ -7,14 +7,15 @@ import { ModalXInstance, ModalX } from '@/lib/uiX/components/ModalX';
 import { FormX } from '@/lib/uiX/components/FormX';
 import { toastx } from '@/lib/uiX/components/ToastX';
 import { filterExcluded } from '@/utils/filterExcluded';
-import * as empresasService from './empresas.service';
-import { empresasHeaders } from './datatable_config/empresas.headers';
-import { toEmpresasGridRows } from './datatable_config/empresas.body';
-import { getEmpresasFields } from './form_config/empresas.fields';
-import { buildDeleteBody } from './form_config/empresas.delete';
-import type { Empresas } from './empresas.types';
-import * as tipoDocumentosService from '@/features/backoffice/tipodocumentos/tipodocumentos.service';
-import { uploadImage, deleteFile } from '@/features/backoffice/uploads/uploads.service';
+import * as usuarioRolService from './usuariorol.service';
+import { usuarioRolHeaders } from './datatable_config/usuariorol.headers';
+import { toUsuarioRolGridRows } from './datatable_config/usuariorol.body';
+import { getUsuarioRolFields } from './form_config/usuariorol.fields';
+import { buildDeleteBody } from './form_config/usuariorol.delete';
+import type { UsuarioRol, UsuarioRolCreateDTO } from './usuariorol.types';
+import * as usuariosService from '@/features/backoffice/usuarios/usuarios.service';
+import * as rolesService from '@/features/backoffice/roles/roles.service';
+
 
 // ---- Helper ----
 
@@ -29,12 +30,13 @@ const getErrorMessage = (error: unknown): string => {
 
 // ---- Feature class ----
 
-export class EmpresasFeature {
+export class UsuarioRolFeature {
   // State
-  private _empresas: Empresas[] = [];
+  private _usuarioRols: UsuarioRol[] = [];
   private _saving = false;
-  private _selectedEmpresas: Empresas | null = null;
-  private _tipoDocumentosOptions: Array<{ value: number; label: string }> = [];
+  private _selectedUsuarioRol: UsuarioRol | null = null;
+  private _usuariosOptions: Array<{ value: number; label: string }> = [];
+  private _rolesOptions: Array<{ value: number; label: string }> = [];
 
   // DOM refs
   private _loadingEl!: HTMLElement;
@@ -47,19 +49,19 @@ export class EmpresasFeature {
 
   constructor() {
     this._modalCreate = ModalX({
-      title: 'Crear Empresas',
+      title: 'Crear UsuarioRol',
       size: 'md',
       onClose: () => this._modalCreate.close(),
     });
 
     this._modalEdit = ModalX({
-      title: 'Editar Empresas',
+      title: 'Editar UsuarioRol',
       size: 'md',
       onClose: () => this._modalEdit.close(),
     });
 
     this._modalDelete = ModalX({
-      title: 'Eliminar Empresas',
+      title: 'Eliminar UsuarioRol',
       size: 'sm',
       onClose: () => this._modalDelete.close(),
     });
@@ -73,11 +75,11 @@ export class EmpresasFeature {
     header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:20px';
 
     const pageTitle = document.createElement('h1');
-    pageTitle.textContent = 'Empresas';
+    pageTitle.textContent = 'UsuarioRols';
     pageTitle.style.margin = '0';
 
     const btnNew = document.createElement('button');
-    btnNew.textContent = '+ Nuevo Empresas';
+    btnNew.textContent = '+ Nuevo UsuarioRol';
     btnNew.className = 'btn btn-success';
     btnNew.addEventListener('click', () => this._openCreate());
 
@@ -91,9 +93,9 @@ export class EmpresasFeature {
 
     // --- Gridie ---
     this._gridie = new Gridie({
-      id: 'empresas-table',
+      id: 'usuariorol-table',
       identityField: 'id',
-      headers: empresasHeaders,
+      headers: usuarioRolHeaders,
       body: [],
       enableSort: true,
       enableFilter: true,
@@ -119,7 +121,7 @@ export class EmpresasFeature {
   private async _fetch(): Promise<void> {
     this._loadingEl.style.display = 'block';
     try {
-      this._empresas = filterExcluded(await empresasService.getAll());
+      this._usuarioRols = filterExcluded(await usuarioRolService.getAll());
       this._refreshGrid();
     } catch (err) {
       toastx.error(getErrorMessage(err));
@@ -130,12 +132,17 @@ export class EmpresasFeature {
 
   private async _fetchRelatedOptions(): Promise<void> {
     try {
-      const [tipoDocumentosRaw] = await Promise.all([
-        tipoDocumentosService.getAll(),
+      const [usuariosRaw, rolesRaw] = await Promise.all([
+        usuariosService.getAll(),
+        rolesService.getAll(),
       ]);
-      this._tipoDocumentosOptions = filterExcluded(tipoDocumentosRaw).map((item: any) => ({
+      this._usuariosOptions = filterExcluded(usuariosRaw).map((item: any) => ({
         value: item.id,
-        label: item.tipo ?? String(item.id),
+        label: item.sucursal_id ?? String(item.id),
+      }));
+      this._rolesOptions = filterExcluded(rolesRaw).map((item: any) => ({
+        value: item.id,
+        label: item.nombre ?? String(item.id),
       }));
     } catch (_err) {
       // Si falla la carga de opciones, se continúa sin ellas
@@ -143,7 +150,7 @@ export class EmpresasFeature {
   }
 
   /** Pre-selecciona los SelectX de FK cuando se abre el modal de edición */
-  private _preSelectFKValues(form: HTMLElement, data: Empresas): void {
+  private _preSelectFKValues(form: HTMLElement, data: UsuarioRol): void {
     requestAnimationFrame(() => {
       form.querySelectorAll('select-x').forEach((el) => {
         const selEl = el as any;
@@ -163,7 +170,7 @@ export class EmpresasFeature {
 
   private _refreshGrid(): void {
     this._gridie.setBody(
-      toEmpresasGridRows(this._empresas, {
+      toUsuarioRolGridRows(this._usuarioRols, {
         onEdit:   (item) => this._openEdit(item),
         onDelete: (item) => this._openDelete(item),
       }),
@@ -173,21 +180,21 @@ export class EmpresasFeature {
   // ---- Open modals ----
 
   private _openCreate(): void {
-    this._selectedEmpresas = null;
+    this._selectedUsuarioRol = null;
     this._modalCreate.setBody(this._buildForm(null, this._modalCreate));
     this._modalCreate.open();
   }
 
-  private _openEdit(item: Empresas): void {
-    this._selectedEmpresas = item;
+  private _openEdit(item: UsuarioRol): void {
+    this._selectedUsuarioRol = item;
     const editForm = this._buildForm(item, this._modalEdit);
     this._modalEdit.setBody(editForm);
     this._modalEdit.open();
     this._preSelectFKValues(editForm, item);
   }
 
-  private _openDelete(item: Empresas): void {
-    this._selectedEmpresas = item;
+  private _openDelete(item: UsuarioRol): void {
+    this._selectedUsuarioRol = item;
     this._modalDelete.setBody(buildDeleteBody(item));
     this._modalDelete.setFooter(this._buildDeleteFooter());
     this._modalDelete.open();
@@ -195,7 +202,7 @@ export class EmpresasFeature {
 
   // ---- Create / Edit form ----
 
-  private _buildForm(initialData: Empresas | null, modal: ModalXInstance): HTMLElement {
+  private _buildForm(initialData: UsuarioRol | null, modal: ModalXInstance): HTMLElement {
     const isEdit = initialData !== null;
 
     const errorMsg = document.createElement('div');
@@ -218,84 +225,55 @@ export class EmpresasFeature {
     actions.appendChild(cancelBtn);
     actions.appendChild(submitBtn);
 
-  const form = FormX({
-  validateOn: 'blur',
-  onSubmit: async (result) => {
-    if (!result.general_validation) {
-      errorMsg.style.display = 'flex';
-      return;
-    }
-    errorMsg.style.display = 'none';
-    if (this._saving) return;
-    this._saving = true;
-    submitBtn.disabled = true;
-    cancelBtn.disabled = true;
-    submitBtn.textContent = 'Guardando...';
+    const form = FormX({
+      validateOn: 'blur',
+      onSubmit: async (result) => {
+        if (!result.general_validation) {
+          errorMsg.style.display = 'flex';
+          return;
+        }
+        errorMsg.style.display = 'none';
+        if (this._saving) return;
+        this._saving = true;
+        submitBtn.disabled = true;
+        cancelBtn.disabled = true;
+        submitBtn.textContent = 'Guardando...';
 
-    try {
-      const logoFiles = result.body['logo'] as File[];
-      const baseFields = {
-        nombre:            result.body['nombre']            as string,
-        tipo_documento_id: result.body['tipo_documento_id'] as number,
-        numero_documento:  result.body['numero_documento']  as string,
-      };
+        try {
+          const data: UsuarioRolCreateDTO = {
+            usuario_id: result.body['usuario_id'] as number,
+            rol_id: result.body['rol_id'] as number,
+          };
 
-      if (isEdit) {
-        // ── Edición ────────────────────────────────────────────────
-        let logoUrl: string = initialData.logo ?? '';
-
-        if (logoFiles && logoFiles.length > 0) {
-          // Eliminar logo anterior si existe
-          if (initialData.logo) {
-            const uploadsMarker = '/api/uploads/';
-            const markerIdx = initialData.logo.indexOf(uploadsMarker);
-            if (markerIdx !== -1) {
-              const oldPath = initialData.logo.slice(markerIdx + uploadsMarker.length);
-              await deleteFile(oldPath).catch(() => { /* ignorar si ya no existe */ });
-            }
+          if (isEdit) {
+            await usuarioRolService.update(initialData.id, data);
+            toastx.success('UsuarioRol actualizado correctamente');
+          } else {
+            await usuarioRolService.create(data);
+            toastx.success('UsuarioRol creado correctamente');
           }
-          const uploaded = await uploadImage(`empresas/${initialData.id}/logo`, logoFiles[0]);
-          logoUrl = uploaded.url;
+
+          modal.close();
+          await this._fetch();
+        } catch (err) {
+          toastx.error(getErrorMessage(err));
+          submitBtn.disabled = false;
+          cancelBtn.disabled = false;
+          submitBtn.textContent = isEdit ? 'Actualizar' : 'Crear';
+        } finally {
+          this._saving = false;
         }
+      },
+      children: [
+        ...getUsuarioRolFields(initialData, {
+          usuariosOptions: this._usuariosOptions,
+          rolesOptions: this._rolesOptions,
+        }),
+        errorMsg,
+        actions,
+      ],
+    });
 
-        await empresasService.update(initialData.id, { ...baseFields, logo: logoUrl });
-        toastx.success('Empresa actualizada correctamente');
-      } else {
-        // ── Creación ───────────────────────────────────────────────
-        // 1. Crear empresa para obtener el ID
-        const created = await empresasService.create({ ...baseFields, logo: '', estado: '' });
-
-        // 2. Subir logo si se seleccionó uno
-        if (logoFiles && logoFiles.length > 0) {
-          const uploaded = await uploadImage(`empresas/${created.id}/logo`, logoFiles[0]);
-          await empresasService.update(created.id, { logo: uploaded.url });
-        }
-
-        toastx.success('Empresa creada correctamente');
-      }
-
-      modal.close();
-      await this._fetch();
-    } catch (err) {
-      toastx.error(getErrorMessage(err));
-      submitBtn.disabled = false;
-      cancelBtn.disabled = false;
-      submitBtn.textContent = isEdit ? 'Actualizar' : 'Crear';
-    } finally {
-      this._saving = false;
-    }
-  },
-  children: [
-    ...getEmpresasFields(initialData, {
-      tipoDocumentosOptions: this._tipoDocumentosOptions,
-    }),
-    errorMsg,
-    actions,
-  ],
-});
-
-
-//=========================
     return form;
   }
 
@@ -312,15 +290,15 @@ export class EmpresasFeature {
     deleteBtn.textContent = 'Eliminar';
 
     deleteBtn.addEventListener('click', async () => {
-      if (!this._selectedEmpresas || this._saving) return;
+      if (!this._selectedUsuarioRol || this._saving) return;
       this._saving = true;
       deleteBtn.disabled = true;
       cancelBtn.disabled = true;
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await empresasService.remove(this._selectedEmpresas.id);
-        toastx.success('Empresas eliminado correctamente');
+        await usuarioRolService.remove(this._selectedUsuarioRol.id);
+        toastx.success('UsuarioRol eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();
       } catch (err) {
@@ -339,8 +317,8 @@ export class EmpresasFeature {
 
 // ---- Factory ----
 
-export function Empresas(container: HTMLElement): EmpresasFeature {
-  const feature = new EmpresasFeature();
+export function UsuarioRol(container: HTMLElement): UsuarioRolFeature {
+  const feature = new UsuarioRolFeature();
   feature.mount(container);
   return feature;
 }

@@ -1,8 +1,12 @@
 import { InputX } from '@/lib/uiX/components/InputX';
+import { SelectX } from '@/lib/uiX/components/SelectX';
 import type { Paises } from '../paises.types';
 
 export function getPaisesFields(
-  initialData: Paises | null
+  initialData: Paises | null,
+  options: {
+    monedasOptions: Array<{ value: number; label: string }>;
+  }
 ): HTMLElement[] {
   return [
     InputX({
@@ -25,19 +29,21 @@ export function getPaisesFields(
       defaultValue: initialData?.codigo_iso != null ? String(initialData.codigo_iso) : '',
       rules: {
         validations: [
-          { type: 'maxLength', value: 255 },
+          { type: 'maxLength', value: 2 },
+        ],
+        restrictions: [
+          {type:'maxChars', value: 2},
         ],
       },
     }),
-    InputX({
-      name: 'moneda_defecto',
-      label: 'Moneda Defecto',
-      placeholder: 'Ingrese moneda defecto',
-      type: 'text',
-      defaultValue: initialData?.moneda_defecto != null ? String(initialData.moneda_defecto) : '',
+    SelectX({
+      name: 'moneda_id',
+      label: 'Moneda Id',
+      placeholder: 'Seleccionar...',
+      options: options.monedasOptions ?? [],
+      defaultValue: initialData?.moneda_id != null ? String(initialData.moneda_id) : '',
       rules: {
         validations: [
-          { type: 'maxLength', value: 255 },
         ],
       },
     }),

@@ -1,8 +1,8 @@
-import type { Paises, PaisesGridRow } from '../paises.types';
+import type { UsuarioRol, UsuarioRolGridRow } from '../usuariorol.types';
 
-export interface PaisesHandlers {
-  onEdit: (paises: Paises) => void;
-  onDelete: (paises: Paises) => void;
+export interface UsuarioRolHandlers {
+  onEdit: (usuarioRol: UsuarioRol) => void;
+  onDelete: (usuarioRol: UsuarioRol) => void;
 }
 
 const actionButtonStyles = `
@@ -40,12 +40,10 @@ const actionButtonStyles = `
   </style>
 `;
 
-export const toPaisesGridRow = (paises: Paises, handlers: PaisesHandlers): PaisesGridRow => ({
-  id: paises.id,
-  nombre: paises.nombre,
-  codigo_iso: paises.codigo_iso,
-  //moneda_id: paises.moneda_id,
-  moneda: paises.moneda?.nombre ?? (paises.moneda_id != null ? String(paises.moneda_id) : undefined),
+export const toUsuarioRolGridRow = (usuarioRol: UsuarioRol, handlers: UsuarioRolHandlers): UsuarioRolGridRow => ({
+  id: usuarioRol.id,
+  usuario_id: usuarioRol.usuario_id,
+  rol_id: usuarioRol.rol_id,
   actions: [
     {
       content: `
@@ -59,7 +57,7 @@ export const toPaisesGridRow = (paises: Paises, handlers: PaisesHandlers): Paise
         </button>
       `,
       event: 'click',
-      funct: () => handlers.onEdit(paises),
+      funct: () => handlers.onEdit(usuarioRol),
     },
     {
       content: `
@@ -74,10 +72,10 @@ export const toPaisesGridRow = (paises: Paises, handlers: PaisesHandlers): Paise
         </button>
       `,
       event: 'click',
-      funct: () => handlers.onDelete(paises),
+      funct: () => handlers.onDelete(usuarioRol),
     },
   ],
 });
 
-export const toPaisesGridRows = (paises: Paises[], handlers: PaisesHandlers): PaisesGridRow[] =>
-  paises.map((paises) => toPaisesGridRow(paises, handlers));
+export const toUsuarioRolGridRows = (usuarioRols: UsuarioRol[], handlers: UsuarioRolHandlers): UsuarioRolGridRow[] =>
+  usuarioRols.map((usuarioRol) => toUsuarioRolGridRow(usuarioRol, handlers));

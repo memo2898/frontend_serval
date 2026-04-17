@@ -55,13 +55,45 @@ export function getEmpresasFields(
         ],
       },
     }),
-   InputFileX({
-  name: "logo",
-  label: "Logo",
-  accept: "image/*",
-  // Si solo necesitas una imagen:
-  multiple: false,
-  maxSize: 2 * 1024 * 1024, // 2MB opcional
-}),
+    ...((): HTMLElement[] => {
+      const elements: HTMLElement[] = [];
+
+      // Preview de logo actual (solo en edición)
+      if (initialData?.logo) {
+        const previewWrapper = document.createElement('div');
+        previewWrapper.style.cssText = 'margin-bottom:4px;';
+
+        const previewLabel = document.createElement('p');
+        previewLabel.textContent = 'Logo actual';
+        previewLabel.style.cssText = 'margin:0 0 6px;font-size:13px;font-weight:500;color:#374151;';
+
+        const previewImg = document.createElement('img');
+        previewImg.src = initialData.logo;
+        previewImg.alt = 'Logo actual';
+        previewImg.style.cssText =
+          'width:80px;height:80px;object-fit:contain;border:1px solid #e5e7eb;border-radius:8px;padding:6px;background:#fff;display:block;';
+
+        const previewHint = document.createElement('p');
+        previewHint.textContent = 'Selecciona un archivo para reemplazarlo.';
+        previewHint.style.cssText = 'margin:6px 0 0;font-size:12px;color:#6b7280;';
+
+        previewWrapper.appendChild(previewLabel);
+        previewWrapper.appendChild(previewImg);
+        previewWrapper.appendChild(previewHint);
+        elements.push(previewWrapper);
+      }
+
+      elements.push(
+        InputFileX({
+          name: 'logo',
+          label: initialData?.logo ? 'Reemplazar logo' : 'Logo',
+          accept: 'image/*',
+          multiple: false,
+          maxSize: 2 * 1024 * 1024,
+        }),
+      );
+
+      return elements;
+    })(),
   ];
 }

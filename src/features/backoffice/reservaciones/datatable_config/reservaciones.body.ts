@@ -1,8 +1,8 @@
-import type { Paises, PaisesGridRow } from '../paises.types';
+import type { Reservaciones, ReservacionesGridRow } from '../reservaciones.types';
 
-export interface PaisesHandlers {
-  onEdit: (paises: Paises) => void;
-  onDelete: (paises: Paises) => void;
+export interface ReservacionesHandlers {
+  onEdit: (reservaciones: Reservaciones) => void;
+  onDelete: (reservaciones: Reservaciones) => void;
 }
 
 const actionButtonStyles = `
@@ -40,12 +40,25 @@ const actionButtonStyles = `
   </style>
 `;
 
-export const toPaisesGridRow = (paises: Paises, handlers: PaisesHandlers): PaisesGridRow => ({
-  id: paises.id,
-  nombre: paises.nombre,
-  codigo_iso: paises.codigo_iso,
-  //moneda_id: paises.moneda_id,
-  moneda: paises.moneda?.nombre ?? (paises.moneda_id != null ? String(paises.moneda_id) : undefined),
+export const toReservacionesGridRow = (reservaciones: Reservaciones, handlers: ReservacionesHandlers): ReservacionesGridRow => ({
+  id: reservaciones.id,
+  sucursal_id: reservaciones.sucursal_id,
+  mesa_id: reservaciones.mesa_id,
+  cliente_id: reservaciones.cliente_id,
+  nombre_contacto: reservaciones.nombre_contacto,
+  telefono: reservaciones.telefono,
+  fecha_hora: reservaciones.fecha_hora,
+  duracion_min: reservaciones.duracion_min,
+  num_personas: reservaciones.num_personas,
+  estado: reservaciones.estado,
+  notas: reservaciones.notas,
+  cancelada_en: reservaciones.cancelada_en,
+  cancelada_por: reservaciones.cancelada_por,
+  motivo_cancelacion: reservaciones.motivo_cancelacion,
+  agregado_en: reservaciones.agregado_en,
+  agregado_por: reservaciones.agregado_por,
+  actualizado_en: reservaciones.actualizado_en,
+  actualizado_por: reservaciones.actualizado_por,
   actions: [
     {
       content: `
@@ -59,7 +72,7 @@ export const toPaisesGridRow = (paises: Paises, handlers: PaisesHandlers): Paise
         </button>
       `,
       event: 'click',
-      funct: () => handlers.onEdit(paises),
+      funct: () => handlers.onEdit(reservaciones),
     },
     {
       content: `
@@ -74,10 +87,10 @@ export const toPaisesGridRow = (paises: Paises, handlers: PaisesHandlers): Paise
         </button>
       `,
       event: 'click',
-      funct: () => handlers.onDelete(paises),
+      funct: () => handlers.onDelete(reservaciones),
     },
   ],
 });
 
-export const toPaisesGridRows = (paises: Paises[], handlers: PaisesHandlers): PaisesGridRow[] =>
-  paises.map((paises) => toPaisesGridRow(paises, handlers));
+export const toReservacionesGridRows = (reservaciones: Reservaciones[], handlers: ReservacionesHandlers): ReservacionesGridRow[] =>
+  reservaciones.map((reservaciones) => toReservacionesGridRow(reservaciones, handlers));

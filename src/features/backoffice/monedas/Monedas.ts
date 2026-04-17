@@ -1,5 +1,5 @@
 // ============================================
-// Feature: TipoDocumentos — CRUD (Vanilla TS)
+// Feature: Monedas — CRUD (Vanilla TS)
 // ============================================
 
 import { Gridie } from '@/lib/gridie';
@@ -7,12 +7,12 @@ import { ModalXInstance, ModalX } from '@/lib/uiX/components/ModalX';
 import { FormX } from '@/lib/uiX/components/FormX';
 import { toastx } from '@/lib/uiX/components/ToastX';
 import { filterExcluded } from '@/utils/filterExcluded';
-import * as tipoDocumentosService from './tipodocumentos.service';
-import { tipoDocumentosHeaders } from './datatable_config/tipodocumentos.headers';
-import { toTipoDocumentosGridRows } from './datatable_config/tipodocumentos.body';
-import { getTipoDocumentosFields } from './form_config/tipodocumentos.fields';
-import { buildDeleteBody } from './form_config/tipodocumentos.delete';
-import type { TipoDocumentos, TipoDocumentosCreateDTO } from './tipodocumentos.types';
+import * as monedasService from './monedas.service';
+import { monedasHeaders } from './datatable_config/monedas.headers';
+import { toMonedasGridRows } from './datatable_config/monedas.body';
+import { getMonedasFields } from './form_config/monedas.fields';
+import { buildDeleteBody } from './form_config/monedas.delete';
+import type { Monedas, MonedasCreateDTO } from './monedas.types';
 
 
 // ---- Helper ----
@@ -28,11 +28,11 @@ const getErrorMessage = (error: unknown): string => {
 
 // ---- Feature class ----
 
-export class TipoDocumentosFeature {
+export class MonedasFeature {
   // State
-  private _tipoDocumentos: TipoDocumentos[] = [];
+  private _monedas: Monedas[] = [];
   private _saving = false;
-  private _selectedTipoDocumentos: TipoDocumentos | null = null;
+  private _selectedMonedas: Monedas | null = null;
 
   // DOM refs
   private _loadingEl!: HTMLElement;
@@ -45,19 +45,19 @@ export class TipoDocumentosFeature {
 
   constructor() {
     this._modalCreate = ModalX({
-      title: 'Crear TipoDocumentos',
+      title: 'Crear Monedas',
       size: 'md',
       onClose: () => this._modalCreate.close(),
     });
 
     this._modalEdit = ModalX({
-      title: 'Editar TipoDocumentos',
+      title: 'Editar Monedas',
       size: 'md',
       onClose: () => this._modalEdit.close(),
     });
 
     this._modalDelete = ModalX({
-      title: 'Eliminar TipoDocumentos',
+      title: 'Eliminar Monedas',
       size: 'sm',
       onClose: () => this._modalDelete.close(),
     });
@@ -71,11 +71,11 @@ export class TipoDocumentosFeature {
     header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:20px';
 
     const pageTitle = document.createElement('h1');
-    pageTitle.textContent = 'TipoDocumentos';
+    pageTitle.textContent = 'Monedas';
     pageTitle.style.margin = '0';
 
     const btnNew = document.createElement('button');
-    btnNew.textContent = '+ Nuevo TipoDocumentos';
+    btnNew.textContent = '+ Nuevo Monedas';
     btnNew.className = 'btn btn-success';
     btnNew.addEventListener('click', () => this._openCreate());
 
@@ -89,9 +89,9 @@ export class TipoDocumentosFeature {
 
     // --- Gridie ---
     this._gridie = new Gridie({
-      id: 'tipodocumentos-table',
+      id: 'monedas-table',
       identityField: 'id',
-      headers: tipoDocumentosHeaders,
+      headers: monedasHeaders,
       body: [],
       enableSort: true,
       enableFilter: true,
@@ -117,7 +117,7 @@ export class TipoDocumentosFeature {
   private async _fetch(): Promise<void> {
     this._loadingEl.style.display = 'block';
     try {
-      this._tipoDocumentos = filterExcluded(await tipoDocumentosService.getAll());
+      this._monedas = filterExcluded(await monedasService.getAll());
       this._refreshGrid();
     } catch (err) {
       toastx.error(getErrorMessage(err));
@@ -128,7 +128,7 @@ export class TipoDocumentosFeature {
 
   private _refreshGrid(): void {
     this._gridie.setBody(
-      toTipoDocumentosGridRows(this._tipoDocumentos, {
+      toMonedasGridRows(this._monedas, {
         onEdit:   (item) => this._openEdit(item),
         onDelete: (item) => this._openDelete(item),
       }),
@@ -138,20 +138,20 @@ export class TipoDocumentosFeature {
   // ---- Open modals ----
 
   private _openCreate(): void {
-    this._selectedTipoDocumentos = null;
+    this._selectedMonedas = null;
     this._modalCreate.setBody(this._buildForm(null, this._modalCreate));
     this._modalCreate.open();
   }
 
-  private _openEdit(item: TipoDocumentos): void {
-    this._selectedTipoDocumentos = item;
+  private _openEdit(item: Monedas): void {
+    this._selectedMonedas = item;
     const editForm = this._buildForm(item, this._modalEdit);
     this._modalEdit.setBody(editForm);
     this._modalEdit.open();
   }
 
-  private _openDelete(item: TipoDocumentos): void {
-    this._selectedTipoDocumentos = item;
+  private _openDelete(item: Monedas): void {
+    this._selectedMonedas = item;
     this._modalDelete.setBody(buildDeleteBody(item));
     this._modalDelete.setFooter(this._buildDeleteFooter());
     this._modalDelete.open();
@@ -159,7 +159,7 @@ export class TipoDocumentosFeature {
 
   // ---- Create / Edit form ----
 
-  private _buildForm(initialData: TipoDocumentos | null, modal: ModalXInstance): HTMLElement {
+  private _buildForm(initialData: Monedas | null, modal: ModalXInstance): HTMLElement {
     const isEdit = initialData !== null;
 
     const errorMsg = document.createElement('div');
@@ -197,26 +197,19 @@ export class TipoDocumentosFeature {
         submitBtn.textContent = 'Guardando...';
 
         try {
-          const rawRegex    = result.body['regex_validacion'] as string;
-          const rawFuncion  = result.body['funcion_validacion'] as string;
-          const rawFormato  = result.body['formato_ejemplo'] as string;
-
-          const data: TipoDocumentosCreateDTO = {
-            tipo:               result.body['tipo'] as string,
-            aplica_a:           result.body['aplica_a'] as string,
-            tipo_validacion:    result.body['tipo_validacion'] as string,
-            regex_validacion:   rawRegex   || null,
-            funcion_validacion: rawFuncion || null,
-            formato_ejemplo:    rawFormato || null,
-            estado:             result.body['estado'] as string,
+          const data: MonedasCreateDTO = {
+            codigo: result.body['codigo'] as string,
+            nombre: result.body['nombre'] as string,
+            simbolo: result.body['simbolo'] as string,
+            decimales: result.body['decimales'] as number,
           };
 
           if (isEdit) {
-            await tipoDocumentosService.update(initialData.id, data);
-            toastx.success('TipoDocumentos actualizado correctamente');
+            await monedasService.update(initialData.id, data);
+            toastx.success('Monedas actualizado correctamente');
           } else {
-            await tipoDocumentosService.create(data);
-            toastx.success('TipoDocumentos creado correctamente');
+            await monedasService.create(data);
+            toastx.success('Monedas creado correctamente');
           }
 
           modal.close();
@@ -231,7 +224,7 @@ export class TipoDocumentosFeature {
         }
       },
       children: [
-        ...getTipoDocumentosFields(initialData),
+        ...getMonedasFields(initialData),
         errorMsg,
         actions,
       ],
@@ -253,15 +246,15 @@ export class TipoDocumentosFeature {
     deleteBtn.textContent = 'Eliminar';
 
     deleteBtn.addEventListener('click', async () => {
-      if (!this._selectedTipoDocumentos || this._saving) return;
+      if (!this._selectedMonedas || this._saving) return;
       this._saving = true;
       deleteBtn.disabled = true;
       cancelBtn.disabled = true;
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await tipoDocumentosService.remove(this._selectedTipoDocumentos.id);
-        toastx.success('TipoDocumentos eliminado correctamente');
+        await monedasService.remove(this._selectedMonedas.id);
+        toastx.success('Monedas eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();
       } catch (err) {
@@ -280,8 +273,8 @@ export class TipoDocumentosFeature {
 
 // ---- Factory ----
 
-export function TipoDocumentos(container: HTMLElement): TipoDocumentosFeature {
-  const feature = new TipoDocumentosFeature();
+export function Monedas(container: HTMLElement): MonedasFeature {
+  const feature = new MonedasFeature();
   feature.mount(container);
   return feature;
 }

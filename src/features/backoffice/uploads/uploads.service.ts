@@ -1,11 +1,9 @@
-import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
 
 const BASE = `${SERVER_ROUTE}/api/uploads`;
 
 
-
-// ─── Upload multipart ─────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface UploadedFile {
   originalName: string;
@@ -25,16 +23,17 @@ export interface UploadResponse {
 }
 
 
-// ─── Upload single image ──────────────────────────────────────────────────────
+// ─── Upload single image  →  POST /api/uploads/image ─────────────────────────
 
 export const uploadImage = async (
-  path: string,
+  folder: string,
   file: File,
 ): Promise<UploadedFile> => {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('folder', folder);
 
-  const res = await fetch(`${BASE}/image?path=${encodeURIComponent(path)}`, {
+  const res = await fetch(`${BASE}/image`, {
     method: 'POST',
     body: formData,
   });
@@ -45,22 +44,22 @@ export const uploadImage = async (
     throw new Error(data.message || 'Error al subir la imagen');
   }
 
-  return data.image; // <-- antes era data.files[0]
+  return data.image;
 };
 
+
+// ─── Upload multiple files  →  POST /api/uploads/files ───────────────────────
+
 export const uploadFiles = async (
-  path: string,
+  folder: string,
   files: File[],
 ): Promise<UploadResponse> => {
-  //const { getToken } = await import('@/global/session.service');
-  //const token = getToken();
-
   const formData = new FormData();
   files.forEach((file) => formData.append('files', file));
+  formData.append('folder', folder);
 
-  const res = await fetch(`${BASE}?path=${encodeURIComponent(path)}`, {
+  const res = await fetch(`${BASE}/files`, {
     method: 'POST',
-    //headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
   });
 
@@ -71,5 +70,33 @@ export const uploadFiles = async (
   }
 
   return data;
+};
+
+
+// ─── Get file URL  →  GET /api/uploads/* ─────────────────────────────────────
+
+export const getFileUrl = async (filePath: string): Promise<string> => {
+  const res = await fetch(`${BASE}/${filePath}`);
+
+  if (!res.ok) {
+    throw new Error('Archivo no encontrado');
+  }
+
+  const data: any = await res.json();
+  return data.url ?? `${BASE}/${filePath}`;
+};
+
+
+// ─── Delete file  →  DELETE /api/uploads/* ───────────────────────────────────
+
+export const deleteFile = async (filePath: string): Promise<void> => {
+  const res = await fetch(`${BASE}/${filePath}`, {
+    method: 'DELETE',
+  });
+
+  if (!res.ok) {
+    const data: any = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'Error al eliminar el archivo');
+  }
 };
 

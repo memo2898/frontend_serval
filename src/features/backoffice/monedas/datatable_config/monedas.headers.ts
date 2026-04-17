@@ -1,11 +1,16 @@
 import type { GridieHeaderConfig } from '@/lib/gridie';
 
-export const paisesHeaders: GridieHeaderConfig[] = [
+export const monedasHeaders: GridieHeaderConfig[] = [
   {
     label: 'Id',
     type: 'number',
     sortable: true,
     width: '80px',
+  },
+  {
+    label: 'Codigo',
+    type: 'string',
+    sortable: true,
   },
   {
     label: 'Nombre',
@@ -16,14 +21,23 @@ export const paisesHeaders: GridieHeaderConfig[] = [
     },
   },
   {
-    label: 'Codigo Iso',
+    label: 'Simbolo',
     type: 'string',
     sortable: true,
   },
   {
-    label: 'Moneda',
+    label: 'Decimales',
     type: 'number',
     sortable: true,
+  },
+  {
+    label: 'Estado',
+    type: 'string',
+    sortable: true,
+    width: '100px',
+    filters: {
+      headerFilter: { visible: true, showCount: true },
+    },
   },
   {
     label: 'Acciones',

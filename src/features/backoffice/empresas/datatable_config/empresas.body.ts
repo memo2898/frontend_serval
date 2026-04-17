@@ -45,7 +45,9 @@ export const toEmpresasGridRow = (empresas: Empresas, handlers: EmpresasHandlers
   nombre: empresas.nombre,
   tipo_documento_id: empresas.tipo_documento_id,
   numero_documento: empresas.numero_documento,
-  logo: empresas.logo,
+  logo: empresas.logo
+    ? `<img src="${empresas.logo}" alt="Logo" style="width:48px;height:48px;object-fit:contain;border-radius:6px;background:#f3f4f6;border:1px solid #e5e7eb;padding:4px;" />`
+    : '—',
   estado: empresas.estado,
   agregado_en: empresas.agregado_en,
   agregado_por: empresas.agregado_por,

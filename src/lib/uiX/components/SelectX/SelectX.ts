@@ -220,6 +220,18 @@ export class SelectXElement extends HTMLElement {
 
     this.appendChild(container);
     this._syncRequiredLabel();
+
+    // Pre-select default value if provided
+    const defaultValue = this.getAttribute("default-value");
+    if (defaultValue) {
+      const match = this._options.find((o) => String(o.value) === defaultValue);
+      if (match) {
+        this._selectedOption = match;
+        this._searchText = match.label;
+        inputEl.value = match.label;
+        this._updateClearBtn();
+      }
+    }
   }
 
   // ---- Private: dropdown ----
@@ -490,6 +502,7 @@ export interface SelectXConfig {
   label?: string;
   placeholder?: string;
   options?: SelectXOption[];
+  defaultValue?: string;
   rules?: InputRules;
   validateOn?: ValidateOn;
   helperText?: string;
@@ -511,6 +524,7 @@ export function SelectX(config: SelectXConfig): SelectXElement {
   if (config.validateOn)    el.setAttribute("validate-on",     config.validateOn);
   if (config.helperText)    el.setAttribute("helper-text",     config.helperText);
   if (config.noResultsText) el.setAttribute("no-results-text", config.noResultsText);
+  if (config.defaultValue)  el.setAttribute("default-value",   config.defaultValue);
   if (config.disabled)      el.setAttribute("disabled",        "");
 
   if (config.rules)         el.rules        = config.rules;
