@@ -53,9 +53,9 @@ export const ADMIN_OPTIONS: MenuItem[] = [
       { text: 'Familias',              href: '/familias' },
       { text: 'Subfamilias',           href: '/subfamilias' },
       { text: 'Artículos',             href: '/articulos' },
-      { text: 'Artículo Impuestos',    href: '/articuloimpuestos' },
-      { text: 'Alérgenos',             href: '/alergenos' },
-      { text: 'Artículo Alérgenos',    href: '/articuloalergenos' },
+      // { text: 'Artículo Impuestos',    href: '/articuloimpuestos' },
+      // { text: 'Alérgenos',             href: '/alergenos' },
+      // { text: 'Artículo Alérgenos',    href: '/articuloalergenos' },
     ],
   },
 
@@ -73,16 +73,16 @@ export const ADMIN_OPTIONS: MenuItem[] = [
   },
 
   // ── Combos ──────────────────────────────────
-  {
-    id: 'combos',
-    icon: 'fas fa-layer-group',
-    text: 'Combos',
-    href: '#',
-    submenu: [
-      { text: 'Combos',          href: '/combos' },
-      { text: 'Combo Artículos', href: '/comboarticulos' },
-    ],
-  },
+  // {
+  //   id: 'combos',
+  //   icon: 'fas fa-layer-group',
+  //   text: 'Combos',
+  //   href: '#',
+  //   submenu: [
+  //     { text: 'Combos',          href: '/combos' },
+  //     { text: 'Combo Artículos', href: '/comboarticulos' },
+  //   ],
+  // },
 
   // ── Precios y descuentos ─────────────────────
   {

@@ -3,6 +3,7 @@ import type { Articulos, ArticulosGridRow } from '../articulos.types';
 export interface ArticulosHandlers {
   onEdit: (articulos: Articulos) => void;
   onDelete: (articulos: Articulos) => void;
+  onModificadores: (articulos: Articulos) => void;
 }
 
 const actionButtonStyles = `
@@ -33,6 +34,9 @@ const actionButtonStyles = `
     .btn-delete { color: #dc2626; border-color: #fee2e2; background: #fef2f2; }
     .btn-delete:hover   { background: #fee2e2; border-color: #fecaca; }
     .btn-delete:active  { background: #fecaca; }
+    .btn-modif  { color: #7c3aed; border-color: #ede9fe; background: #f5f3ff; }
+    .btn-modif:hover    { background: #ede9fe; border-color: #c4b5fd; }
+    .btn-modif:active   { background: #ddd6fe; }
     @media (max-width: 768px) {
       .btn-action span { display: none; }
       .btn-action { padding: 8px; min-width: 36px; }
@@ -46,21 +50,58 @@ export const toArticulosGridRow = (articulos: Articulos, handlers: ArticulosHand
   subfamilia_id: articulos.subfamilia_id,
   nombre: articulos.nombre,
   descripcion: articulos.descripcion,
-  referencia: articulos.referencia,
-  codigo_barras: articulos.codigo_barras,
   precio_venta: articulos.precio_venta,
-  coste: articulos.coste,
-  tiene_stock: articulos.tiene_stock,
-  vendido_por_peso: articulos.vendido_por_peso,
-  impuesto_id: articulos.impuesto_id,
-  tiempo_preparacion: articulos.tiempo_preparacion,
-  imagen: articulos.imagen,
-  estado: articulos.estado,
-  agregado_en: articulos.agregado_en,
-  agregado_por: articulos.agregado_por,
-  actualizado_en: articulos.actualizado_en,
-  actualizado_por: articulos.actualizado_por,
+  imagen: articulos.imagen
+    ? [
+        {
+          content: `<img
+            src="${articulos.imagen}"
+            alt="Imagen"
+            style="width:48px;height:48px;object-fit:contain;border-radius:6px;background:#f3f4f6;border:1px solid #e5e7eb;padding:4px;cursor:zoom-in;"
+          />`,
+          event: 'click',
+          funct: () => {
+            const overlay = document.createElement('div');
+            overlay.style.cssText =
+              'position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:zoom-out;';
+
+            const img = document.createElement('img');
+            img.src = articulos.imagen!;
+            img.alt = articulos.nombre ?? 'Imagen';
+            img.style.cssText =
+              'max-width:90vw;max-height:90vh;object-fit:contain;border-radius:10px;box-shadow:0 24px 64px rgba(0,0,0,0.6);';
+
+            overlay.appendChild(img);
+            overlay.addEventListener('click', () => overlay.remove());
+            document.addEventListener('keydown', function onKey(e) {
+              if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onKey); }
+            });
+            document.body.appendChild(overlay);
+          },
+        },
+      ]
+    : '—',
+  // estado: articulos.estado,
+  // agregado_en: articulos.agregado_en,
+  // agregado_por: articulos.agregado_por,
+  // actualizado_en: articulos.actualizado_en,
+  // actualizado_por: articulos.actualizado_por,
   actions: [
+    {
+      content: `
+        ${actionButtonStyles}
+        <button class="btn-action btn-modif" title="Modificadores">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07M8.46 8.46a5 5 0 0 0 0 7.07"/>
+          </svg>
+          <span>Modificadores</span>
+        </button>
+      `,
+      event: 'click',
+      funct: () => handlers.onModificadores(articulos),
+    },
     {
       content: `
         ${actionButtonStyles}

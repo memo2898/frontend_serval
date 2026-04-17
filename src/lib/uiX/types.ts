@@ -23,6 +23,7 @@ export interface ValidationRule {
 // Restriction types
 export type RestrictionType =
   | "onlyNumbers"
+  | "onlyDecimals"
   | "onlyLetters"
   | "onlyAlphanumeric"
   | "noSpaces"

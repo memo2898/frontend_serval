@@ -22,6 +22,11 @@ export function shouldBlockKey(
       case "onlyNumbers":
         if (!/^\d$/.test(key)) return true;
         break;
+      case "onlyDecimals":
+        if (!/^\d$/.test(key) && key !== ".") return true;
+        // Bloquear segundo punto
+        if (key === "." && currentValue.includes(".")) return true;
+        break;
       case "onlyLetters":
         if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]$/.test(key)) return true;
         break;
@@ -51,6 +56,15 @@ export function applyRestrictionsToValue(
     switch (restriction.type) {
       case "onlyNumbers":
         result = result.replace(/[^\d]/g, "");
+        break;
+      case "onlyDecimals":
+        // Permitir dígitos y un solo punto decimal
+        result = result.replace(/[^\d.]/g, "");
+        // Si hay más de un punto, conservar solo el primero
+        const dotIdx = result.indexOf(".");
+        if (dotIdx !== -1) {
+          result = result.slice(0, dotIdx + 1) + result.slice(dotIdx + 1).replace(/\./g, "");
+        }
         break;
       case "onlyLetters":
         result = result.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]/g, "");

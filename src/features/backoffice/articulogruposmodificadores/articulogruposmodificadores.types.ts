@@ -18,10 +18,8 @@ export interface ArticuloGruposModificadoresGridRow {
 }
 
 export interface ArticuloGruposModificadoresCreateDTO {
-  articulo_id?: number;
-  grupo_modificador_id?: number;
-  articuloId: number;
-  grupoId: number;
+  articulo_id: number;
+  grupo_modificador_id: number;
 }
 
 export interface ArticuloGruposModificadoresUpdateDTO {
