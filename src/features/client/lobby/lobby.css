@@ -1,0 +1,223 @@
+/* lobby.css */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.lobby-body {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Decoraciones de fondo */
+.bg-decoration {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  animation: float 20s infinite linear;
+}
+
+.circle-1 { width: 200px; height: 200px; top: 10%; left: -5%; animation-delay: 0s; }
+.circle-2 { width: 150px; height: 150px; top: 70%; right: -5%; animation-delay: -10s; }
+.circle-3 { width: 100px; height: 100px; top: 40%; left: 80%; animation-delay: -5s; }
+
+@keyframes float {
+  0%   { transform: translateY(0px) rotate(0deg); }
+  50%  { transform: translateY(-20px) rotate(180deg); }
+  100% { transform: translateY(0px) rotate(360deg); }
+}
+
+/* Contenedor principal */
+.lobby-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 640px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 40px 36px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 15px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Header */
+.lobby-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.logo-container {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px;
+  background: linear-gradient(-80deg, #f4c0cb -10%, #d63050 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(214, 48, 80, 0.3);
+}
+
+.lobby-logo {
+  width: 45px;
+}
+
+.lobby-header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 6px;
+}
+
+.lobby-subtitle {
+  font-size: 14px;
+  color: #718096;
+  font-weight: 400;
+  margin-bottom: 4px;
+}
+
+.lobby-user-name {
+  font-size: 13px;
+  color: #a0aec0;
+  font-weight: 500;
+}
+
+/* Grid de roles */
+.roles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+/* Tarjeta de rol */
+.role-card {
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 24px 20px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.25s ease;
+  text-align: center;
+}
+
+.role-card:hover {
+  border-color: #d63050;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(214, 48, 80, 0.15);
+}
+
+.role-card:active {
+  transform: translateY(0);
+}
+
+.role-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(-80deg, #f4c0cb -10%, #d63050 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(214, 48, 80, 0.25);
+  flex-shrink: 0;
+}
+
+.role-icon i {
+  font-size: 22px;
+  color: #fff;
+}
+
+.role-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.role-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.role-desc {
+  font-size: 12px;
+  color: #718096;
+  line-height: 1.4;
+}
+
+/* Footer */
+.lobby-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.logout-btn {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #718096;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  border-color: #d63050;
+  color: #d63050;
+  background: rgba(214, 48, 80, 0.04);
+}
+
+/* Responsive */
+@media (max-width: 520px) {
+  .lobby-container {
+    padding: 28px 20px;
+  }
+
+  .roles-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .role-card {
+    flex-direction: row;
+    text-align: left;
+    padding: 18px 16px;
+  }
+
+  .role-info {
+    align-items: flex-start;
+  }
+
+  .circle-1, .circle-2, .circle-3 {
+    display: none;
+  }
+}

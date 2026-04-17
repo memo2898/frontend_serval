@@ -1,0 +1,40 @@
+
+/* Reset */
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: system-ui, sans-serif; margin: 0; background: #f9fafb; color: #111827; }
+
+/* Buttons */
+.btn { padding: 10px 20px; font-size: 14px; font-weight: 500; border-radius: 6px; border: none; cursor: pointer; transition: background 0.15s; }
+.btn-primary   { background: #d63050; color: #fff; }
+.btn-primary:hover   { background: #b8263f; }
+.btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+.btn-secondary:hover { background: #e5e7eb; }
+.btn-danger  { background: #ef4444; color: #fff; }
+.btn-danger:hover  { background: #dc2626; }
+.btn-success { background: #374151; color: #fff; }
+/* .btn-success { background: #16a34a; color: #fff; } */
+.btn-success:hover { background: #15803d; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+:root {
+  /* Brand colors */
+  --primary-color: #d63050;
+  --secondary-color: #ffffff;
+
+  /* Primary scale */
+  --soft-primary: #f4c0cb;
+
+  /* Menu */
+  --menu-bg: #1e293b;
+  --menu-bg-sub: #0f172a;
+
+  /* Gray scale */
+  --light-gray: #F5F5F5;
+  --medium-gray: #DBDBDB;
+  --dark-gray: #4B4C4D;
+
+  /* Accent colors */
+  --accent-pink: #D56599;
+  --accent-orange: #DD710F;
+  --accent-yellow: #F7E300;
+  --accent-green: #00893E;
+}

@@ -1,0 +1,35 @@
+/* ===== TOPBAR / CABECERA ===== */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 100;
+  padding: 0 20px;
+  height: 64px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.topbar_logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topbar_logo img {
+  height: 70px;
+  width: auto;
+  object-fit: contain;
+}
+
+.topbar_actions {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

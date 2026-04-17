@@ -1,0 +1,38 @@
+/* ─── Design tokens compartidos entre todos los módulos client ─────────────── */
+:root {
+  --bg:           #eef0f8;
+  --surface:      #ffffff;
+  --surface2:     #f4f6fc;
+  --surface3:     #e8ecf6;
+
+  /* accent: cada módulo sobreescribe este valor */
+  --accent:       #d63050;
+  --accent-rgb:   214,48,80;
+
+  --text:         #1a1b2e;
+  --text-muted:   #5f628a;
+  --text-dim:     #adb0cc;
+
+  --border:       rgba(80,80,180,0.13);
+  --border-strong:rgba(80,80,180,0.22);
+
+  --green:        #00904c;
+  --orange:       #c56200;
+  --yellow:       #9e7400;
+  --blue:         #1a52cc;
+  --red:          #c62828;
+
+  --radius:       10px;
+  --radius-lg:    16px;
+}
+
+/* ─── Reset mínimo ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', system-ui, sans-serif; font-size: 14px; }
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(80,80,180,0.20); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(80,80,180,0.32); }

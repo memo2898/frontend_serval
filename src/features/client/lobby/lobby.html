@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seleccionar Rol | Serval</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../../main.css" />
+    <link rel="stylesheet" href="lobby.css" />
+    <script src="lobby.ts" type="module" defer></script>
+  </head>
+  <body>
+    <div class="lobby-body">
+
+      <div class="bg-decoration">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+        <div class="circle circle-3"></div>
+      </div>
+
+      <div class="lobby-container">
+        <div class="lobby-header">
+          <div class="logo-container">
+            <img src="/escudo_claro.svg" alt="Escudo" class="lobby-logo" />
+          </div>
+          <h1>Serval</h1>
+          <p class="lobby-subtitle">Selecciona el rol con el que trabajarás</p>
+          <p class="lobby-user-name" id="lobbyUserName"></p>
+        </div>
+
+        <div class="roles-grid" id="rolesGrid">
+          <!-- Los roles se insertan dinámicamente -->
+        </div>
+
+        <div class="lobby-footer">
+          <button class="logout-btn" id="logoutBtn">
+            <i class="fas fa-sign-out-alt"></i>
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,124 @@
+/* ─── Toast ─────────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  padding: 11px 24px; border-radius: 40px;
+  font-size: 13px; font-weight: 600; z-index: 9999;
+  opacity: 0; transition: all 0.22s ease;
+  pointer-events: none; white-space: nowrap;
+}
+.toast.show    { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { background: var(--green); color: #fff; }
+.toast.info    { background: var(--blue);  color: #fff; }
+.toast.error   { background: var(--red);   color: #fff; }
+
+/* ─── Topbar ────────────────────────────────────────────────────────────────── */
+.topbar {
+  display: flex; align-items: center;
+  padding: 0 20px; height: 52px; min-height: 52px;
+  background: var(--surface);
+  border-bottom: 3px solid var(--accent);
+  gap: 12px; box-shadow: 0 1px 4px rgba(var(--accent-rgb),0.10);
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-brand  { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent); font-size: 15px; }
+.topbar-sep    { color: var(--border-strong); font-size: 18px; }
+.topbar-title  { font-size: 14px; font-weight: 700; color: var(--accent); letter-spacing: 0.3px; }
+.topbar-spacer { flex: 1; }
+.topbar-clock  { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; color: var(--text); }
+.topbar-user   { font-size: 13px; color: var(--text-muted); }
+.topbar-screen {
+  font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text-muted); padding: 3px 10px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+}
+
+/* Stat pills */
+.topbar-stat {
+  font-size: 12px; padding: 4px 12px; border-radius: 20px;
+  font-weight: 600; white-space: nowrap;
+}
+.stat-pend { background: rgba(197,98,0,0.10);   color: var(--orange); border: 1px solid rgba(197,98,0,0.25); }
+.stat-prep { background: rgba(26,82,204,0.09);  color: var(--blue);   border: 1px solid rgba(26,82,204,0.22); }
+.stat-list { background: rgba(0,144,76,0.09);   color: var(--green);  border: 1px solid rgba(0,144,76,0.22); }
+
+/* ─── Botones comunes ───────────────────────────────────────────────────────── */
+.btn-exit {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 14px;
+  color: var(--text-muted); font-size: 13px; cursor: pointer;
+  font-family: inherit; transition: all 0.15s;
+}
+.btn-exit:active { color: var(--accent); border-color: var(--accent); }
+
+.btn-back {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 14px; color: var(--text);
+  font-size: 13px; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; gap: 6px;
+  transition: background 0.15s; white-space: nowrap;
+}
+.btn-back:active { background: var(--surface3); }
+
+/* ─── Screen switcher ───────────────────────────────────────────────────────── */
+.screen { display: none; width: 100%; height: 100vh; overflow: hidden; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ─── Login box ─────────────────────────────────────────────────────────────── */
+.login-screen {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100vh;
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(var(--accent-rgb),0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 30%, rgba(26,82,204,0.05) 0%, transparent 50%);
+}
+.login-box {
+  width: 360px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 48px 40px;
+  display: flex; flex-direction: column; gap: 24px;
+  box-shadow: 0 8px 32px rgba(80,80,180,0.10);
+}
+.login-logo { text-align: center; }
+.login-logo .brand {
+  font-family: 'JetBrains Mono', monospace; font-size: 28px;
+  font-weight: 700; color: var(--accent); letter-spacing: -1px;
+}
+.login-logo .tagline {
+  font-size: 12px; color: var(--text-muted); margin-top: 4px;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+.form-group label {
+  font-size: 12px; color: var(--text-muted); font-weight: 600;
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+.form-group input {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px; color: var(--text);
+  font-size: 15px; font-family: inherit; outline: none; transition: border-color 0.2s;
+}
+.form-group input:focus { border-color: var(--accent); }
+.btn-login {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: var(--radius); padding: 16px; font-size: 15px;
+  font-weight: 700; cursor: pointer; letter-spacing: 0.5px;
+  transition: opacity 0.2s, transform 0.1s; font-family: inherit;
+}
+.btn-login:active  { transform: scale(0.98); opacity: 0.9; }
+.btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Empty state ───────────────────────────────────────────────────────────── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; flex: 1; color: var(--text-dim); gap: 10px; font-size: 14px;
+}
+.empty-state-icon { font-size: 36px; opacity: 0.4; }
+
+/* ─── Loading spinner ───────────────────────────────────────────────────────── */
+.loading-spinner {
+  width: 32px; height: 32px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.8s linear infinite; margin: auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

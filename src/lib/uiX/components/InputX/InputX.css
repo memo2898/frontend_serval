@@ -1,0 +1,115 @@
+/* ============================================
+   uiX - InputX Styles
+   ============================================ */
+
+.inputx-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.inputx-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 2px;
+}
+
+.inputx-label.required::after {
+  content: " *";
+  color: #ef4444;
+}
+
+.inputx-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputx-field {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1f2937;
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.inputx-field::placeholder {
+  color: #9ca3af;
+}
+
+.inputx-field:hover:not(:disabled) {
+  border-color: #9ca3af;
+}
+
+.inputx-field:focus {
+  border-color: #d63050;
+  box-shadow: 0 0 0 3px rgba(214, 48, 80, 0.15);
+}
+
+.inputx-field:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Error state */
+.inputx-field.error {
+  border-color: #ef4444;
+}
+
+.inputx-field.error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+/* Success state */
+.inputx-field.success {
+  border-color: #10b981;
+}
+
+.inputx-field.success:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+/* Error message */
+.inputx-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 2px;
+}
+
+.inputx-error-icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+}
+
+.inputx-error-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.inputx-error-item {
+  line-height: 1.4;
+}
+
+/* Helper text */
+.inputx-helper {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}

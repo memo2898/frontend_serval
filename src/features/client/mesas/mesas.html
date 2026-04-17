@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServalPOS — Mesas</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/styles/client-tokens.css">
+  <link rel="stylesheet" href="../shared/styles/client-layout.css">
+  <link rel="stylesheet" href="./mesas.css">
+  <style>
+    html, body { overflow: hidden; }
+  </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ══════════════ MESAS ══════════════ -->
+<div id="screen-mesas" class="screen active">
+  <div class="topbar">
+    <span class="topbar-brand">ServalPOS</span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-user" id="topbar-user">—</span>
+    <button class="btn-exit" id="btn-exit-mesas">Salir</button>
+  </div>
+  <div class="zonas-tabs" id="zonas-tabs"></div>
+  <div class="mesas-plano-wrap">
+    <div class="mesas-plano">
+      <div class="mesas-plano-inner" id="mesas-grid"></div>
+    </div>
+  </div>
+  <div class="mesas-leyenda">
+    <div class="leyenda-item"><div class="leyenda-dot libre"></div>Libre</div>
+    <div class="leyenda-item"><div class="leyenda-dot ocupada"></div>Ocupada</div>
+    <div class="leyenda-item"><div class="leyenda-dot por_cobrar"></div>Por cobrar</div>
+    <div class="leyenda-item"><div class="leyenda-dot reservada"></div>Reservada</div>
+    <div class="leyenda-item"><div class="leyenda-dot bloqueada"></div>Bloqueada</div>
+  </div>
+</div>
+
+<!-- ══════════════ TPV ══════════════ -->
+<div id="screen-tpv" class="screen">
+  <div class="topbar">
+    <button class="btn-back" data-back-mesas>← Volver</button>
+    <span class="topbar-title" id="tpv-mesa-label">Mesa —</span>
+    <div class="topbar-spacer"></div>
+  </div>
+  <div class="tpv-body">
+    <!-- Izquierda: catálogo -->
+    <div class="tpv-left">
+      <div class="familias-tabs" id="familias-tabs"></div>
+      <div class="articulos-grid" id="articulos-grid"></div>
+    </div>
+    <!-- Derecha: orden -->
+    <div class="tpv-right">
+      <div class="orden-header">
+        <div class="orden-header-num" id="orden-num">ORDEN #—</div>
+        <div class="orden-header-info" id="orden-info">—</div>
+      </div>
+      <div class="orden-lineas" id="orden-lineas"></div>
+      <div class="nota-section">
+        <textarea class="nota-input" id="nota-input" rows="2" placeholder="Nota para cocina…"></textarea>
+      </div>
+      <div class="orden-totales" id="orden-totales"></div>
+      <div class="orden-actions">
+        <button class="btn-cocina" data-enviar-cocina>🍳 Enviar cocina</button>
+        <button class="btn-cobrar" data-pedir-cuenta>📋 Pedir cuenta</button>
+      </div>
+      <div style="padding: 0 12px 10px; display:flex; gap:8px;">
+        <button class="btn-split" id="btn-split" style="flex:1">÷ Dividir cuenta</button>
+        <button class="btn-split" data-abrir-unir-tpv style="flex:1">＋ Unir mesa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODALES ══════════════ -->
+
+<!-- Modal modificadores -->
+<div id="modal-mods" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-art-nombre">Artículo</div>
+      <div class="modal-subtitle">Selecciona las opciones</div>
+    </div>
+    <div class="modal-body" id="modal-grupos"></div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" data-cerrar-mods>Cancelar</button>
+      <button class="btn-modal-add" id="btn-agregar-modal" disabled>Agregar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal acción mesa -->
+<div id="modal-accion-mesa" class="comensales-modal" style="display:none">
+  <div class="comensales-box">
+    <div class="comensales-title" id="accion-mesa-title">Mesa —</div>
+    <div class="comensales-sub">¿Qué deseas hacer?</div>
+    <div class="accion-menu">
+      <button class="btn-confirm-com" data-abrir-orden>▶ &nbsp;Abrir orden</button>
+      <button class="btn-cancel-com"  data-iniciar-union>＋ &nbsp;Unir con otras mesas</button>
+      <button class="btn-cancel-com"  data-cerrar-accion-mesa style="margin-top:4px">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal comensales -->
+<div id="modal-comensales" class="comensales-modal" style="display:none">
+  <div class="comensales-box">
+    <div class="comensales-title" id="comensales-titulo">Mesa —</div>
+    <div class="comensales-sub">¿Cuántos comensales?</div>
+    <div class="comensales-grid" id="comensales-grid"></div>
+    <div class="comensales-actions">
+      <button class="btn-cancel-com"  data-cerrar-comensales>Cancelar</button>
+      <button class="btn-confirm-com" data-confirmar-comensales>Continuar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Barra modo unión -->
+<div id="merge-bar" class="merge-bar" style="display:none">
+  <span class="merge-bar-label" id="merge-bar-label">Selecciona las mesas a unir con <strong id="merge-bar-principal">—</strong></span>
+  <button class="btn-back" data-cancelar-merge>Cancelar</button>
+  <button id="merge-bar-confirm" class="btn-merge-confirm" disabled>Confirmar</button>
+</div>
+
+<!-- Modal unir mesa desde TPV -->
+<div id="modal-unir-tpv" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">Unir mesa</div>
+      <div class="modal-subtitle">Selecciona las mesas libres a unir con <strong id="unir-tpv-principal">—</strong></div>
+    </div>
+    <div class="unir-mesas-grid" id="unir-mesas-grid"></div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" data-cerrar-unir-tpv>Cancelar</button>
+      <button class="btn-modal-add" id="btn-confirmar-unir-tpv" disabled>Unir mesas</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./mesas.ts"></script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login | Serval</title>
+ <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+    <!-- Font Awesome para los iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Tus archivos CSS -->
+    <link rel="stylesheet" href="../../../main.css" />
+    <link rel="stylesheet" href="login.css" />
+    <!-- JavaScript -->
+    <script src="auth.ts" type="module" defer></script>
+  </head>
+  <body>
+    <div class="body_container">
+      <!-- Background decorative elements -->
+      <div class="bg-decoration">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+        <div class="circle circle-3"></div>
+      </div>
+
+      <div class="login-container">
+        <!-- Login Card -->
+        <div class="login-card">
+          <!-- Header -->
+          <div class="login-header">
+            <div class="logo-container">
+              <img
+                src="/escudo_claro.svg"
+                alt="Escudo Alcaldía"
+                class="escudo_login"
+              />
+            </div>
+            <h1>Serval</h1>
+            <p>Gestión de restaurantes</p>
+          </div>
+
+          <!-- Form -->
+          <form class="login-form" id="loginForm">
+            <div class="input-group">
+              <div class="input-wrapper">
+                <i class="fas fa-user"></i>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  autocomplete="off"
+                  placeholder="Usuario"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="input-group">
+              <div class="input-wrapper">
+                <i class="fas fa-lock"></i>
+                <input
+                  type="password"
+                  class="input_pass"
+                  id="password"
+                  name="password"
+                  autocomplete="off"
+                  placeholder="Contraseña"
+                  required
+                />
+                <button
+                  type="button"
+                  class="toggle-password"
+                  onclick="togglePassword()"
+                >
+                  <i class="fas fa-eye" id="eyeIcon"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- <div class="form-options">
+              <label class="checkbox-container">
+                <input type="checkbox" id="remember" />
+                <span class="checkmark"></span>
+                Recordarme
+              </label>
+              <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+            </div> -->
+
+
+            <div class="cont_login_error">
+              <span class="login_error"></span>
+            </div>
+
+            <button type="submit" class="login-btn">
+              <span class="btn-text">Iniciar Sesión</span>
+              <i class="fas fa-arrow-right btn-icon"></i>
+            </button>
+          </form>
+
+          <!-- Footer -->
+          <div class="login-footer">
+            <p>&copy; <span id="year"></span> Serval</p>
+            <p>Todos los derechos reservados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Script para el año actual -->
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+    </script>
+  </body>
+</html>

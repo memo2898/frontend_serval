@@ -1,0 +1,635 @@
+/* ============================================
+   uiX - DynamicFieldsX Styles
+   ============================================ */
+
+.dynamic-fields-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.dynamic-fields-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+/* Add field button */
+.dynamic-fields-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dynamic-fields-add-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.dynamic-fields-add-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Fields list */
+.dynamic-fields-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Field card */
+.field-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.field-card:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.field-card.dragging {
+  opacity: 0.5;
+  border-color: #d63050;
+  background-color: #fce8ec;
+}
+
+.field-card.drag-over {
+  border-color: #d63050;
+  border-style: dashed;
+}
+
+/* Drag handle */
+.field-card-drag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: #9ca3af;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.field-card-drag:active {
+  cursor: grabbing;
+}
+
+.field-card-drag svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Field card content */
+.field-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.field-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.field-card-type {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  background-color: #e5e7eb;
+  color: #6b7280;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.field-card-label {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.field-card-validations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.field-card-validation-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  background-color: #fce8ec;
+  color: #b8263f;
+  border-radius: 4px;
+}
+
+/* Field card actions */
+.field-card-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.field-card-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.field-card-action:hover {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.field-card-action.delete:hover {
+  background-color: #fef2f2;
+  color: #ef4444;
+}
+
+.field-card-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Expandable form */
+.field-form-container {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.field-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.field-form-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.field-form-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.field-form-close:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.field-form-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.field-form-row.full {
+  grid-template-columns: 1fr;
+}
+
+.field-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-form-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.field-form-input {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.field-form-input:focus {
+  border-color: #d63050;
+}
+
+.field-form-select {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+  background-color: #fff;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.field-form-select:focus {
+  border-color: #d63050;
+}
+
+.field-form-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-form-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.field-form-checkbox-label {
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+}
+
+/* Options editor for Select */
+.options-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.options-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.options-editor-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.options-editor-add {
+  font-size: 12px;
+  padding: 4px 8px;
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.options-editor-add:hover {
+  background-color: #f9fafb;
+}
+
+.options-editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.options-editor-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.options-editor-item input {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.options-editor-item input:focus {
+  border-color: #d63050;
+}
+
+.options-editor-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.options-editor-remove:hover {
+  color: #ef4444;
+}
+
+/* Validations picker */
+.validations-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.validations-picker-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.validations-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.validation-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.validation-item.active {
+  border-color: #d63050;
+  background-color: #fce8ec;
+}
+
+.validation-item-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.validation-item-checkbox {
+  width: 14px;
+  height: 14px;
+}
+
+.validation-item-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.validation-item-input {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.validation-item-input:focus {
+  border-color: #d63050;
+}
+
+/* Form actions */
+.field-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.field-form-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.field-form-btn.cancel {
+  background-color: #fff;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.field-form-btn.cancel:hover {
+  background-color: #f9fafb;
+}
+
+.field-form-btn.save {
+  background-color: #d63050;
+  border-color: #d63050;
+  color: #fff;
+}
+
+.field-form-btn.save:hover:not(:disabled) {
+  background-color: #b8263f;
+}
+
+.field-form-btn.save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Section divider for extend contract */
+.dynamic-fields-section {
+  margin-top: 16px;
+}
+
+.dynamic-fields-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Simple field card (extend / none) */
+.simple-field-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.simple-field-card.dragging {
+  opacity: 0.5;
+  border-color: #d63050;
+  background-color: #fce8ec;
+}
+
+.simple-field-card.drag-over {
+  border-color: #d63050;
+  border-style: dashed;
+}
+
+.simple-field-card .field-card-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.simple-field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.simple-field-value {
+  flex: 1;
+  min-width: 0;
+}
+
+.simple-field-value input[type="text"],
+.simple-field-value input[type="number"] {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.simple-field-value input[type="text"]:focus,
+.simple-field-value input[type="number"]:focus {
+  border-color: #d63050;
+}
+
+.simple-field-value input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+/* Follow contract field wrapper */
+.follow-field-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.follow-field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.follow-field-input {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.follow-field-input:focus {
+  border-color: #d63050;
+}
+
+.follow-field-input:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.follow-field-helper {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.follow-field-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Error state */
+.dynamic-fields-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.dynamic-fields-error svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}

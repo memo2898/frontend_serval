@@ -1,0 +1,218 @@
+/* ============================================
+   Mi Perfil — estilos
+   ============================================ */
+
+/* ── Header de perfil ──────────────────────────────────────── */
+.perfil-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--secondary-color);
+  border: 1px solid var(--medium-gray);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.perfil-avatar {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  user-select: none;
+}
+
+.perfil-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.perfil-header-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.perfil-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--dark-gray);
+}
+
+.perfil-meta-sep {
+  color: var(--medium-gray);
+}
+
+.perfil-estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.perfil-estado-badge.activo {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.perfil-estado-badge.inactivo {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ── Tarjetas de sección ───────────────────────────────────── */
+.perfil-card {
+  background: var(--secondary-color);
+  border: 1px solid var(--medium-gray);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.perfil-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.perfil-card-title i {
+  color: var(--primary-color);
+  font-size: 14px;
+}
+
+.perfil-card-desc {
+  font-size: 12px;
+  color: var(--dark-gray);
+  margin-bottom: 20px;
+}
+
+.perfil-divider {
+  height: 1px;
+  background: var(--medium-gray);
+  margin: 12px 0 20px;
+}
+
+/* ── Grid de campos ────────────────────────────────────────── */
+.perfil-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.perfil-fields.single {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 540px) {
+  .perfil-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Campo individual ─────────────────────────────────────── */
+.perfil-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.perfil-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dark-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.perfil-field input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--medium-gray);
+  border-radius: 6px;
+  font-size: 14px;
+  color: #111827;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+
+.perfil-field input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(214, 48, 80, 0.1);
+}
+
+.perfil-field input:read-only {
+  background: var(--light-gray);
+  color: var(--dark-gray);
+  cursor: default;
+}
+
+.perfil-field input:read-only:focus {
+  border-color: var(--medium-gray);
+  box-shadow: none;
+}
+
+/* ── Acciones de formulario ───────────────────────────────── */
+.perfil-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── Roles (read-only) ─────────────────────────────────────── */
+.perfil-roles-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.perfil-role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--light-gray);
+  border: 1px solid var(--medium-gray);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.perfil-role-chip i {
+  font-size: 12px;
+  color: var(--primary-color);
+}
+
+/* ── Estado vacío ─────────────────────────────────────────── */
+.perfil-empty {
+  font-size: 13px;
+  color: var(--dark-gray);
+  font-style: italic;
+}

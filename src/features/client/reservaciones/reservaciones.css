@@ -1,0 +1,166 @@
+/* ─── Acento azul para reservaciones (sobrescribe el rojo de mesas) ──────────── */
+/* El acento se aplica vía JS en _applyTheme(); este archivo añade estilos
+   específicos de reservaciones que no existen en mesas.css               */
+
+/* ─── Badge de hora sobre la mesa reservada ─────────────────────────────────── */
+.rv-time-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: var(--blue, #1a52cc);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  border-radius: 5px;
+  padding: 2px 5px;
+  white-space: nowrap;
+  z-index: 1;
+  box-shadow: 0 1px 4px rgba(26,82,204,0.35);
+}
+
+/* ─── Modal de reserva (ancho ligeramente mayor) ─────────────────────────────── */
+.rv-modal-box {
+  max-width: 520px !important;
+}
+
+/* ─── Cuerpo del formulario ──────────────────────────────────────────────────── */
+.rv-form-body {
+  gap: 16px !important;
+}
+
+/* ─── Grupos de campo ────────────────────────────────────────────────────────── */
+.rv-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rv-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.rv-optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.7;
+}
+
+.rv-field-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.rv-field-input:focus {
+  border-color: var(--accent);
+}
+
+.rv-field-textarea {
+  resize: none;
+}
+
+/* ─── Grid de personas (heredado de comensales-grid, sin margen inferior) ────── */
+.rv-personas-grid {
+  margin-bottom: 0 !important;
+}
+
+/* ─── Footer del modal de detalle ────────────────────────────────────────────── */
+.rv-detalle-footer {
+  flex-wrap: wrap;
+  gap: 8px !important;
+}
+
+.rv-detalle-footer .btn-modal-cancel {
+  flex: 1;
+  min-width: 120px;
+}
+
+.rv-detalle-footer .btn-modal-add {
+  flex: 2;
+  min-width: 160px;
+}
+
+/* ─── Botón "Cancelar reserva" (destructivo) ─────────────────────────────────── */
+.rv-btn-danger {
+  color: var(--red, #c62828) !important;
+  border-color: rgba(198, 40, 40, 0.35) !important;
+}
+
+.rv-btn-danger:hover {
+  background: rgba(198, 40, 40, 0.07) !important;
+}
+
+/* ─── Filas del detalle de reserva ───────────────────────────────────────────── */
+.rv-detalle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.rv-detalle-row:last-child {
+  border-bottom: none;
+}
+
+.rv-detalle-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rv-detalle-val {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: right;
+}
+
+.rv-detalle-notas {
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ─── Estado badge en el detalle ─────────────────────────────────────────────── */
+.rv-estado-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.rv-estado-badge.pendiente {
+  background: rgba(26, 82, 204, 0.10);
+  color: var(--blue, #1a52cc);
+  border: 1px solid rgba(26, 82, 204, 0.28);
+}
+
+.rv-estado-badge.confirmada {
+  background: rgba(0, 144, 76, 0.10);
+  color: var(--green, #00904c);
+  border: 1px solid rgba(0, 144, 76, 0.28);
+}

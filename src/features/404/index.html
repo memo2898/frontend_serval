@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 — Página no encontrada</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; padding: 4rem 1rem; }
+      .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 2.5rem; max-width: 480px; width: 100%; }
+      h1 { font-size: 4rem; font-weight: 800; color: #f87171; line-height: 1; }
+      h2 { font-size: 1.25rem; color: #94a3b8; margin: 0.5rem 0 1.5rem; }
+      p { font-size: 0.875rem; color: #64748b; margin-bottom: 1rem; }
+      .url { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 0.4rem 0.75rem; font-family: monospace; color: #f87171; display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; min-height: 1.75rem; }
+      ul { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+      li a { display: block; padding: 0.6rem 1rem; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #7dd3fc; text-decoration: none; font-size: 0.9rem; transition: background 0.15s, border-color 0.15s; }
+      li a:hover { background: #1e3a5f; border-color: #7dd3fc; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>404</h1>
+      <h2>Página no encontrada</h2>
+      <div class="url" id="attempted-url"></div>
+      <p>Rutas disponibles:</p>
+      <ul>
+        <li><a href="/">/</a></li>
+        <li><a href="/login">/login</a></li>
+        <li><a href="/tipodocumentos">/tipodocumentos</a></li>
+        <li><a href="/empresas">/empresas</a></li>
+        <li><a href="/sucursales">/sucursales</a></li>
+        <li><a href="/terminales">/terminales</a></li>
+        <li><a href="/roles">/roles</a></li>
+        <li><a href="/permisos">/permisos</a></li>
+        <li><a href="/rolpermiso">/rolpermiso</a></li>
+        <li><a href="/usuarios">/usuarios</a></li>
+        <li><a href="/paises">/paises</a></li>
+        <li><a href="/impuestos">/impuestos</a></li>
+        <li><a href="/familias">/familias</a></li>
+        <li><a href="/subfamilias">/subfamilias</a></li>
+        <li><a href="/articulos">/articulos</a></li>
+        <li><a href="/articuloimpuestos">/articuloimpuestos</a></li>
+        <li><a href="/tarifas">/tarifas</a></li>
+        <li><a href="/preciosportarifa">/preciosportarifa</a></li>
+        <li><a href="/alergenos">/alergenos</a></li>
+        <li><a href="/articuloalergenos">/articuloalergenos</a></li>
+        <li><a href="/gruposmodificadores">/gruposmodificadores</a></li>
+        <li><a href="/modificadores">/modificadores</a></li>
+        <li><a href="/articulogruposmodificadores">/articulogruposmodificadores</a></li>
+        <li><a href="/combos">/combos</a></li>
+        <li><a href="/comboarticulos">/comboarticulos</a></li>
+        <li><a href="/zonas">/zonas</a></li>
+        <li><a href="/mesas">/mesas</a></li>
+        <li><a href="/clientes">/clientes</a></li>
+        <li><a href="/formaspago">/formaspago</a></li>
+        <li><a href="/descuentos">/descuentos</a></li>
+        <li><a href="/turnoscaja">/turnoscaja</a></li>
+        <li><a href="/movimientoscaja">/movimientoscaja</a></li>
+        <li><a href="/ordenes">/ordenes</a></li>
+        <li><a href="/ordenlineas">/ordenlineas</a></li>
+        <li><a href="/ordenlineamodificadores">/ordenlineamodificadores</a></li>
+        <li><a href="/ordenpagos">/ordenpagos</a></li>
+        <li><a href="/facturas">/facturas</a></li>
+        <li><a href="/destinosimpresion">/destinosimpresion</a></li>
+        <li><a href="/kdsordenes">/kdsordenes</a></li>
+        <li><a href="/stock">/stock</a></li>
+        <li><a href="/movimientosstock">/movimientosstock</a></li>
+        <li><a href="/configuracionsucursal">/configuracionsucursal</a></li>
+        <li><a href="/auth">/auth</a></li>
+        <li><a href="/uploads">/uploads</a></li>
+        <li><a href="/mail">/mail</a></li>
+        <li><a href="/utils">/utils</a></li>
+        <li><a href="/404">/404</a></li>
+      </ul>
+    </div>
+    <script>
+      const el = document.getElementById('attempted-url');
+      if (el) el.textContent = window.location.pathname;
+    </script>
+  </body>
+</html>

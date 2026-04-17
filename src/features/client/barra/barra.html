@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServalPOS — KDS Barra</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/styles/client-tokens.css">
+  <link rel="stylesheet" href="../shared/styles/client-layout.css">
+  <link rel="stylesheet" href="../kds/kds.css">
+  <style>
+    body { display: flex; flex-direction: column; overflow: hidden; }
+    #kds-grid { overflow-y: auto; flex: 1; }
+  </style>
+</head>
+<body>
+  <div id="toast"></div>
+  <div id="kds-topbar" class="topbar"></div>
+  <div id="kds-filtros" class="filtros"></div>
+  <div id="kds-grid" class="kds-grid"></div>
+  <script type="module" src="./barra.ts"></script>
+</body>
+</html>

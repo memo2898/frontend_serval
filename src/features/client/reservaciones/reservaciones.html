@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServalPOS — Reservaciones</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/styles/client-tokens.css">
+  <link rel="stylesheet" href="../shared/styles/client-layout.css">
+  <link rel="stylesheet" href="../mesas/mesas.css">
+  <link rel="stylesheet" href="./reservaciones.css">
+  <style>
+    html, body { overflow: hidden; }
+  </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ══════════════ PANTALLA PRINCIPAL ══════════════ -->
+<div id="screen-reservaciones" class="screen active">
+  <div class="topbar">
+    <span class="topbar-brand">ServalPOS</span>
+    <span class="topbar-sep">|</span>
+    <span class="topbar-title">Reservaciones</span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-user" id="topbar-user">—</span>
+    <button class="btn-exit" id="btn-exit">Salir</button>
+  </div>
+  <div class="zonas-tabs" id="zonas-tabs"></div>
+  <div class="mesas-plano-wrap">
+    <div class="mesas-plano">
+      <div class="mesas-plano-inner" id="mesas-grid"></div>
+    </div>
+  </div>
+  <div class="mesas-leyenda">
+    <div class="leyenda-item"><div class="leyenda-dot libre"></div>Libre</div>
+    <div class="leyenda-item"><div class="leyenda-dot ocupada"></div>Ocupada</div>
+    <div class="leyenda-item"><div class="leyenda-dot por_cobrar"></div>Por cobrar</div>
+    <div class="leyenda-item"><div class="leyenda-dot reservada"></div>Reservada</div>
+    <div class="leyenda-item"><div class="leyenda-dot bloqueada"></div>Bloqueada</div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL: NUEVA / EDITAR RESERVA ══════════════ -->
+<div id="modal-nueva-reserva" class="modal-overlay" style="display:none">
+  <div class="modal-box rv-modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="nueva-reserva-title">Nueva Reserva</div>
+      <div class="modal-subtitle" id="nueva-reserva-subtitle">Mesa —</div>
+    </div>
+    <div class="modal-body rv-form-body">
+
+      <div class="rv-field-group">
+        <label class="rv-field-label">Nombre del cliente *</label>
+        <input class="rv-field-input" id="rv-nombre" type="text"
+          placeholder="Ej. Juan García" maxlength="100" autocomplete="off">
+      </div>
+
+      <div class="rv-field-group">
+        <label class="rv-field-label">Teléfono *</label>
+        <input class="rv-field-input" id="rv-telefono" type="tel"
+          placeholder="Ej. +506 8888-8888" maxlength="30">
+      </div>
+
+      <div class="rv-field-group">
+        <label class="rv-field-label">Fecha y hora *</label>
+        <input class="rv-field-input" id="rv-fecha" type="datetime-local">
+      </div>
+
+      <div class="rv-field-group">
+        <label class="rv-field-label">Número de personas *</label>
+        <div class="comensales-grid rv-personas-grid" id="rv-personas-grid"></div>
+      </div>
+
+      <div class="rv-field-group">
+        <label class="rv-field-label">Notas <span class="rv-optional">(opcional)</span></label>
+        <textarea class="rv-field-input rv-field-textarea" id="rv-notas"
+          rows="2" placeholder="Alergias, preferencias, ocasión especial…"></textarea>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" id="btn-cancelar-nueva">Cancelar</button>
+      <button class="btn-modal-add"    id="btn-guardar-reserva">Confirmar reserva</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL: DETALLE DE RESERVA ══════════════ -->
+<div id="modal-detalle-reserva" class="modal-overlay" style="display:none">
+  <div class="modal-box rv-modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="detalle-mesa-title">Mesa —</div>
+      <div class="modal-subtitle">Reservación activa</div>
+    </div>
+    <div class="modal-body" id="detalle-body">
+      <!-- Renderizado dinámicamente -->
+    </div>
+    <div class="modal-footer rv-detalle-footer">
+      <button class="btn-modal-cancel"             id="btn-editar-reserva">Editar</button>
+      <button class="btn-modal-cancel rv-btn-danger" id="btn-cancelar-reserva">Cancelar reserva</button>
+      <button class="btn-modal-add"                id="btn-confirmar-llegada">Confirmar llegada →</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./reservaciones.ts"></script>
+</body>
+</html>
