@@ -97,14 +97,14 @@ export function clearSession(): void {
   clearContext();
 }
 
-// ── Contexto de lobby (parque + rol seleccionado) ─────────
+// ── Contexto de lobby (sucursal + rol seleccionado) ──────
 
 const CONTEXT_KEY = 'lobbyCtx';
 
 export interface LobbyContext {
-  id_parque: number | null;
+  sucursal_id: number;
+  nombre_sucursal: string;
   id_rol: number | null;
-  nombre_parque: string;
   nombre_rol: string;
 }
 
@@ -119,6 +119,21 @@ export function getContext(): LobbyContext | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Devuelve el sucursal_id guardado en el contexto del lobby.
+ * Retorna 0 si no hay contexto o si el contexto guardado tiene el
+ * formato antiguo (campo id_parque en lugar de sucursal_id).
+ */
+export function getSucursalId(): number {
+  const ctx = getContext();
+  // Detectar contexto con formato viejo y limpiarlo
+  if (ctx && !('sucursal_id' in ctx)) {
+    clearContext();
+    return 0;
+  }
+  return ctx?.sucursal_id ?? 0;
 }
 
 export function clearContext(): void {

@@ -27,39 +27,47 @@ export class TpvScreen {
     const el = document.getElementById('articulos-grid');
     if (!el) return;
     if (!articulos.length) {
-      el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🍽️</div><span>Sin artículos</span></div>';
+      el.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><i class="fa-solid fa-utensils"></i></div><span>Sin artículos</span></div>';
       return;
     }
-    el.innerHTML = articulos.map(a => `
-      <div class="articulo-card" data-articulo="${a.id}">
-        <div class="articulo-imagen">${a.imagen}</div>
-        <div class="articulo-nombre">${a.nombre}</div>
-        <div class="articulo-precio">${fmt(a.precio)}</div>
-      </div>
-    `).join('');
+    el.innerHTML = articulos.map(a => {
+      const iconoGris = `<i class="fa-regular fa-image" style="font-size:32px;color:var(--text-muted)"></i>`;
+      const media = a.imagen
+        ? `<img src="${a.imagen}" alt="${a.nombre}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">${iconoGris.replace('style="', 'style="display:none;')}`
+        : iconoGris;
+      return `
+        <div class="articulo-card" data-articulo="${a.id}">
+          <div class="articulo-imagen">${media}</div>
+          <div class="articulo-nombre">${a.nombre}</div>
+          <div class="articulo-precio">${fmt(a.precio_venta)}</div>
+        </div>
+      `;
+    }).join('');
   }
 
   // ─── Render orden ─────────────────────────────────────────────────────────────
 
   renderOrden(): void {
-    const { orden, lineas, mesaLabel, numComensales, lineaSeleccionada, splitMode } = this._store.state;
+    const { orden, lineas, mesaLabel, numComensales, lineaSeleccionada, splitMode,
+            ordenCompleta, lineasNuevasIds } = this._store.state;
     const user = this._getUserNombre();
 
     const numEl = document.getElementById('orden-num');
-    if (numEl) numEl.textContent = 'ORDEN #' + (orden?.numero ?? '—');
+    const num = orden?.numero_orden ?? orden?.id;
+    if (numEl) numEl.textContent = 'ORDEN #' + (num != null ? num.toString().padStart(4, '0') : '—');
 
     const infoEl = document.getElementById('orden-info');
     if (infoEl) {
       infoEl.innerHTML =
         `Mesa ${mesaLabel} · ${user} · <span data-cambiar-comensales style="cursor:pointer;border-bottom:1px dotted currentColor">` +
-        `${numComensales} ${numComensales === 1 ? 'comensal' : 'comensales'} ✎</span>`;
+        `${numComensales} ${numComensales === 1 ? 'comensal' : 'comensales'} <i class="fa-solid fa-pen" style="font-size:0.75em"></i></span>`;
     }
 
     const linesEl = document.getElementById('orden-lineas');
     if (!linesEl) return;
 
     if (!lineas.length) {
-      linesEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🍽️</div><span>Orden vacía</span></div>';
+      linesEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><i class="fa-solid fa-utensils"></i></div><span>Orden vacía</span></div>';
     } else {
       linesEl.innerHTML = lineas.map(l => {
         const sel      = lineaSeleccionada?.id === l.id;
@@ -83,7 +91,7 @@ export class TpvScreen {
               <button class="qty-btn" data-qty="${l.id}" data-delta="-1">−</button>
               <span class="qty-num">${l.cantidad}</span>
               <button class="qty-btn" data-qty="${l.id}" data-delta="1">+</button>
-              <button class="qty-btn delete" data-delete="${l.id}">🗑</button>
+              <button class="qty-btn delete" data-delete="${l.id}"><i class="fa-solid fa-trash"></i></button>
             </div>` : ''}
           </div>
         `;
@@ -94,16 +102,44 @@ export class TpvScreen {
 
     const btnSplit = document.getElementById('btn-split');
     if (btnSplit) btnSplit.classList.toggle('active', splitMode);
+
+    // ── Botón "Enviar cocina": activo sólo cuando hay líneas pendientes ──
+    const hayPendientes = lineas.some(l => !l.enviado_a_cocina);
+    const btnCocina = document.querySelector<HTMLButtonElement>('[data-enviar-cocina]');
+    if (btnCocina) {
+      btnCocina.disabled = !hayPendientes;
+      btnCocina.style.opacity = hayPendientes ? '' : '0.45';
+    }
+
+    // ── Botón "Pedir cuenta": activo sólo cuando KDS despachó todo ──
+    // ordenCompleta = true cuando kds:orden_completa llega O todas las líneas
+    // ya estaban enviadas al cargar la orden desde la BD.
+    const hayNuevasSinEnviar = lineasNuevasIds.size > 0 || lineas.some(l => !l.enviado_a_cocina);
+    const canPedirCuenta = lineas.length > 0 && ordenCompleta && !hayNuevasSinEnviar;
+    const btnCobrar = document.querySelector<HTMLButtonElement>('[data-pedir-cuenta]');
+    if (btnCobrar) {
+      btnCobrar.disabled = !canPedirCuenta;
+      btnCobrar.style.opacity = canPedirCuenta ? '' : '0.45';
+      btnCobrar.title = canPedirCuenta
+        ? ''
+        : hayNuevasSinEnviar
+          ? 'Primero envía los artículos a cocina'
+          : 'Espera a que cocina/barra despachen todo';
+    }
   }
 
   renderTotales(): void {
-    const { orden } = this._store.state;
+    const { orden, impuestos } = this._store.state;
     const totEl = document.getElementById('orden-totales');
     if (!totEl || !orden) return;
+    const generales = impuestos.filter(i => i.impuesto != null);
+    const lineasImpuesto = generales.map(i => {
+      const monto = Math.round(orden.subtotal * (Number(i.impuesto.porcentaje) / 100) * 100) / 100;
+      return `<div class="total-row"><span>${i.impuesto.nombre} ${i.impuesto.porcentaje}%</span><span class="total-val">${fmt(monto)}</span></div>`;
+    }).join('');
     totEl.innerHTML = `
       <div class="total-row"><span>Subtotal</span><span class="total-val">${fmt(orden.subtotal)}</span></div>
-      <div class="total-row"><span>ITBIS 18%</span><span class="total-val">${fmt(orden.impuestos)}</span></div>
-      <div class="total-row"><span>Propina 10%</span><span class="total-val">${fmt(orden.propina)}</span></div>
+      ${lineasImpuesto}
       <div class="total-row grand"><span>TOTAL</span><span class="total-val">${fmt(orden.total)}</span></div>
     `;
   }

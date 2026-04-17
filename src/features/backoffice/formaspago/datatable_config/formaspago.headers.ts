@@ -8,7 +8,7 @@ export const formasPagoHeaders: GridieHeaderConfig[] = [
     width: '80px',
   },
   {
-    label: 'Sucursal Id',
+    label: 'Sucursal',
     type: 'number',
     sortable: true,
   },

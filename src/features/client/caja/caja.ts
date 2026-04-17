@@ -2,28 +2,119 @@ import { checkRoleAccess } from '@/global/guards_auth';
 import { doLogout } from '@/global/logOut';
 const _allowed = checkRoleAccess(['cajero']);
 
+import { getSucursalId } from '@/global/session.service';
+import { route } from '@/global/saveRoutes';
 import { fmt, tiempoDesde } from '../shared/utils/format';
 import { toast } from '../shared/utils/toast';
 import { mesasChannel, CAJA_QUEUE_KEY, MESAS_UPDATE_KEY } from '../shared/services/pos-channel';
+import { posSocket } from '../shared/services/pos-socket';
 import { CajaStore } from './caja.store';
-import { getQueue, removeFromQueue } from './caja.service';
+import { getQueue, removeFromQueue, confirmarCobro, getFormasPago } from './caja.service';
+import type { TicketCola } from './caja.types';
 
 // ─── Orchestrador ────────────────────────────────────────────────────────────
 
 class CajaPage {
   private readonly _store = new CajaStore();
+  private _sucursalId = 0;
 
   init(): void {
     this._applyTheme();
+
+    this._sucursalId = getSucursalId();
+    if (!this._sucursalId) {
+      location.replace(route('/lobby'));
+      return;
+    }
+
+    this._loadFormasPago();
     this._loadQueue();
     this._wireEvents();
     this._subscribeChannels();
-    setInterval(() => this._loadQueue(), 5000);
+    this._connectSocket();
   }
 
   private _applyTheme(): void {
     document.documentElement.style.setProperty('--accent',     '#00904c');
     document.documentElement.style.setProperty('--accent-rgb', '0,144,76');
+  }
+
+  // ─── Socket ───────────────────────────────────────────────────────────────
+
+  private _connectSocket(): void {
+    import('@/global/session.service').then(({ getToken }) => {
+      const tk = getToken();
+      if (tk) posSocket.connect(tk, this._sucursalId, 'caja');
+    });
+
+    // Nueva orden lista para cobrar — el servidor la notifica cuando mesas llama pedir-cuenta
+    posSocket.onCajaOrdenListaCobrar(({ mesa_id, mesa_nombre, orden_id, total }) => {
+      // Si ya está en la cola local no duplicar
+      const yaEnCola = this._store.state.queue.some(t => t.mesaId === mesa_id);
+      if (yaEnCola) return;
+
+      // Agregar un ticket básico a la cola para que el cajero lo vea de inmediato
+      // (los datos completos vendrán del localStorage o una llamada a la API)
+      const ticketBasico: TicketCola = {
+        id: orden_id,
+        mesaId: mesa_id,
+        mesaLabel: mesa_nombre,
+        numComensales: 1,
+        orden: {
+          id: orden_id,
+          numero_orden: orden_id,
+          mesa_id,
+          estado: 'lista',
+          subtotal: 0,
+          impuestos_total: 0,
+          total,
+        },
+        lineas: [],
+        splitMode: false,
+        numCuentas: 1,
+        timestamp: Date.now(),
+      };
+
+      const queue = this._store.state.queue;
+      this._store.setQueue([...queue, ticketBasico]);
+      this._renderQueue();
+      toast(`Nueva orden: Mesa ${mesa_nombre}`, 'success');
+    });
+
+    // Pago registrado (confirmado por el servidor)
+    posSocket.onCajaPagoRegistrado(({ orden_id, mesa_id }) => {
+      // Si este terminal fue el que registró el cobro, ya se procesó localmente
+      // Solo actuar si la mesa aún está en cola (otro terminal la cobró)
+      const enCola = this._store.state.queue.some(t => t.mesaId === mesa_id);
+      if (enCola) {
+        removeFromQueue(mesa_id);
+        this._store.setQueue(getQueue());
+        this._renderQueue();
+      }
+      void orden_id;
+    });
+
+    // Orden anulada
+    posSocket.onCajaOrdenAnulada(({ mesa_id }) => {
+      removeFromQueue(mesa_id);
+      this._store.setQueue(getQueue());
+      this._renderQueue();
+      toast('Orden anulada');
+    });
+  }
+
+  // ─── Formas de pago (API real) ────────────────────────────────────────────
+
+  private _loadFormasPago(): void {
+    getFormasPago()
+      .then(formas => {
+        this._store.setFormasPago(formas);
+        // Re-render si hay un ticket activo
+        if (this._store.state.mesaId !== null) {
+          this._renderFormasPago();
+        }
+      })
+      .catch(() => toast('Error al cargar formas de pago'));
   }
 
   // ─── Cola ─────────────────────────────────────────────────────────────────
@@ -95,7 +186,8 @@ class CajaPage {
     const { orden, mesaLabel, numComensales, splitMode, numCuentas, ticketId } = this._store.state;
     const numEl  = document.getElementById('detalle-num');
     const metaEl = document.getElementById('detalle-meta');
-    if (numEl)  numEl.textContent  = 'ORDEN #' + (orden?.numero ?? String(ticketId).padStart(4, '0'));
+    const numOrden = orden?.numero_orden?.toString().padStart(4, '0') ?? String(ticketId).padStart(4, '0');
+    if (numEl)  numEl.textContent  = 'ORDEN #' + numOrden;
     if (metaEl) metaEl.textContent =
       'Mesa ' + mesaLabel + ' · ' + numComensales +
       (numComensales === 1 ? ' comensal' : ' comensales') +
@@ -138,12 +230,15 @@ class CajaPage {
     const { splitMode, cuentaActivaCobro, orden } = this._store.state;
     const t = splitMode
       ? this._store.getTotalCuenta(cuentaActivaCobro)
-      : { subtotal: orden?.subtotal ?? 0, impuestos: orden?.impuestos ?? 0, propina: orden?.propina ?? 0, total: orden?.total ?? 0 };
+      : {
+          subtotal:   orden?.subtotal ?? 0,
+          impuestos:  orden?.impuestos_total ?? 0,
+          total:      orden?.total ?? 0,
+        };
     const label = splitMode ? `Cuenta ${cuentaActivaCobro}` : 'TOTAL';
     document.getElementById('cobro-totales')!.innerHTML = `
       <div class="cobro-total-row"><span>Subtotal</span><span class="cobro-total-val">${fmt(t.subtotal)}</span></div>
       <div class="cobro-total-row"><span>ITBIS 18%</span><span class="cobro-total-val">${fmt(t.impuestos)}</span></div>
-      <div class="cobro-total-row"><span>Propina 10%</span><span class="cobro-total-val">${fmt(t.propina)}</span></div>
       <div class="cobro-total-row grand"><span>${label}</span><span class="cobro-total-val">${fmt(t.total)}</span></div>
     `;
   }
@@ -154,7 +249,7 @@ class CajaPage {
     const { formasPago, formaSeleccionada } = this._store.state;
     document.getElementById('formas-pago-grid')!.innerHTML = formasPago.map(f => `
       <button class="forma-btn ${formaSeleccionada?.id === f.id ? 'selected' : ''}" data-forma="${f.id}">
-        <span class="forma-icono">${f.icono}</span>
+        <span class="forma-icono">${f.icono ?? '💳'}</span>
         <span>${f.nombre}</span>
       </button>
     `).join('');
@@ -166,14 +261,14 @@ class CajaPage {
   }
 
   private _renderCobro(): void {
-    const pagos    = this._store.getPagosActivos();
+    const pagos     = this._store.getPagosActivos();
     const pendiente = this._store.getPendiente();
     const cambio    = this._store.getCambio();
     const pagado    = this._store.getTotalPagado();
 
     document.getElementById('pagos-list')!.innerHTML = pagos.map(p => `
       <div class="pago-item">
-        <span class="pago-nombre">${p.icono} ${p.nombre}</span>
+        <span class="pago-nombre">${p.icono ?? ''} ${p.nombre}</span>
         <span class="pago-monto">${fmt(p.monto)}</span>
       </div>
     `).join('');
@@ -203,7 +298,7 @@ class CajaPage {
     const { splitMode } = this._store.state;
     if (splitMode) {
       const resultado = this._store.confirmarCuentaActiva();
-      toast(`Cuenta confirmada ✓`, 'success');
+      toast('Cuenta confirmada ✓', 'success');
       if (resultado === 'siguiente') {
         this._renderCuentasTabs();
         this._renderCobroLineas();
@@ -226,17 +321,24 @@ class CajaPage {
   private _finalizarCobro(): void {
     document.getElementById('modal-cambio')!.style.display = 'none';
 
-    const { mesaId } = this._store.state;
-    if (mesaId !== null) {
-      removeFromQueue(mesaId);
-      // Notificar a mesas
-      mesasChannel.send({ tipo: 'mesa_liberada', mesaId });
-      try {
-        localStorage.setItem(MESAS_UPDATE_KEY, JSON.stringify([
-          { mesaId, estado: 'libre', timestamp: Date.now() },
-        ]));
-      } catch { /* ignorar */ }
-    }
+    const { mesaId, ticketId, pagos } = this._store.state;
+    if (!mesaId || !ticketId) return;
+
+    // Llamada a la API
+    confirmarCobro(ticketId, pagos)
+      .catch(() => {
+        // El cobro ya se registró localmente — no bloquear el flujo
+        toast('Advertencia: error al sincronizar cobro con el servidor');
+      });
+
+    // Notificar a otros módulos
+    removeFromQueue(mesaId);
+    mesasChannel.send({ tipo: 'mesa_liberada', mesaId });
+    try {
+      localStorage.setItem(MESAS_UPDATE_KEY, JSON.stringify([
+        { mesaId, estado: 'libre', timestamp: Date.now() },
+      ]));
+    } catch { /* ignorar */ }
 
     toast('Cobro registrado ✓', 'success');
     this._store.resetTicket();
@@ -252,13 +354,11 @@ class CajaPage {
   // ─── Wiring ───────────────────────────────────────────────────────────────
 
   private _wireEvents(): void {
-    // Cola
     document.getElementById('queue-list')?.addEventListener('click', e => {
       const card = (e.target as HTMLElement).closest<HTMLElement>('[data-ticket]');
       if (card) this._selectTicket(Number(card.dataset.ticket));
     });
 
-    // Cuentas tabs
     document.getElementById('cuentas-tabs')?.addEventListener('click', e => {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-cuenta]');
       if (!btn) return;
@@ -270,7 +370,6 @@ class CajaPage {
       this._setMontoPago();
     });
 
-    // Formas de pago
     document.getElementById('formas-pago-grid')?.addEventListener('click', e => {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-forma]');
       if (!btn) return;
@@ -278,7 +377,6 @@ class CajaPage {
       this._renderFormasPago();
     });
 
-    // Agregar pago
     document.getElementById('btn-agregar-pago')?.addEventListener('click', () => {
       const input = document.getElementById('monto-pago') as HTMLInputElement;
       const monto = parseFloat(input.value);
@@ -288,16 +386,17 @@ class CajaPage {
       this._renderCobro();
     });
 
-    // Confirmar
     document.getElementById('btn-confirmar')?.addEventListener('click', () => this._confirmarCobro());
     document.getElementById('btn-cerrar-cambio')?.addEventListener('click', () => this._finalizarCobro());
 
-    // Salir
-    document.getElementById('btn-exit')?.addEventListener('click', () => doLogout());
+    document.getElementById('btn-exit')?.addEventListener('click', () => {
+      posSocket.disconnect();
+      doLogout();
+    });
   }
 
   private _subscribeChannels(): void {
-    // Nuevas órdenes desde mesas
+    // Nuevas órdenes desde mesas (mismo dispositivo, fallback al socket)
     window.addEventListener('storage', e => {
       if (e.key === CAJA_QUEUE_KEY) this._loadQueue();
     });

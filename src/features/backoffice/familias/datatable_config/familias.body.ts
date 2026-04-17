@@ -42,7 +42,7 @@ const actionButtonStyles = `
 
 export const toFamiliasGridRow = (familias: Familias, handlers: FamiliasHandlers): FamiliasGridRow => ({
   id: familias.id,
-  //sucursal_id: familias.sucursal_id,
+  sucursal: familias.sucursal_?.nombre ?? String(familias.sucursal_id ?? ''),
   nombre: familias.nombre,
   // color: familias.color,
   // icono: familias.icono,

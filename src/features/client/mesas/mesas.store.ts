@@ -1,7 +1,8 @@
 import type {
   MesasState, Mesa, Orden, LineaOrden,
   Articulo, GrupoModificador, OpcionModificador,
-  Familia, Zona,
+  Familia, Zona, ImpuestoSucursal,
+  PresenciaUsuario, MesaPresenciaPayload,
 } from './mesas.types';
 
 // ─── Estado inicial ───────────────────────────────────────────────────────────
@@ -9,12 +10,16 @@ import type {
 function createInitialState(): MesasState {
   return {
     zonas: [], mesas: [], zonaActiva: null,
+    presencias: {},
+    cargando: false,
+    impuestos: [],
     ordenId: null, mesaId: null, mesaLabel: '',
     numComensales: 1,
-    orden: null, lineas: [],
+    orden: null, lineas: [], lineasNuevasIds: new Set(),
     familias: [], familiaActiva: null, articulos: [],
     lineaSeleccionada: null,
     splitMode: false, numCuentas: 1,
+    ordenCompleta: false,
     mergeMode: false, mergePrincipal: null, mergeSelected: [], unirTPVSelected: [],
     modalArticulo: null, modalMods: {}, modalSel: {},
   };
@@ -25,7 +30,7 @@ function createInitialState(): MesasState {
 export class MesasStore {
   private _state: MesasState = createInitialState();
   private _listeners: Array<() => void> = [];
-  private _nextId = 1000;
+  private _nextTempId = -1; // IDs temporales negativos hasta ser persistidos
 
   // ─── Suscripción ────────────────────────────────────────────────────────────
 
@@ -42,18 +47,24 @@ export class MesasStore {
 
   get state(): Readonly<MesasState> { return this._state; }
 
-  nextId(): number { return ++this._nextId; }
+  /** ID temporal negativo para líneas aún no guardadas en BD. */
+  nextTempId(): number { return this._nextTempId--; }
 
   getMesa(id: number): Mesa | undefined {
     return this._state.mesas.find(m => m.id === id);
   }
 
+  // ─── Carga ───────────────────────────────────────────────────────────────────
+
+  setCargando(v: boolean): void { this._state.cargando = v; this._notify(); }
+
   // ─── Catálogo ────────────────────────────────────────────────────────────────
 
-  setZonas(zonas: Zona[]): void      { this._state.zonas = zonas; this._notify(); }
-  setMesas(mesas: Mesa[]): void      { this._state.mesas = mesas; this._notify(); }
-  setFamilias(f: Familia[]): void    { this._state.familias = f; this._notify(); }
-  setArticulos(a: Articulo[]): void  { this._state.articulos = a; this._notify(); }
+  setZonas(zonas: Zona[]): void                   { this._state.zonas = zonas; this._notify(); }
+  setMesas(mesas: Mesa[]): void                   { this._state.mesas = mesas; this._notify(); }
+  setFamilias(f: Familia[]): void                 { this._state.familias = f; this._notify(); }
+  setArticulos(a: Articulo[]): void               { this._state.articulos = a; this._notify(); }
+  setImpuestos(i: ImpuestoSucursal[]): void       { this._state.impuestos = i; this._notify(); }
 
   setZonaActiva(id: number): void {
     this._state.zonaActiva = id;
@@ -71,23 +82,81 @@ export class MesasStore {
     this._notify();
   }
 
+  // ─── Presencias ──────────────────────────────────────────────────────────────
+
+  setPresencias(list: MesaPresenciaPayload[]): void {
+    this._state.presencias = {};
+    for (const { mesa_id, usuarios } of list) {
+      this._state.presencias[mesa_id] = usuarios;
+    }
+    this._notify();
+  }
+
+  addPresencia(mesa_id: number, usuario: PresenciaUsuario): void {
+    const arr = this._state.presencias[mesa_id] ?? [];
+    if (!arr.some(u => u.usuario_id === usuario.usuario_id)) {
+      this._state.presencias[mesa_id] = [...arr, usuario];
+      this._notify();
+    }
+  }
+
+  removePresencia(mesa_id: number, usuario_id: number): void {
+    const arr = this._state.presencias[mesa_id];
+    if (!arr) return;
+    this._state.presencias[mesa_id] = arr.filter(u => u.usuario_id !== usuario_id);
+    this._notify();
+  }
+
+  getPresencias(mesa_id: number): PresenciaUsuario[] {
+    return this._state.presencias[mesa_id] ?? [];
+  }
+
   // ─── Sesión TPV ──────────────────────────────────────────────────────────────
 
   openTPV(mesaId: number, mesaLabel: string, numComensales: number, orden: Orden): void {
-    this._state.ordenId       = orden.id;
-    this._state.mesaId        = mesaId;
-    this._state.mesaLabel     = mesaLabel;
-    this._state.numComensales = numComensales;
-    this._state.orden         = { ...orden };
-    this._state.lineas        = [];
-    this._state.lineaSeleccionada = null;
-    this._state.splitMode     = false;
-    this._state.numCuentas    = 1;
+    this._state.ordenId            = orden.id;
+    this._state.mesaId             = mesaId;
+    this._state.mesaLabel          = mesaLabel;
+    this._state.numComensales      = numComensales;
+    this._state.orden              = { ...orden };
+    this._state.lineas             = [];
+    this._state.lineasNuevasIds    = new Set();
+    this._state.lineaSeleccionada  = null;
+    this._state.splitMode          = false;
+    this._state.numCuentas         = 1;
+    this._state.ordenCompleta      = false;
     this._notify();
   }
 
   setLineas(lineas: LineaOrden[]): void {
     this._state.lineas = lineas;
+    this._state.lineasNuevasIds = new Set();
+    // Para órdenes cargadas: si todo ya fue enviado a KDS, habilitamos pedir cuenta
+    // (no podemos saber el estado KDS exacto sin API, esto es una aproximación conservadora)
+    this._state.ordenCompleta = lineas.length > 0 && lineas.every(l => l.enviado_a_cocina);
+    this._recalcular();
+    this._notify();
+  }
+
+  setOrdenCompleta(v: boolean): void {
+    this._state.ordenCompleta = v;
+    this._notify();
+  }
+
+  /** Recibe una línea enviada por otro camarero vía socket y la refleja localmente. */
+  sincronizarLineaExterna(linea: LineaOrden): void {
+    const idx = this._state.lineas.findIndex(l => l.id === linea.id);
+    const existing = idx >= 0 ? this._state.lineas[idx] : undefined;
+    const merged: LineaOrden = {
+      ...linea,
+      nombre_articulo: linea.nombre_articulo || existing?.nombre_articulo || '',
+      modificadores:   linea.modificadores ?? existing?.modificadores ?? [],
+    };
+    if (idx >= 0) {
+      this._state.lineas[idx] = merged;
+    } else {
+      this._state.lineas.push(merged);
+    }
     this._recalcular();
     this._notify();
   }
@@ -99,35 +168,64 @@ export class MesasStore {
 
   // ─── Líneas de orden ─────────────────────────────────────────────────────────
 
-  agregarLinea(art: Articulo, mods: OpcionModificador[]): void {
-    const precioExtra = mods.reduce((s, m) => s + m.precio_extra, 0);
-    const precio = art.precio + precioExtra;
-    const existente = mods.length === 0
-      ? this._state.lineas.find(l => l.articulo_id === art.id && l.modificadores.length === 0)
-      : undefined;
+  /** Devuelve el ID temporal asignado a la nueva línea (negativo). */
+  agregarLinea(art: Articulo, mods: OpcionModificador[]): number {
+    const precioExtra = mods.reduce((s, m) => s + Number(m.precio_extra), 0);
+    const precio = Number(art.precio_venta) + precioExtra;
+
+    // Agrupar si el artículo y sus modificadores son idénticos y la línea aún no fue enviada a cocina
+    const modIds = mods.map(m => m.id).sort();
+    const existente = this._state.lineas.find(l => {
+      if (l.articulo_id !== art.id || l.enviado_a_cocina) return false;
+      const lModIds = l.modificadores.map(m => m.modificador_id).sort();
+      return lModIds.length === modIds.length && lModIds.every((id, i) => id === modIds[i]);
+    });
 
     if (existente) {
       existente.cantidad += 1;
       existente.subtotal_linea = existente.cantidad * existente.precio_unitario;
-    } else {
-      this._state.lineas.push({
-        id: this.nextId(),
-        orden_id: this._state.ordenId ?? 0,
-        articulo_id: art.id,
-        nombre_articulo: art.nombre,
-        cantidad: 1,
-        precio_unitario: precio,
-        subtotal_linea: precio,
-        estado: 'pendiente',
-        cuenta_num: 1,
-        modificadores: mods.map(m => ({
-          id: this.nextId(),
-          nombre_modificador: m.nombre,
-          precio_extra: m.precio_extra,
-        })),
-      });
+      this._recalcular();
+      this._notify();
+      return existente.id;
     }
+
+    const tempId = this.nextTempId();
+    this._state.lineas.push({
+      id: tempId,
+      orden_id: this._state.ordenId ?? 0,
+      articulo_id: art.id,
+      nombre_articulo: art.nombre,
+      cantidad: 1,
+      precio_unitario: precio,
+      descuento_linea: 0,
+      impuesto_linea: 0,
+      subtotal_linea: precio,
+      estado: 'pendiente',
+      enviado_a_cocina: false,
+      cuenta_num: 1,
+      modificadores: mods.map(m => ({
+        id: this.nextTempId(),
+        modificador_id: m.id,
+        nombre_modificador: m.nombre,
+        precio_extra: m.precio_extra,
+      })),
+    });
+    this._state.lineasNuevasIds.add(tempId);
     this._recalcular();
+    this._notify();
+    return tempId;
+  }
+
+  /** Reemplaza el ID temporal de una línea por el ID real devuelto por la BD. */
+  confirmarLineaPersistida(tempId: number, lineaReal: LineaOrden): void {
+    const idx = this._state.lineas.findIndex(l => l.id === tempId);
+    if (idx < 0) return;
+    this._state.lineas[idx] = lineaReal;
+    this._state.lineasNuevasIds.delete(tempId);
+    // Mantener el ID real como "nuevo" hasta que sea enviado a cocina
+    if (!lineaReal.enviado_a_cocina) {
+      this._state.lineasNuevasIds.add(lineaReal.id);
+    }
     this._notify();
   }
 
@@ -142,6 +240,7 @@ export class MesasStore {
 
   eliminarLinea(lineaId: number): void {
     this._state.lineas = this._state.lineas.filter(l => l.id !== lineaId);
+    this._state.lineasNuevasIds.delete(lineaId);
     if (this._state.lineaSeleccionada?.id === lineaId) {
       this._state.lineaSeleccionada = null;
     }
@@ -186,17 +285,20 @@ export class MesasStore {
   marcarEnviadas(): void {
     this._state.lineas
       .filter(l => l.estado === 'pendiente')
-      .forEach(l => { l.estado = 'en_preparacion'; });
+      .forEach(l => { l.estado = 'en_preparacion'; l.enviado_a_cocina = true; });
+    this._state.lineasNuevasIds.clear();
     this._notify();
   }
 
   private _recalcular(): void {
-    const subtotal  = this._state.lineas.reduce((s, l) => s + l.subtotal_linea, 0);
-    const impuestos = Math.round(subtotal * 0.18);
-    const propina   = Math.round(subtotal * 0.10);
-    const total     = subtotal + impuestos + propina;
+    const subtotal = this._state.lineas.reduce((s, l) => s + Number(l.subtotal_linea), 0);
+    const generales = this._state.impuestos.filter(i => i.impuesto != null);
+    const impuestos = generales.reduce((s, i) => {
+      return s + Math.round(subtotal * (Number(i.impuesto.porcentaje) / 100) * 100) / 100;
+    }, 0);
+    const total = subtotal + impuestos;
     if (this._state.orden) {
-      Object.assign(this._state.orden, { subtotal, impuestos, propina, total });
+      Object.assign(this._state.orden, { subtotal, impuestos_total: impuestos, total });
     }
   }
 
@@ -264,7 +366,6 @@ export class MesasStore {
 
   closeModal(): void {
     this._state.modalArticulo = null;
-    this._state.modalSel = {};
     this._notify();
   }
 
@@ -305,14 +406,16 @@ export class MesasStore {
   // ─── Reset ───────────────────────────────────────────────────────────────────
 
   resetTPV(): void {
-    this._state.ordenId   = null;
-    this._state.mesaId    = null;
-    this._state.mesaLabel = '';
-    this._state.orden     = null;
-    this._state.lineas    = [];
+    this._state.ordenId          = null;
+    this._state.mesaId           = null;
+    this._state.mesaLabel        = '';
+    this._state.orden            = null;
+    this._state.lineas           = [];
+    this._state.lineasNuevasIds  = new Set();
     this._state.lineaSeleccionada = null;
-    this._state.splitMode = false;
-    this._state.numCuentas = 1;
+    this._state.splitMode        = false;
+    this._state.numCuentas       = 1;
+    this._state.ordenCompleta    = false;
     this._notify();
   }
 }

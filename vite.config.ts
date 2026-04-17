@@ -62,6 +62,7 @@ const URL_MAPPINGS: Record<string, string> = {
     '/monedas': '/src/features/backoffice/monedas/index.html',
       '/usuariorol': '/src/features/backoffice/usuariorol/index.html',
         '/reservaciones': '/src/features/backoffice/reservaciones/index.html',
+  '/sucursalimpuestos': '/src/features/backoffice/sucursalimpuestos/index.html',
   "/404": "/src/features/404/index.html",
   // ── POS / Client modules ──────────────────────────────────────────────────
   "/pos/mesas": "/src/features/client/mesas/mesas.html",

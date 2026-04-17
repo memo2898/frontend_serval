@@ -25,7 +25,7 @@ export interface Usuarios {
 
 export interface UsuariosGridRow {
   id?: number;
-  sucursal_id?: number;
+  sucursal?: string;
   rol_id?: number;
   nombre?: string;
   apellido?: string;

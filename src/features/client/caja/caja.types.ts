@@ -27,14 +27,13 @@ export interface LineaCobro {
 
 export interface OrdenCobro {
   id: number;
-  numero: string;
+  numero_orden: number;
   mesa_id: number;
   estado: string;
   subtotal: number;
-  impuestos: number;
-  propina: number;
+  impuestos_total: number;
   total: number;
-  notas: string;
+  notas?: string;
 }
 
 export interface TicketCola {
@@ -52,7 +51,6 @@ export interface TicketCola {
 export interface TotalesCuenta {
   subtotal: number;
   impuestos: number;
-  propina: number;
   total: number;
 }
 

@@ -42,5 +42,39 @@
       </div>
 
     </div>
+
+    <!-- Modal: selección de sucursal (solo administrador) -->
+    <div class="lobby-modal-overlay" id="modalSucursal" style="display:none">
+      <div class="lobby-modal">
+        <div class="lobby-modal-icon">
+          <i class="fas fa-store"></i>
+        </div>
+        <h2 class="lobby-modal-title">¿Con qué sucursal trabajarás?</h2>
+        <p class="lobby-modal-sub">Selecciona la sucursal para esta sesión</p>
+        <div id="sucursalesLoading" class="lobby-modal-loading">
+          <i class="fas fa-spinner fa-spin"></i> Cargando sucursales…
+        </div>
+        <select id="sucursalSelect" class="lobby-sucursal-select" style="display:none">
+          <option value="">— Selecciona una sucursal —</option>
+        </select>
+        <p id="sucursalesError" class="lobby-modal-error" style="display:none">
+          No se pudieron cargar las sucursales.
+        </p>
+        <button id="btnConfirmarSucursal" class="lobby-btn-confirmar" disabled>
+          Confirmar
+        </button>
+        <button id="btnLogoutModal" class="logout-btn" style="width:100%;justify-content:center">
+          <i class="fas fa-sign-out-alt"></i>
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+
+    <!-- Toast de error (sin sucursal asignada) -->
+    <div class="lobby-error-banner" id="errorSinSucursal" style="display:none">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span>Tu usuario no tiene sucursal asignada. Contacta al administrador.</span>
+    </div>
+
   </body>
 </html>

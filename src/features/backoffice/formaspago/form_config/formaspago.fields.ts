@@ -47,17 +47,17 @@ export function getFormasPagoFields(
         ],
       },
     }),
-    InputX({
-      name: 'requiere_referencia',
-      label: 'Requiere Referencia',
-      placeholder: 'Ingrese requiere referencia',
-      type: 'checkbox',
-      defaultValue: initialData?.requiere_referencia != null ? String(initialData.requiere_referencia) : '',
-      rules: {
-        validations: [
-          { type: 'required', message: 'Requiere Referencia es obligatorio' },
-        ],
-      },
-    }),
+    // InputX({
+    //   name: 'requiere_referencia',
+    //   label: 'Requiere Referencia',
+    //   placeholder: 'Ingrese requiere referencia',
+    //   type: 'checkbox',
+    //   defaultValue: initialData?.requiere_referencia != null ? String(initialData.requiere_referencia) : '',
+    //   rules: {
+    //     validations: [
+    //       { type: 'required', message: 'Requiere Referencia es obligatorio' },
+    //     ],
+    //   },
+    // }),
   ];
 }

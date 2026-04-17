@@ -8,8 +8,8 @@ export const usuariosHeaders: GridieHeaderConfig[] = [
     width: '80px',
   },
   {
-    label: 'Sucursal Id',
-    type: 'number',
+    label: 'Sucursal',
+    type: 'string',
     sortable: true,
   },
  

@@ -9,18 +9,18 @@ export function getFamiliasFields(
   }
 ): HTMLElement[] {
   return [
-    // SelectX({
-    //   name: 'sucursal_id',
-    //   label: 'Sucursal Id',
-    //   placeholder: 'Seleccionar...',
-    //   options: options.sucursalesOptions ?? [],
-    //   defaultValue: initialData?.sucursal_id != null ? String(initialData.sucursal_id) : '',
-    //   rules: {
-    //     validations: [
-    //       { type: 'required', message: 'Sucursal Id es obligatorio' },
-    //     ],
-    //   },
-    // }),
+    SelectX({
+      name: 'sucursal_id',
+      label: 'Sucursal',
+      placeholder: 'Seleccionar...',
+      options: options.sucursalesOptions ?? [],
+      defaultValue: initialData?.sucursal_id != null ? String(initialData.sucursal_id) : '',
+      rules: {
+        validations: [
+          { type: 'required', message: 'Sucursal es obligatorio' },
+        ],
+      },
+    }),
     InputX({
       name: 'nombre',
       label: 'Nombre',

@@ -146,7 +146,7 @@ export class UsuariosFeature {
       ]);
       this._sucursalesOptions = filterExcluded(sucursalesRaw).map((item: any) => ({
         value: item.id,
-        label: item.empresa_id ?? String(item.id),
+        label: item.nombre ?? String(item.id),
       }));
       this._rolesOptions = filterExcluded(rolesRaw).map((item: any) => ({
         value: item.id,

@@ -13,11 +13,16 @@ export interface Familias {
   agregado_por?: number;
   actualizado_en?: string;
   actualizado_por?: number;
+  sucursal_?: {
+    id: number;
+    nombre: string;
+  };
 }
 
 export interface FamiliasGridRow {
   id?: number;
   sucursal_id?: number;
+  sucursal?: string;
   nombre?: string;
   color?: string;
   icono?: string;

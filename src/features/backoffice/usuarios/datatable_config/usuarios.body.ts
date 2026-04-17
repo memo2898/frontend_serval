@@ -46,7 +46,7 @@ const actionButtonStyles = `
 
 export const toUsuariosGridRow = (usuarios: Usuarios, handlers: UsuariosHandlers): UsuariosGridRow => ({
   id: usuarios.id,
-  sucursal_id: usuarios.sucursal_id,
+  sucursal: usuarios.sucursal?.nombre ?? '',
 
   nombre: usuarios.nombre,
   apellido: usuarios.apellido,

@@ -1,5 +1,5 @@
 // ============================================
-// Feature: FormasPagos — CRUD (Vanilla TS)
+// Feature: SucursalImpuestos — CRUD (Vanilla TS)
 // ============================================
 
 import { Gridie } from '@/lib/gridie';
@@ -7,13 +7,14 @@ import { ModalXInstance, ModalX } from '@/lib/uiX/components/ModalX';
 import { FormX } from '@/lib/uiX/components/FormX';
 import { toastx } from '@/lib/uiX/components/ToastX';
 import { filterExcluded } from '@/utils/filterExcluded';
-import * as formasPagoService from './formaspago.service';
-import { formasPagoHeaders } from './datatable_config/formaspago.headers';
-import { toFormasPagoGridRows } from './datatable_config/formaspago.body';
-import { getFormasPagoFields } from './form_config/formaspago.fields';
-import { buildDeleteBody } from './form_config/formaspago.delete';
-import type { FormasPago, FormasPagoCreateDTO } from './formaspago.types';
+import * as sucursalImpuestosService from './sucursalimpuestos.service';
+import { sucursalImpuestosHeaders } from './datatable_config/sucursalimpuestos.headers';
+import { toSucursalImpuestosGridRows } from './datatable_config/sucursalimpuestos.body';
+import { getSucursalImpuestosFields } from './form_config/sucursalimpuestos.fields';
+import { buildDeleteBody } from './form_config/sucursalimpuestos.delete';
+import type { SucursalImpuestos, SucursalImpuestosCreateDTO } from './sucursalimpuestos.types';
 import * as sucursalesService from '@/features/backoffice/sucursales/sucursales.service';
+import * as impuestosService from '@/features/backoffice/impuestos/impuestos.service';
 
 
 // ---- Helper ----
@@ -29,12 +30,13 @@ const getErrorMessage = (error: unknown): string => {
 
 // ---- Feature class ----
 
-export class FormasPagoFeature {
+export class SucursalImpuestosFeature {
   // State
-  private _formasPagos: FormasPago[] = [];
+  private _sucursalImpuestos: SucursalImpuestos[] = [];
   private _saving = false;
-  private _selectedFormasPago: FormasPago | null = null;
+  private _selectedSucursalImpuestos: SucursalImpuestos | null = null;
   private _sucursalesOptions: Array<{ value: number; label: string }> = [];
+  private _impuestosOptions: Array<{ value: number; label: string }> = [];
 
   // DOM refs
   private _loadingEl!: HTMLElement;
@@ -47,19 +49,19 @@ export class FormasPagoFeature {
 
   constructor() {
     this._modalCreate = ModalX({
-      title: 'Crear FormasPago',
+      title: 'Crear SucursalImpuestos',
       size: 'md',
       onClose: () => this._modalCreate.close(),
     });
 
     this._modalEdit = ModalX({
-      title: 'Editar FormasPago',
+      title: 'Editar SucursalImpuestos',
       size: 'md',
       onClose: () => this._modalEdit.close(),
     });
 
     this._modalDelete = ModalX({
-      title: 'Eliminar FormasPago',
+      title: 'Eliminar SucursalImpuestos',
       size: 'sm',
       onClose: () => this._modalDelete.close(),
     });
@@ -73,11 +75,11 @@ export class FormasPagoFeature {
     header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:20px';
 
     const pageTitle = document.createElement('h1');
-    pageTitle.textContent = 'FormasPagos';
+    pageTitle.textContent = 'SucursalImpuestos';
     pageTitle.style.margin = '0';
 
     const btnNew = document.createElement('button');
-    btnNew.textContent = '+ Nuevo FormasPago';
+    btnNew.textContent = '+ Nuevo SucursalImpuestos';
     btnNew.className = 'btn btn-success';
     btnNew.addEventListener('click', () => this._openCreate());
 
@@ -91,9 +93,9 @@ export class FormasPagoFeature {
 
     // --- Gridie ---
     this._gridie = new Gridie({
-      id: 'formaspago-table',
+      id: 'sucursalimpuestos-table',
       identityField: 'id',
-      headers: formasPagoHeaders,
+      headers: sucursalImpuestosHeaders,
       body: [],
       enableSort: true,
       enableFilter: true,
@@ -119,7 +121,7 @@ export class FormasPagoFeature {
   private async _fetch(): Promise<void> {
     this._loadingEl.style.display = 'block';
     try {
-      this._formasPagos = filterExcluded(await formasPagoService.getAll());
+      this._sucursalImpuestos = filterExcluded(await sucursalImpuestosService.getAll());
       this._refreshGrid();
     } catch (err) {
       toastx.error(getErrorMessage(err));
@@ -130,12 +132,17 @@ export class FormasPagoFeature {
 
   private async _fetchRelatedOptions(): Promise<void> {
     try {
-      const [sucursalesRaw] = await Promise.all([
+      const [sucursalesRaw, impuestosRaw] = await Promise.all([
         sucursalesService.getAll(),
+        impuestosService.getAll(),
       ]);
       this._sucursalesOptions = filterExcluded(sucursalesRaw).map((item: any) => ({
         value: item.id,
-        label: item.nombre ?? String(item.id),
+        label: item.empresa_id ?? String(item.id),
+      }));
+      this._impuestosOptions = filterExcluded(impuestosRaw).map((item: any) => ({
+        value: item.id,
+        label: item.pais_id ?? String(item.id),
       }));
     } catch (_err) {
       // Si falla la carga de opciones, se continúa sin ellas
@@ -143,7 +150,7 @@ export class FormasPagoFeature {
   }
 
   /** Pre-selecciona los SelectX de FK cuando se abre el modal de edición */
-  private _preSelectFKValues(form: HTMLElement, data: FormasPago): void {
+  private _preSelectFKValues(form: HTMLElement, data: SucursalImpuestos): void {
     requestAnimationFrame(() => {
       form.querySelectorAll('select-x').forEach((el) => {
         const selEl = el as any;
@@ -163,7 +170,7 @@ export class FormasPagoFeature {
 
   private _refreshGrid(): void {
     this._gridie.setBody(
-      toFormasPagoGridRows(this._formasPagos, {
+      toSucursalImpuestosGridRows(this._sucursalImpuestos, {
         onEdit:   (item) => this._openEdit(item),
         onDelete: (item) => this._openDelete(item),
       }),
@@ -173,21 +180,21 @@ export class FormasPagoFeature {
   // ---- Open modals ----
 
   private _openCreate(): void {
-    this._selectedFormasPago = null;
+    this._selectedSucursalImpuestos = null;
     this._modalCreate.setBody(this._buildForm(null, this._modalCreate));
     this._modalCreate.open();
   }
 
-  private _openEdit(item: FormasPago): void {
-    this._selectedFormasPago = item;
+  private _openEdit(item: SucursalImpuestos): void {
+    this._selectedSucursalImpuestos = item;
     const editForm = this._buildForm(item, this._modalEdit);
     this._modalEdit.setBody(editForm);
     this._modalEdit.open();
     this._preSelectFKValues(editForm, item);
   }
 
-  private _openDelete(item: FormasPago): void {
-    this._selectedFormasPago = item;
+  private _openDelete(item: SucursalImpuestos): void {
+    this._selectedSucursalImpuestos = item;
     this._modalDelete.setBody(buildDeleteBody(item));
     this._modalDelete.setFooter(this._buildDeleteFooter());
     this._modalDelete.open();
@@ -195,7 +202,7 @@ export class FormasPagoFeature {
 
   // ---- Create / Edit form ----
 
-  private _buildForm(initialData: FormasPago | null, modal: ModalXInstance): HTMLElement {
+  private _buildForm(initialData: SucursalImpuestos | null, modal: ModalXInstance): HTMLElement {
     const isEdit = initialData !== null;
 
     const errorMsg = document.createElement('div');
@@ -233,19 +240,19 @@ export class FormasPagoFeature {
         submitBtn.textContent = 'Guardando...';
 
         try {
-          const data: FormasPagoCreateDTO = {
+          const data: SucursalImpuestosCreateDTO = {
             sucursal_id: result.body['sucursal_id'] as number,
-            nombre: result.body['nombre'] as string,
-            tipo: result.body['tipo'] as string,
-            requiere_referencia: result.body['requiere_referencia'] as boolean,
+            impuesto_id: result.body['impuesto_id'] as number,
+            obligatorio: result.body['obligatorio'] as boolean,
+            orden_aplicacion: result.body['orden_aplicacion'] as number,
           };
 
           if (isEdit) {
-            await formasPagoService.update(initialData.id, data);
-            toastx.success('FormasPago actualizado correctamente');
+            await sucursalImpuestosService.update(initialData.id, data);
+            toastx.success('SucursalImpuestos actualizado correctamente');
           } else {
-            await formasPagoService.create(data);
-            toastx.success('FormasPago creado correctamente');
+            await sucursalImpuestosService.create(data);
+            toastx.success('SucursalImpuestos creado correctamente');
           }
 
           modal.close();
@@ -260,8 +267,9 @@ export class FormasPagoFeature {
         }
       },
       children: [
-        ...getFormasPagoFields(initialData, {
+        ...getSucursalImpuestosFields(initialData, {
           sucursalesOptions: this._sucursalesOptions,
+          impuestosOptions: this._impuestosOptions,
         }),
         errorMsg,
         actions,
@@ -284,15 +292,15 @@ export class FormasPagoFeature {
     deleteBtn.textContent = 'Eliminar';
 
     deleteBtn.addEventListener('click', async () => {
-      if (!this._selectedFormasPago || this._saving) return;
+      if (!this._selectedSucursalImpuestos || this._saving) return;
       this._saving = true;
       deleteBtn.disabled = true;
       cancelBtn.disabled = true;
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await formasPagoService.remove(this._selectedFormasPago.id);
-        toastx.success('FormasPago eliminado correctamente');
+        await sucursalImpuestosService.remove(this._selectedSucursalImpuestos.id);
+        toastx.success('SucursalImpuestos eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();
       } catch (err) {
@@ -311,8 +319,8 @@ export class FormasPagoFeature {
 
 // ---- Factory ----
 
-export function FormasPago(container: HTMLElement): FormasPagoFeature {
-  const feature = new FormasPagoFeature();
+export function SucursalImpuestos(container: HTMLElement): SucursalImpuestosFeature {
+  const feature = new SucursalImpuestosFeature();
   feature.mount(container);
   return feature;
 }

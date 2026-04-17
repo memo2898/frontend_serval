@@ -2,20 +2,13 @@ import type {
   CajaState, TicketCola, FormaPago, PagoAplicado, TotalesCuenta,
 } from './caja.types';
 
-const FORMAS_PAGO_DEFAULT: FormaPago[] = [
-  { id: 1, nombre: 'Efectivo',      icono: '💵' },
-  { id: 2, nombre: 'Tarjeta',       icono: '💳' },
-  { id: 3, nombre: 'Transferencia', icono: '📱' },
-  { id: 4, nombre: 'Otro',          icono: '🔖' },
-];
-
 function createInitialState(): CajaState {
   return {
     queue: [],
     ticketId: null, mesaId: null, mesaLabel: '',
     orden: null, lineas: [],
     numComensales: 1, splitMode: false, numCuentas: 1,
-    formasPago: [...FORMAS_PAGO_DEFAULT],
+    formasPago: [],
     formaSeleccionada: null,
     pagos: [],
     cuentaActivaCobro: 1,
@@ -40,6 +33,11 @@ export class CajaStore {
 
   setQueue(queue: TicketCola[]): void {
     this._state.queue = queue;
+    this._notify();
+  }
+
+  setFormasPago(formas: FormaPago[]): void {
+    this._state.formasPago = formas;
     this._notify();
   }
 
@@ -106,11 +104,11 @@ export class CajaStore {
     const sub = this._state.lineas
       .filter(l => (l.cuenta_num || 1) === n)
       .reduce((s, l) => s + Number(l.subtotal_linea), 0);
+    const impuestos = Math.round(sub * 0.18 * 100) / 100;
     return {
       subtotal:   sub,
-      impuestos:  Math.round(sub * 0.18),
-      propina:    Math.round(sub * 0.10),
-      total:      Math.round(sub * 1.28),
+      impuestos,
+      total:      Math.round((sub + impuestos) * 100) / 100,
     };
   }
 

@@ -40,13 +40,18 @@ export class FloorPlanScreen {
 
     const visible = mesas.filter(m => m.zona_id === zonaActiva);
 
-    el.innerHTML = visible.map(m => {
+    if (!visible.length) {
+      el.innerHTML = `<p class="mesas-empty">No hay mesas registradas en esta zona</p>`;
+      return;
+    }
+
+    const renderMesaHTML = (m: Mesa): string => {
       let extraClass = '';
       let subLabel   = m.estado === 'por_cobrar' ? 'cobrar' : m.estado;
 
       if (mergeMode) {
         if (m.id === mergePrincipal?.id)       { extraClass = 'mesa-merge-principal'; subLabel = 'principal'; }
-        else if (mergeSelected.includes(m.id)) { extraClass = 'mesa-merge-seleccionada'; subLabel = '✓ unida'; }
+        else if (mergeSelected.includes(m.id)) { extraClass = 'mesa-merge-seleccionada'; subLabel = 'unida'; }
         else if (m.estado === 'libre')         { extraClass = 'mesa-merge-disponible'; }
         else                                   { extraClass = 'mesa-merge-dim'; }
       }
@@ -54,7 +59,7 @@ export class FloorPlanScreen {
       let indicatorHTML = '';
       if (!mergeMode && m.mesa_principal_id) {
         const principal = mesas.find(x => x.id === m.mesa_principal_id);
-        indicatorHTML = `<span class="mesa-union-indicator">↗ ${principal?.nombre ?? ''}</span>`;
+        indicatorHTML = `<span class="mesa-union-indicator"><i class="fa-solid fa-link" style="font-size:0.65em"></i> ${principal?.nombre ?? ''}</span>`;
         subLabel = 'unida';
       }
 
@@ -72,6 +77,21 @@ export class FloorPlanScreen {
         `<div class="silla ${i < ocupBot ? 'silla-ocup' : ''}"></div>`
       ).join('');
 
+      const presencias = this._store.getPresencias(m.id);
+      const badgeHTML = presencias.length > 0 ? (() => {
+        const primero = presencias[0];
+        const iniciales = primero.nombre
+          .split(' ').map(n => n[0] ?? '').join('').toUpperCase().slice(0, 2);
+        const extra = presencias.length > 1
+          ? `<span class="presencia-badge-extra">+${presencias.length - 1}</span>`
+          : '';
+        return `
+          <div class="presencia-badge" data-presencia-badge="${m.id}" title="Ver presencia">
+            <span class="presencia-badge-avatar">${iniciales}</span>
+            ${extra}
+          </div>`;
+      })() : '';
+
       return `
         <div class="mesa-fp mesa-${m.estado} ${extraClass}"
           style="--top-count:${topCount}"
@@ -79,6 +99,7 @@ export class FloorPlanScreen {
           <div class="sillas-top">${siTop}</div>
           <div style="position:relative;display:inline-block">
             ${indicatorHTML}
+            ${badgeHTML}
             <div class="mesa-superficie">
               <span class="mesa-fp-nombre">${m.nombre}</span>
               <span class="mesa-fp-personas">${pers}/${cap}</span>
@@ -88,7 +109,32 @@ export class FloorPlanScreen {
           <div class="sillas-bottom">${siBot}</div>
         </div>
       `;
-    }).join('');
+    };
+
+    // En merge mode renderizar plano sin agrupaciones
+    if (mergeMode) {
+      el.innerHTML = visible.map(renderMesaHTML).join('');
+      return;
+    }
+
+    // Fuera de merge mode: agrupar mesas unidas junto a su principal
+    const visibleIds = new Set(visible.map(m => m.id));
+    const parts: string[] = [];
+
+    for (const m of visible) {
+      // Las secundarias se renderizan dentro del grupo de su principal
+      if (m.mesa_principal_id && visibleIds.has(m.mesa_principal_id)) continue;
+
+      const secundarias = visible.filter(s => s.mesa_principal_id === m.id);
+      if (secundarias.length > 0) {
+        const mesasDelGrupo = [m, ...secundarias].map(renderMesaHTML).join('');
+        parts.push(`<div class="mesa-grupo-unido">${mesasDelGrupo}</div>`);
+      } else {
+        parts.push(renderMesaHTML(m));
+      }
+    }
+
+    el.innerHTML = parts.join('');
   }
 
   // ─── Click handler ────────────────────────────────────────────────────────────
@@ -114,10 +160,12 @@ export class FloorPlanScreen {
       return;
     }
 
-    // Mesa secundaria unida → redirigir a la principal
+    // Mesa secundaria unida → abrir la misma orden que la principal
     if (mesa.mesa_principal_id) {
       const principal = this._store.getMesa(mesa.mesa_principal_id);
-      if (principal && principal.estado === 'ocupada') this._onOpenTPV(principal.id);
+      if (principal && (principal.estado === 'ocupada' || principal.estado === 'por_cobrar')) {
+        this._onOpenTPV(principal.id);
+      }
       return;
     }
 

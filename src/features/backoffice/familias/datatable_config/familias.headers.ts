@@ -7,11 +7,11 @@ export const familiasHeaders: GridieHeaderConfig[] = [
     sortable: true,
     width: '80px',
   },
-  // {
-  //   label: 'Sucursal Id',
-  //   type: 'number',
-  //   sortable: true,
-  // },
+  {
+    label: 'Sucursal',
+    type: 'string',
+    sortable: true,
+  },
   {
     label: 'Nombre',
     type: 'string',

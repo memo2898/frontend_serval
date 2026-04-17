@@ -9,7 +9,12 @@ const request = async <T>(url: string, options: RequestInit, auth: boolean): Pro
       ...options.headers,
     },
   });
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) {
+    const msg = data?.message ?? data?.error ?? `HTTP ${res.status}`;
+    throw new Error(Array.isArray(msg) ? msg.join(', ') : String(msg));
+  }
+  return data as T;
 };
 
 export const http = {

@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ServalPOS — Mesas</title>
+  <title>Serval — Mesas</title>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="../shared/styles/client-tokens.css">
   <link rel="stylesheet" href="../shared/styles/client-layout.css">
   <link rel="stylesheet" href="./mesas.css">
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
   <style>
     html, body { overflow: hidden; }
   </style>
@@ -19,7 +22,7 @@
 <!-- ══════════════ MESAS ══════════════ -->
 <div id="screen-mesas" class="screen active">
   <div class="topbar">
-    <span class="topbar-brand">ServalPOS</span>
+    <span class="topbar-brand">Serval</span>
     <div class="topbar-spacer"></div>
     <span class="topbar-user" id="topbar-user">—</span>
     <button class="btn-exit" id="btn-exit-mesas">Salir</button>
@@ -42,7 +45,7 @@
 <!-- ══════════════ TPV ══════════════ -->
 <div id="screen-tpv" class="screen">
   <div class="topbar">
-    <button class="btn-back" data-back-mesas>← Volver</button>
+    <button class="btn-back" data-back-mesas><i class="fa-solid fa-arrow-left"></i> Volver</button>
     <span class="topbar-title" id="tpv-mesa-label">Mesa —</span>
     <div class="topbar-spacer"></div>
   </div>
@@ -64,12 +67,12 @@
       </div>
       <div class="orden-totales" id="orden-totales"></div>
       <div class="orden-actions">
-        <button class="btn-cocina" data-enviar-cocina>🍳 Enviar cocina</button>
-        <button class="btn-cobrar" data-pedir-cuenta>📋 Pedir cuenta</button>
+        <button class="btn-cocina" data-enviar-cocina><i class="fa-solid fa-fire-flame-curved"></i> Enviar cocina</button>
+        <button class="btn-cobrar" data-pedir-cuenta><i class="fa-solid fa-receipt"></i> Pedir cuenta</button>
       </div>
       <div style="padding: 0 12px 10px; display:flex; gap:8px;">
-        <button class="btn-split" id="btn-split" style="flex:1">÷ Dividir cuenta</button>
-        <button class="btn-split" data-abrir-unir-tpv style="flex:1">＋ Unir mesa</button>
+        <button class="btn-split" id="btn-split" style="flex:1"><i class="fa-solid fa-divide"></i> Dividir cuenta</button>
+        <button class="btn-split" data-abrir-unir-tpv style="flex:1"><i class="fa-solid fa-link"></i> Unir mesa</button>
       </div>
     </div>
   </div>
@@ -98,8 +101,8 @@
     <div class="comensales-title" id="accion-mesa-title">Mesa —</div>
     <div class="comensales-sub">¿Qué deseas hacer?</div>
     <div class="accion-menu">
-      <button class="btn-confirm-com" data-abrir-orden>▶ &nbsp;Abrir orden</button>
-      <button class="btn-cancel-com"  data-iniciar-union>＋ &nbsp;Unir con otras mesas</button>
+      <button class="btn-confirm-com" data-abrir-orden><i class="fa-solid fa-play"></i> &nbsp;Abrir orden</button>
+      <button class="btn-cancel-com"  data-iniciar-union><i class="fa-solid fa-link"></i> &nbsp;Unir con otras mesas</button>
       <button class="btn-cancel-com"  data-cerrar-accion-mesa style="margin-top:4px">Cancelar</button>
     </div>
   </div>
@@ -111,9 +114,17 @@
     <div class="comensales-title" id="comensales-titulo">Mesa —</div>
     <div class="comensales-sub">¿Cuántos comensales?</div>
     <div class="comensales-grid" id="comensales-grid"></div>
+    <div id="comensales-custom" style="display:none">
+      <input type="number" id="comensales-custom-input" class="comensales-custom-input"
+             min="1" max="99" placeholder="Cantidad…">
+    </div>
+    <div class="comensales-warning" id="comensales-warning" style="display:none">
+      <div class="comensales-warning-text" id="comensales-warning-text"></div>
+      <div class="comensales-sugerencias" id="comensales-sugerencias"></div>
+    </div>
     <div class="comensales-actions">
       <button class="btn-cancel-com"  data-cerrar-comensales>Cancelar</button>
-      <button class="btn-confirm-com" data-confirmar-comensales>Continuar →</button>
+      <button class="btn-confirm-com" data-confirmar-comensales>Continuar</button>
     </div>
   </div>
 </div>

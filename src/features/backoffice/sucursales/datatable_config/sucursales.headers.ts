@@ -68,6 +68,6 @@ export const sucursalesHeaders: GridieHeaderConfig[] = [
   },
   {
     label: 'Acciones',
-    width: '240px',
+    width: '380px',
   },
 ];

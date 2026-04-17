@@ -1,8 +1,8 @@
-import type { FormasPago, FormasPagoGridRow } from '../formaspago.types';
+import type { SucursalImpuestos, SucursalImpuestosGridRow } from '../sucursalimpuestos.types';
 
-export interface FormasPagoHandlers {
-  onEdit: (formasPago: FormasPago) => void;
-  onDelete: (formasPago: FormasPago) => void;
+export interface SucursalImpuestosHandlers {
+  onEdit: (sucursalImpuestos: SucursalImpuestos) => void;
+  onDelete: (sucursalImpuestos: SucursalImpuestos) => void;
 }
 
 const actionButtonStyles = `
@@ -40,18 +40,12 @@ const actionButtonStyles = `
   </style>
 `;
 
-export const toFormasPagoGridRow = (formasPago: FormasPago, handlers: FormasPagoHandlers): FormasPagoGridRow => ({
-  id: formasPago.id,
-  //sucursal_id: formasPago.sucursal_id,
-  sucursal: formasPago.sucursal_?.nombre ?? String(formasPago.sucursal_id ?? ''),
-  nombre: formasPago.nombre,
-  tipo: formasPago.tipo,
-  requiere_referencia: formasPago.requiere_referencia,
-  estado: formasPago.estado,
-  agregado_en: formasPago.agregado_en,
-  agregado_por: formasPago.agregado_por,
-  actualizado_en: formasPago.actualizado_en,
-  actualizado_por: formasPago.actualizado_por,
+export const toSucursalImpuestosGridRow = (sucursalImpuestos: SucursalImpuestos, handlers: SucursalImpuestosHandlers): SucursalImpuestosGridRow => ({
+  id: sucursalImpuestos.id,
+  sucursal_id: sucursalImpuestos.sucursal_id,
+  impuesto_id: sucursalImpuestos.impuesto_id,
+  obligatorio: sucursalImpuestos.obligatorio,
+  orden_aplicacion: sucursalImpuestos.orden_aplicacion,
   actions: [
     {
       content: `
@@ -65,7 +59,7 @@ export const toFormasPagoGridRow = (formasPago: FormasPago, handlers: FormasPago
         </button>
       `,
       event: 'click',
-      funct: () => handlers.onEdit(formasPago),
+      funct: () => handlers.onEdit(sucursalImpuestos),
     },
     {
       content: `
@@ -80,10 +74,10 @@ export const toFormasPagoGridRow = (formasPago: FormasPago, handlers: FormasPago
         </button>
       `,
       event: 'click',
-      funct: () => handlers.onDelete(formasPago),
+      funct: () => handlers.onDelete(sucursalImpuestos),
     },
   ],
 });
 
-export const toFormasPagoGridRows = (formasPagos: FormasPago[], handlers: FormasPagoHandlers): FormasPagoGridRow[] =>
-  formasPagos.map((formasPago) => toFormasPagoGridRow(formasPago, handlers));
+export const toSucursalImpuestosGridRows = (sucursalImpuestos: SucursalImpuestos[], handlers: SucursalImpuestosHandlers): SucursalImpuestosGridRow[] =>
+  sucursalImpuestos.map((sucursalImpuestos) => toSucursalImpuestosGridRow(sucursalImpuestos, handlers));

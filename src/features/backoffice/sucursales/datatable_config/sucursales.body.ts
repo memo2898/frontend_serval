@@ -3,6 +3,7 @@ import type { Sucursales, SucursalesGridRow } from '../sucursales.types';
 export interface SucursalesHandlers {
   onEdit: (sucursales: Sucursales) => void;
   onDelete: (sucursales: Sucursales) => void;
+  onImpuestos: (sucursales: Sucursales) => void;
 }
 
 const actionButtonStyles = `
@@ -33,6 +34,9 @@ const actionButtonStyles = `
     .btn-delete { color: #dc2626; border-color: #fee2e2; background: #fef2f2; }
     .btn-delete:hover   { background: #fee2e2; border-color: #fecaca; }
     .btn-delete:active  { background: #fecaca; }
+    .btn-impuestos { color: #0891b2; border-color: #bae6fd; background: #f0f9ff; }
+    .btn-impuestos:hover  { background: #bae6fd; border-color: #7dd3fc; }
+    .btn-impuestos:active { background: #7dd3fc; }
     @media (max-width: 768px) {
       .btn-action span { display: none; }
       .btn-action { padding: 8px; min-width: 36px; }
@@ -81,6 +85,20 @@ export const toSucursalesGridRow = (sucursales: Sucursales, handlers: Sucursales
       `,
       event: 'click',
       funct: () => handlers.onDelete(sucursales),
+    },
+    {
+      content: `
+        <button class="btn-action btn-impuestos" title="Impuestos">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="9" cy="9" r="2"/>
+            <circle cx="15" cy="15" r="2"/>
+            <path d="M3 21L21 3"/>
+          </svg>
+          <span>Impuestos</span>
+        </button>
+      `,
+      event: 'click',
+      funct: () => handlers.onImpuestos(sucursales),
     },
   ],
 });

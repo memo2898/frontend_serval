@@ -113,16 +113,16 @@ export const ADMIN_OPTIONS: MenuItem[] = [
   },
 
   // ── Clientes ─────────────────────────────────
-  {
-    id: 'clientes',
-    icon: 'fas fa-users',
-    text: 'Clientes',
-    href: '#',
-    submenu: [
-      { text: 'Clientes',      href: '/clientes' },
+  // {
+  //   id: 'clientes',
+  //   icon: 'fas fa-users',
+  //   text: 'Clientes',
+  //   href: '#',
+  //   submenu: [
+  //     { text: 'Clientes',      href: '/clientes' },
       
-    ],
-  },
+  //   ],
+  // },
 
   // ── Caja ─────────────────────────────────────
   {

@@ -36,10 +36,12 @@ export interface KdsConfig {
   filtroDefault: string;
   /** destino_id para el endpoint de API */
   destinoId: number;
+  /** sucursal_id para el socket */
+  sucursalId: number;
   /** Ícono del empty state */
   emptyIcon: string;
   /** Texto del empty state */
   emptyText: string;
-  /** Intervalo de polling en ms */
+  /** Intervalo de polling en ms (0 = solo socket, sin polling) */
   pollIntervalMs?: number;
 }

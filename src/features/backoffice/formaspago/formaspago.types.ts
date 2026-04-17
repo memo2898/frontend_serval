@@ -11,6 +11,10 @@ export interface FormasPago {
   agregado_por?: number;
   actualizado_en?: string;
   actualizado_por?: number;
+  sucursal_?: {
+    id: number;
+    nombre: string;
+  };
 }
 
 export interface FormasPagoGridRow {
@@ -25,6 +29,7 @@ export interface FormasPagoGridRow {
   actualizado_en?: string;
   actualizado_por?: number;
   actions: GridieCellAction[];
+  sucursal?: string;
 }
 
 export interface FormasPagoCreateDTO {

@@ -2,9 +2,9 @@ import type { MesasStore } from '../mesas.store';
 
 export class UnirMesaModal {
   private readonly _store: MesasStore;
-  private readonly _onConfirm: (count: number) => void;
+  private readonly _onConfirm: (mesasIds: number[]) => void;
 
-  constructor(store: MesasStore, onConfirm: (count: number) => void) {
+  constructor(store: MesasStore, onConfirm: (mesasIds: number[]) => void) {
     this._store = store;
     this._onConfirm = onConfirm;
   }
@@ -32,10 +32,10 @@ export class UnirMesaModal {
   }
 
   confirm(): void {
-    const count = this._store.state.unirTPVSelected.length;
+    const selected = [...this._store.state.unirTPVSelected];
     this._store.confirmarUnirTPV();
     this.close();
-    this._onConfirm(count);
+    this._onConfirm(selected);
   }
 
   private _renderGrid(): void {

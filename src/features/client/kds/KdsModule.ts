@@ -1,6 +1,7 @@
 import { tiempoStr } from '../shared/utils/format';
 import { toast } from '../shared/utils/toast';
 import { doLogout } from '@/global/logOut';
+import { posSocket } from '../shared/services/pos-socket';
 import type { Comanda, EstadoComanda, KdsConfig, TipoServicio } from './kds.types';
 
 // ─── Labels helpers ───────────────────────────────────────────────────────────
@@ -45,14 +46,19 @@ export class KdsModule {
     this._tick();
     this._tickTimer = setInterval(() => this._tick(), 1000);
 
+    // Polling como fallback (reducido cuando el socket está activo)
     const pollMs = this._config.pollIntervalMs ?? 8000;
-    this._pollTimer = setInterval(() => this._fetchComandas(), pollMs);
+    if (pollMs > 0) {
+      this._pollTimer = setInterval(() => this._fetchComandas(), pollMs);
+    }
     this._fetchComandas();
+    this._connectSocket();
   }
 
   destroy(): void {
     if (this._tickTimer)  clearInterval(this._tickTimer);
     if (this._pollTimer)  clearInterval(this._pollTimer);
+    posSocket.disconnect();
   }
 
   // ─── Tema (CSS custom properties) ───────────────────────────────────────────
@@ -109,6 +115,60 @@ export class KdsModule {
     });
   }
 
+  // ─── Socket ──────────────────────────────────────────────────────────────────
+
+  private _connectSocket(): void {
+    import('@/global/session.service').then(({ getToken }) => {
+      const tk = getToken();
+      if (tk) posSocket.connect(tk, this._config.sucursalId, 'cocina');
+    });
+
+    // Nueva línea de cocina — convertir en comanda o agregar a una existente
+    posSocket.onKdsNuevaLinea(payload => {
+      if (payload.destino_id !== this._config.destinoId) return;
+
+      const existente = this._comandas.find(c => c.id === String(payload.orden_id));
+      if (existente) {
+        existente.lineas.push({
+          id:     payload.orden_linea_id,
+          nombre: payload.articulo_nombre,
+          qty:    payload.cantidad,
+          mods:   payload.modificadores.map(m => m.nombre).join(', '),
+          nota:   payload.notas_linea ?? '',
+          done:   false,
+        });
+      } else {
+        this._comandas.unshift({
+          id:     String(payload.orden_id),
+          numero: '#' + String(payload.orden_id).padStart(4, '0'),
+          mesa:   payload.mesa_nombre,
+          tipo:   'mesa',
+          estado: 'pendiente',
+          abierta: Date.now(),
+          lineas: [{
+            id:     payload.orden_linea_id,
+            nombre: payload.articulo_nombre,
+            qty:    payload.cantidad,
+            mods:   payload.modificadores.map(m => m.nombre).join(', '),
+            nota:   payload.notas_linea ?? '',
+            done:   false,
+          }],
+        });
+      }
+      this._render();
+      toast(`Nueva comanda: Mesa ${payload.mesa_nombre}`, 'info');
+    });
+
+    // Orden completa — marcar como lista
+    posSocket.onKdsOrdenCompleta(({ orden_id }) => {
+      const c = this._comandas.find(x => x.id === String(orden_id));
+      if (c) {
+        c.estado = 'listo';
+        this._render();
+      }
+    });
+  }
+
   // ─── Fetch ───────────────────────────────────────────────────────────────────
 
   private async _fetchComandas(): Promise<void> {
@@ -162,7 +222,12 @@ export class KdsModule {
       toast(`Comanda ${c.numero} entregada`, 'success');
     }
     this._render();
-    // Fire-and-forget al backend
+    // Emitir por socket + sincronizar con backend
+    const numericId = Number(id);
+    if (!isNaN(numericId)) {
+      if (nuevoEstado === 'en_preparacion') posSocket.emitLineaEnPreparacion(numericId);
+      else if (nuevoEstado === 'listo')     posSocket.emitLineaLista(numericId);
+    }
     import('./kds.service').then(({ patchEstadoComanda }) => {
       patchEstadoComanda(id, nuevoEstado ?? 'entregada').catch(() => { /* ignorar */ });
     });

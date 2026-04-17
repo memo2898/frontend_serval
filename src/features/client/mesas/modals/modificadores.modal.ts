@@ -15,7 +15,7 @@ export class ModificadoresModal {
     this._store.openModal(art, grupos);
 
     const titleEl = document.getElementById('modal-art-nombre');
-    if (titleEl) titleEl.textContent = art.nombre + ' — ' + fmt(art.precio);
+    if (titleEl) titleEl.textContent = art.nombre + ' — ' + fmt(art.precio_venta);
 
     const bodyEl = document.getElementById('modal-grupos');
     if (bodyEl) {
