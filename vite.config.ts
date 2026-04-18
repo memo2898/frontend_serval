@@ -221,6 +221,7 @@ ${Object.entries(URL_MAPPINGS)
 // ============================================
 export default defineConfig({
   base: BASE_PATH,
+  
 
   plugins: [htmlPathRewriter(), friendlyRoutes(), generateHtaccess()],
 

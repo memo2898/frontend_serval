@@ -110,6 +110,24 @@ class MesasPage {
     document.documentElement.style.setProperty('--accent2',    '#f04f5a');
   }
 
+  // ─── Liberación de mesa (con separación automática de unidas) ────────────
+
+  private _liberarMesaConUnidas(mesaId: number): void {
+    // Liberar la mesa principal
+    this._store.patchMesa(mesaId, { estado: 'libre', personas: 0, mesa_principal_id: undefined });
+
+    // Buscar y liberar todas las mesas secundarias vinculadas a esta
+    const unidas = this._store.state.mesas.filter(m => m.mesa_principal_id === mesaId);
+    for (const m of unidas) {
+      this._store.patchMesa(m.id, { estado: 'libre', personas: 0, mesa_principal_id: undefined });
+      patchMesaData(m.id, { estado: 'libre', mesa_principal_id: null }).catch(() => {});
+    }
+
+    if (document.getElementById('screen-mesas')?.classList.contains('active')) {
+      this._floorPlan.renderMesas();
+    }
+  }
+
   // ─── Socket ───────────────────────────────────────────────────────────────
 
   private _connectSocket(): void {
@@ -143,19 +161,13 @@ class MesasPage {
       // caja:pago_registrado — libera la mesa automáticamente
       posSocket.onCajaPagoRegistrado(({ mesa_id }) => {
         if (mesa_id == null) return;
-        this._store.patchMesa(mesa_id, { estado: 'libre', personas: 0 });
-        if (document.getElementById('screen-mesas')?.classList.contains('active')) {
-          this._floorPlan.renderMesas();
-        }
+        this._liberarMesaConUnidas(mesa_id);
         toast('Mesa liberada — pago registrado', 'success');
       });
 
       // caja:orden_anulada
       posSocket.onCajaOrdenAnulada(({ mesa_id }) => {
-        this._store.patchMesa(mesa_id, { estado: 'libre', personas: 0 });
-        if (document.getElementById('screen-mesas')?.classList.contains('active')) {
-          this._floorPlan.renderMesas();
-        }
+        this._liberarMesaConUnidas(mesa_id);
         toast('Orden anulada');
       });
 
@@ -1464,10 +1476,7 @@ class MesasPage {
     // Escuchar mesa liberada desde caja (mismo tab, fallback a socket)
     mesasChannel.on(msg => {
       if (msg.tipo === 'mesa_liberada') {
-        this._store.patchMesa(msg.mesaId, { estado: 'libre', personas: 0 });
-        if (document.getElementById('screen-mesas')?.classList.contains('active')) {
-          this._floorPlan.renderMesas();
-        }
+        this._liberarMesaConUnidas(msg.mesaId);
       }
     });
 
@@ -1477,10 +1486,11 @@ class MesasPage {
       try {
         const updates = JSON.parse(e.newValue ?? '[]') as Array<{ mesaId: number; estado: string }>;
         updates.forEach(u => {
-          this._store.patchMesa(u.mesaId, {
-            estado: u.estado as Mesa['estado'],
-            ...(u.estado === 'libre' ? { personas: 0 } : {}),
-          });
+          if (u.estado === 'libre') {
+            this._liberarMesaConUnidas(u.mesaId);
+          } else {
+            this._store.patchMesa(u.mesaId, { estado: u.estado as Mesa['estado'] });
+          }
         });
         if (document.getElementById('screen-mesas')?.classList.contains('active')) {
           this._floorPlan.renderMesas();
