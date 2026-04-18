@@ -17,7 +17,7 @@ import type { Mesa, Orden, LineaOrden } from './mesas.types';
 import {
   getZonas, getMesasByZona, getFamilias, getArticulos, getModificadores,
   getImpuestosSucursal,
-  createOrden, getOrdenActivaMesa, getLineas,
+  createOrden, getOrdenActivaMesa, getUltimaOrdenMesa, getLineas,
   createLinea, updateLinea, deleteLinea,
   marcarOrdenEnPreparacion, marcarOrdenPorCobrar,
   patchEstadoMesa, patchMesaPersonas, patchMesaData,
@@ -26,6 +26,20 @@ import { fmt } from '../shared/utils/format';
 import { notifStore } from '../shared/services/notificaciones.store';
 import { SplitModal } from '../shared/components/split-modal';
 import type { SplitConfirmResult } from '../shared/components/split-modal';
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Reintenta buscar la orden activa hasta 3 veces con espera progresiva.
+ *  Necesario porque el socket puede marcar la mesa como "ocupada" antes de que
+ *  la orden quede persistida en la BD. */
+const fetchOrdenActivaConReintento = async (mesaId: number, intentos = 3, esperaMs = 600): Promise<Orden | null> => {
+  for (let i = 0; i < intentos; i++) {
+    if (i > 0) await new Promise(r => setTimeout(r, esperaMs * i));
+    const ordenes = await getOrdenActivaMesa(mesaId);
+    if (ordenes.length > 0) return ordenes[0];
+  }
+  return null;
+};
 
 // ─── Orchestrador ────────────────────────────────────────────────────────────
 
@@ -355,13 +369,35 @@ class MesasPage {
     this._store.setCargando(true);
 
     if (mesa.estado === 'ocupada') {
-      // Mesa ocupada — cargar la orden activa desde la BD
-      getOrdenActivaMesa(mesaId)
-        .then(ordenes => {
-          const orden = ordenes[0];
+      // Mesa ocupada — cargar la orden activa desde la BD.
+      // Si la mesa es secundaria (unida), la orden está bajo la mesa principal.
+      const mesaOrdenId = mesa.mesa_principal_id ?? mesaId;
+      fetchOrdenActivaConReintento(mesaOrdenId)
+        .then(orden => {
           if (!orden) {
-            toast('No se encontró orden activa para esta mesa');
             this._store.setCargando(false);
+            getUltimaOrdenMesa(mesaOrdenId).then(ultima => {
+              const estadoUltima = ultima?.estado;
+              let mensaje: string;
+              if (!ultima) {
+                mensaje = `La mesa "${mesa.nombre}" aparece ocupada pero nunca tuvo una orden.\n\nPuedes liberarla sin riesgo. ¿Liberar?`;
+              } else if (estadoUltima === 'cobrada') {
+                mensaje = `La mesa "${mesa.nombre}" ya fue cobrada pero no se liberó correctamente.\n\nPuedes liberarla sin riesgo. ¿Liberar?`;
+              } else if (estadoUltima === 'cancelada') {
+                mensaje = `La mesa "${mesa.nombre}" tiene una orden cancelada y no se liberó.\n\nPuedes liberarla sin riesgo. ¿Liberar?`;
+              } else {
+                mensaje = `La mesa "${mesa.nombre}" aparece ocupada pero no se encontró su orden activa (estado: ${estadoUltima ?? 'desconocido'}).\n\n⚠️ Puede haber artículos en curso. Consulta con un supervisor antes de liberar.\n\n¿Liberar de todas formas?`;
+              }
+              if (confirm(mensaje)) {
+                patchEstadoMesa(mesaId, 'libre')
+                  .then(() => {
+                    this._store.patchMesa(mesaId, { estado: 'libre', personas: 0, mesa_principal_id: undefined });
+                    this._floorPlan.renderMesas();
+                    toast('Mesa liberada', 'success');
+                  })
+                  .catch(() => toast('Error al liberar la mesa', 'error'));
+              }
+            });
             return;
           }
           return getLineas(orden.id).then(lineas => {
@@ -399,11 +435,10 @@ class MesasPage {
         // Cola vacía (cobro falló o fue interrumpido) — cargar desde la API
         const mesa = this._store.getMesa(mesaId)!;
         this._store.setCargando(true);
-        getOrdenActivaMesa(mesaId)
-          .then(ordenes => {
-            const orden = ordenes[0];
+        fetchOrdenActivaConReintento(mesaId)
+          .then(orden => {
             if (!orden) {
-              toast('No se encontró orden activa para esta mesa');
+              toast('No se encontró orden activa para esta mesa', 'error');
               this._store.setCargando(false);
               return;
             }
@@ -906,7 +941,7 @@ class MesasPage {
           ...yaEnBD.map(l => l.id),
         ].filter(id => id > 0);
         posSocket.emitEnviarCocina(ordenId, linea_ids);
-        this._store.marcarEnviadas();
+        this._store.marcarEnviadas(linea_ids);
         this._store.setOrdenCompleta(false); // esperar confirmación de KDS
         toast('Enviado a cocina ✓', 'success');
         this._tpv.renderOrden();

@@ -132,6 +132,13 @@ export const getOrdenActivaMesa = async (mesaId: number): Promise<Orden[]> => {
   return [...abierta, ...enPrep, ...lista, ...porCobrar];
 };
 
+/** Devuelve la última orden de la mesa sin filtrar por estado (cobrada, cancelada, etc.). */
+export const getUltimaOrdenMesa = (mesaId: number): Promise<Orden | null> =>
+  http.get<Paginado<Orden> | Orden[]>(`${BASE}/ordenes?mesa_id=${mesaId}&limit=1&order=desc`)
+    .then(unwrap<Orden>)
+    .then(arr => arr[0] ?? null)
+    .catch(() => null);
+
 export const createOrden = (data: {
   sucursal_id: number;
   mesa_id: number;

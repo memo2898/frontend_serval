@@ -171,8 +171,10 @@ export class MesasStore {
     const existing = idx >= 0 ? this._state.lineas[idx] : undefined;
     const merged: LineaOrden = {
       ...linea,
-      nombre_articulo: linea.nombre_articulo || existing?.nombre_articulo || '',
-      modificadores:   linea.modificadores ?? existing?.modificadores ?? [],
+      nombre_articulo:   linea.nombre_articulo || existing?.nombre_articulo || '',
+      modificadores:     linea.modificadores ?? existing?.modificadores ?? [],
+      // enviado_a_cocina nunca retrocede: si ya estaba en true, se conserva
+      enviado_a_cocina:  linea.enviado_a_cocina || existing?.enviado_a_cocina || false,
     };
     if (idx >= 0) {
       this._state.lineas[idx] = merged;
@@ -247,10 +249,20 @@ export class MesasStore {
   confirmarLineaPersistida(tempId: number, lineaReal: LineaOrden): void {
     const idx = this._state.lineas.findIndex(l => l.id === tempId);
     if (idx < 0) return;
-    this._state.lineas[idx] = lineaReal;
+    const local = this._state.lineas[idx];
+    this._state.lineas[idx] = {
+      ...lineaReal,
+      // El API a veces no popula los modificadores en el POST response — preservar los del objeto local
+      modificadores: (lineaReal.modificadores?.length ?? 0) > 0
+        ? lineaReal.modificadores
+        : local.modificadores,
+      // Mantener el estado/enviado local: marcarEnviadas() los actualizará justo después
+      estado:            local.estado,
+      enviado_a_cocina:  local.enviado_a_cocina,
+    };
     this._state.lineasNuevasIds.delete(tempId);
     // Mantener el ID real como "nuevo" hasta que sea enviado a cocina
-    if (!lineaReal.enviado_a_cocina) {
+    if (!local.enviado_a_cocina) {
       this._state.lineasNuevasIds.add(lineaReal.id);
     }
     this._notify();
@@ -370,9 +382,10 @@ export class MesasStore {
     if (this._state.orden) this._state.orden.notas = nota;
   }
 
-  marcarEnviadas(): void {
+  marcarEnviadas(lineaIds: number[]): void {
+    const enviadas = new Set(lineaIds);
     this._state.lineas
-      .filter(l => l.estado === 'pendiente')
+      .filter(l => enviadas.has(l.id))
       .forEach(l => { l.estado = 'en_preparacion'; l.enviado_a_cocina = true; });
     this._state.lineasNuevasIds.clear();
     this._notify();
