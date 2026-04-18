@@ -240,6 +240,7 @@ export class SplitModal {
     this._el = document.createElement('div');
     this._el.className = 'spm-overlay';
     document.body.appendChild(this._el);
+    this._bindEvents();
     this._render();
     requestAnimationFrame(() => this._el?.classList.add('spm-open'));
   }
@@ -276,7 +277,6 @@ export class SplitModal {
         </div>
         ${this._buildFooter()}
       </div>`;
-    this._bindEvents();
   }
 
   private _buildHeader(): string {
