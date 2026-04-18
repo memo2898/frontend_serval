@@ -516,11 +516,15 @@ class CajaPage {
   // ─── Imprimir cuenta ──────────────────────────────────────────────────────
 
   private _imprimirCuenta(soloCuenta?: number): void {
-    const { orden, mesaLabel, lineas, splitMode, numCuentas, cuentasNombres, ticketId } = this._store.state;
+    const { orden, mesaLabel, lineas, splitMode, numCuentas, cuentasNombres, ticketId, queue } = this._store.state;
     if (!ticketId) return;
 
-    const numOrden = orden?.numero_orden?.toString().padStart(4, '0') ?? String(ticketId).padStart(4, '0');
-    const ahora    = new Date().toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' });
+    const ticket     = queue.find(t => t.id === ticketId);
+    const numOrden   = orden?.numero_orden?.toString().padStart(4, '0') ?? String(ticketId).padStart(4, '0');
+    const ahora      = new Date().toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' });
+    const digitadoEn = ticket?.timestamp
+      ? new Date(ticket.timestamp).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' })
+      : '—';
 
     const fmtLineasCuenta = (cuentaNum: number | null) => {
       const src = cuentaNum == null ? lineas : lineas.filter(l => (l.cuenta_num || 1) === cuentaNum);
@@ -620,16 +624,28 @@ class CajaPage {
       tr.cut td { text-align: center; padding: 6px 0; color: #aaa; }
       small { font-size: 10px; color: #555; }
       .footer { text-align: center; margin-top: 10px; font-size: 11px; color: #555; }
+      .propina-section { margin-top: 12px; }
+      .propina-section .label { font-size: 11px; margin-bottom: 6px; }
+      .propina-section .linea { border-bottom: 1px solid #000; margin: 8px 0; height: 18px; }
       @media print { body { width: 100%; } }
     </style></head><body>
     ${logoHtml}
     ${empresaHtml}
     ${sucursalHtml}
-    <div class="sub">Mesa ${mesaLabel} · Orden #${numOrden}</div>
-    <div class="sub">${ahora}</div>
+    <div class="sub">Mesa ${mesaLabel}</div>
+    <div class="sub" style="font-weight:bold;font-size:13px;">Orden #${numOrden}</div>
+    <div class="sub">Digitado: ${digitadoEn}</div>
+    <div class="sub">Emisión: ${ahora}</div>
     <div class="sep-line"></div>
     <table><tbody>${cuerpo}</tbody></table>
     <div class="footer">¡Gracias por su visita!</div>
+    <div class="propina-section">
+      <div class="sep-line"></div>
+      <div class="label">Propina adicional (opcional):</div>
+      <div class="linea"></div>
+      <div class="label" style="margin-top:8px;">Firma:</div>
+      <div class="linea"></div>
+    </div>
     </body></html>`;
 
     const w = window.open('', '_blank', 'width=400,height=600');
