@@ -24,7 +24,7 @@ export interface LineaCobro {
   subtotal_linea: number;
   estado: string;
   cuenta_num: number;
-  modificadores: Array<{ id: number; nombre_modificador: string; precio_extra: number }>;
+  modificadores: Array<{ id: number; modificador_id: number; nombre_modificador: string; precio_extra: number }>;
 }
 
 export interface OrdenCobro {

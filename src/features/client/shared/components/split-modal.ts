@@ -21,6 +21,7 @@ export interface SplitConfirmResult {
   lineas: Array<{ id: number; cuenta_num: number }>;
   numCuentas: number;
   cuentasNombres: Record<number, string>;
+  desglosadas: Array<{ originalId: number; cuentaNums: number[] }>;
 }
 
 export interface SplitModalOpts {
@@ -204,7 +205,19 @@ const SPM_CSS = `
 .spm-btn-quitar  { border:1px solid rgba(198,40,40,0.3);background:rgba(198,40,40,0.08);color:var(--red,#c62828); }
 .spm-btn-quitar:hover  { background:rgba(198,40,40,0.15); }
 .spm-btn-quitar-yes { border:none;background:var(--red,#c62828);color:#fff; }
+
+/* Desglosar */
+.spm-btn-desglosar {
+  background:none;border:none;cursor:pointer;
+  color:var(--text-dim);padding:3px 5px;border-radius:5px;font-size:11px;
+  flex-shrink:0;transition:color 0.12s,background 0.12s;
+}
+.spm-btn-desglosar:hover { color:var(--accent);background:var(--surface3); }
+.spm-linea-virtual {
+  border-left:2px solid var(--border);margin-left:12px;opacity:0.9;
+}
 `;
+
 
 // ─── SplitModal ───────────────────────────────────────────────────────────────
 
@@ -221,20 +234,28 @@ export class SplitModal {
   private _onConfirm!: SplitModalOpts['onConfirm'];
   private _onCancel!: SplitModalOpts['onCancel'];
 
+  // Desglose: líneas virtuales (id < 0) generadas al desglosar una línea agrupada
+  private _virtualToOriginal = new Map<number, number>(); // virtual_id → original_id
+  private _originalLineasBackup = new Map<number, SplitLinea>(); // original_id → línea original
+  private _nextVirtualId = -1;
+
   // ─── API pública ─────────────────────────────────────────────────────────────
 
   open(opts: SplitModalOpts): void {
     this.close();
 
     // Copiar estado inicial — los cambios son locales hasta "Confirmar"
-    this._lineas         = opts.lineas.map(l => ({ ...l }));
-    this._numCuentas     = opts.numCuentas;
-    this._cuentasNombres = { ...opts.cuentasNombres };
-    this._maxCuentas     = Math.max(opts.maxCuentas, 2);
-    this._impuestos      = opts.impuestos;
-    this._mesaLabel      = opts.mesaLabel;
-    this._onConfirm      = opts.onConfirm;
-    this._onCancel       = opts.onCancel;
+    this._lineas               = opts.lineas.map(l => ({ ...l }));
+    this._numCuentas           = opts.numCuentas;
+    this._cuentasNombres       = { ...opts.cuentasNombres };
+    this._maxCuentas           = Math.max(opts.maxCuentas, 2);
+    this._impuestos            = opts.impuestos;
+    this._mesaLabel            = opts.mesaLabel;
+    this._onConfirm            = opts.onConfirm;
+    this._onCancel             = opts.onCancel;
+    this._virtualToOriginal    = new Map();
+    this._originalLineasBackup = new Map();
+    this._nextVirtualId        = -1;
 
     this._injectStyles();
     this._el = document.createElement('div');
@@ -297,20 +318,29 @@ export class SplitModal {
       return '<div class="spm-resumen-empty">Sin artículos en esta orden</div>';
     }
     return this._lineas.map(l => {
-      const cn    = l.cuenta_num || 1;
-      const style = badgeStyle(cn);
-      const nombre = this._cuentasNombres[cn] ?? `C${cn}`;
-      const mods   = l.modificadores?.length
+      const cn        = l.cuenta_num || 1;
+      const style     = badgeStyle(cn);
+      const nombre    = this._cuentasNombres[cn] ?? `C${cn}`;
+      const isVirtual = l.id < 0;
+      const mods      = l.modificadores?.length
         ? `<div class="spm-linea-mods">${l.modificadores.map(m => `└ ${m.nombre_modificador}`).join(' · ')}</div>`
         : '';
+      const labelNombre = isVirtual
+        ? `└ ${l.nombre_articulo}`
+        : `${l.cantidad}× ${l.nombre_articulo}`;
+      const desglosarBtn = !isVirtual && l.cantidad > 1
+        ? `<button class="spm-btn-desglosar" data-spm="desglosar" data-spm-id="${l.id}" title="Desglosar en unidades individuales"><i class="fa-solid fa-scissors"></i></button>`
+        : '';
+      const lineaClass = isVirtual ? 'spm-linea spm-linea-virtual' : 'spm-linea';
       return `
-        <div class="spm-linea" data-spm="ciclar" data-spm-id="${l.id}">
+        <div class="${lineaClass}" data-spm="ciclar" data-spm-id="${l.id}">
           <span class="spm-badge" style="${style}" title="Cuenta ${cn}${this._cuentasNombres[cn] ? ': ' + this._cuentasNombres[cn] : ''}">${nombre}</span>
           <div class="spm-linea-info">
-            <span class="spm-linea-nombre">${l.cantidad}× ${l.nombre_articulo}</span>
+            <span class="spm-linea-nombre">${labelNombre}</span>
             ${mods}
           </div>
           <span class="spm-linea-precio">${fmt(l.subtotal_linea)}</span>
+          ${desglosarBtn}
         </div>`;
     }).join('');
   }
@@ -409,6 +439,7 @@ export class SplitModal {
 
       switch (el.dataset.spm) {
         case 'ciclar':       this._ciclar(Number(el.dataset.spmId)); break;
+        case 'desglosar':    this._desglosaLinea(Number(el.dataset.spmId)); break;
         case 'edit-nombre':  this._editarNombre(Number(el.dataset.spmN), el); break;
         case 'confirm':      this._confirmar(); break;
         case 'cancel':       this._cancelar(); break;
@@ -483,7 +514,38 @@ export class SplitModal {
     // Event delegation on this._el still captures clicks on the new footer — no re-bind needed
   }
 
+  private _desglosaLinea(lineaId: number): void {
+    const idx = this._lineas.findIndex(l => l.id === lineaId);
+    if (idx === -1) return;
+    const linea = this._lineas[idx];
+    this._originalLineasBackup.set(lineaId, { ...linea });
+    this._lineas.splice(idx, 1);
+    const subtotalUnit = Math.round(linea.precio_unitario * 100) / 100;
+    for (let i = 0; i < linea.cantidad; i++) {
+      const vid = this._nextVirtualId--;
+      this._virtualToOriginal.set(vid, lineaId);
+      this._lineas.splice(idx + i, 0, {
+        ...linea,
+        id:            vid,
+        cantidad:      1,
+        subtotal_linea: subtotalUnit,
+      });
+    }
+    this._render();
+  }
+
   private _quitarDivision(): void {
+    // Restaurar líneas originales de desgloses
+    for (const [originalId, originalLinea] of this._originalLineasBackup) {
+      const virtualIds = [...this._virtualToOriginal.entries()]
+        .filter(([, origId]) => origId === originalId)
+        .map(([vid]) => vid);
+      this._lineas = this._lineas.filter(l => !virtualIds.includes(l.id));
+      this._lineas.push({ ...originalLinea, cuenta_num: 1 });
+    }
+    this._virtualToOriginal.clear();
+    this._originalLineasBackup.clear();
+
     this._lineas.forEach(l => { l.cuenta_num = 1; });
     this._numCuentas     = 1;
     this._cuentasNombres = {};
@@ -491,14 +553,30 @@ export class SplitModal {
   }
 
   private _confirmar(): void {
-    // Recalcular numCuentas: solo cuentas con artículos asignados
-    const maxUsado    = this._lineas.reduce((mx, l) => Math.max(mx, l.cuenta_num || 1), 1);
-    this._numCuentas  = maxUsado;
+    const realLineas    = this._lineas.filter(l => l.id > 0);
+    const virtualLineas = this._lineas.filter(l => l.id < 0);
+
+    // Agrupar líneas virtuales por original → desglosadas
+    const groups = new Map<number, number[]>();
+    for (const vl of virtualLineas) {
+      const origId = this._virtualToOriginal.get(vl.id)!;
+      if (!groups.has(origId)) groups.set(origId, []);
+      groups.get(origId)!.push(vl.cuenta_num || 1);
+    }
+    const desglosadas = [...groups.entries()].map(([originalId, cuentaNums]) => ({ originalId, cuentaNums }));
+
+    const maxUsado = Math.max(
+      ...realLineas.map(l => l.cuenta_num || 1),
+      ...virtualLineas.map(l => l.cuenta_num || 1),
+      1,
+    );
+    this._numCuentas = maxUsado;
 
     this._onConfirm({
-      lineas:         this._lineas.map(l => ({ id: l.id, cuenta_num: l.cuenta_num || 1 })),
+      lineas:         realLineas.map(l => ({ id: l.id, cuenta_num: l.cuenta_num || 1 })),
       numCuentas:     this._numCuentas,
       cuentasNombres: { ...this._cuentasNombres },
+      desglosadas,
     });
     this.close();
   }

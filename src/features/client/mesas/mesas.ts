@@ -1252,7 +1252,7 @@ class MesasPage {
     });
   }
 
-  private _aplicarSplitModalResult(result: SplitConfirmResult): void {
+  private async _aplicarSplitModalResult(result: SplitConfirmResult): Promise<void> {
     const { ordenId, mesaId, lineas } = this._store.state;
 
     // 1. Aplicar al store (actualiza lineas, splitMode, numCuentas, cuentasNombres)
@@ -1267,13 +1267,46 @@ class MesasPage {
       }
     });
 
-    // 3. Emitir por socket/BroadcastChannel si la orden ya es por_cobrar
+    // 3. Manejar desgloses: partir líneas agrupadas en unidades individuales
+    if (result.desglosadas.length > 0 && ordenId) {
+      await Promise.all(result.desglosadas.map(async d => {
+        const full = lineas.find(l => l.id === d.originalId);
+        if (!full) return;
+        const subtotalUnit = Math.round(full.precio_unitario * 100) / 100;
+
+        await updateLinea(ordenId, d.originalId, {
+          cantidad:       1,
+          subtotal_linea: subtotalUnit,
+          cuenta_num:     d.cuentaNums[0],
+        }).catch(() => {});
+
+        for (let i = 1; i < d.cuentaNums.length; i++) {
+          await createLinea(ordenId, {
+            articulo_id:      full.articulo_id,
+            cantidad:         1,
+            precio_unitario:  full.precio_unitario,
+            subtotal_linea:   subtotalUnit,
+            cuenta_num:    d.cuentaNums[i],
+            notas_linea:   full.notas_linea,
+            modificadores: full.modificadores.map(m => ({ modificador_id: m.modificador_id, precio_extra: m.precio_extra })),
+          }).catch(() => {});
+        }
+      }));
+
+      // Recargar líneas desde servidor para obtener los IDs reales de las nuevas líneas
+      const freshLineas = await getLineas(ordenId).catch(() => null);
+      if (freshLineas) {
+        this._store.setLineas(freshLineas);
+        this._store.restoreSplitFromLineas();
+      }
+    }
+
+    // 4. Emitir por socket/BroadcastChannel si la orden ya es por_cobrar
     this._emitirSplitSiPorCobrar();
 
-    // 4. Re-renderizar TPV
+    // 5. Re-renderizar TPV
     this._tpv.renderOrden();
 
-    // Emitir mesa:estado_cambio para que otros vean el floor plan actualizado (si aplica)
     if (mesaId) posSocket.emitUsuarioEntro(mesaId);
   }
 

@@ -102,6 +102,32 @@ export const fetchOrdenesEnCola = async (sucursalId: number): Promise<TicketCola
 export const updateLineaCuenta = (lineaId: number, cuentaNum: number): Promise<void> =>
   http.patch(`${BASE}/orden-lineas/${lineaId}`, { cuenta_num: cuentaNum }).then(() => {});
 
+export const updateLineaCaja = (lineaId: number, data: Partial<{ cantidad: number; subtotal_linea: number; cuenta_num: number }>): Promise<void> =>
+  http.patch(`${BASE}/orden-lineas/${lineaId}`, data).then(() => {});
+
+export const crearLineaOrden = async (ordenId: number, data: {
+  articulo_id: number;
+  cantidad: number;
+  precio_unitario: number;
+  subtotal_linea: number;
+  cuenta_num?: number;
+  enviado_a_cocina?: boolean;
+  estado?: string;
+  modificadores?: Array<{ modificador_id: number; precio_extra: number }>;
+}): Promise<void> => {
+  const { modificadores, ...lineaData } = data;
+  const linea = await http.post<{ id: number }>(`${BASE}/orden-lineas`, { ...lineaData, orden_id: ordenId });
+  if (modificadores?.length) {
+    await Promise.all(modificadores.map(m =>
+      http.post(`${BASE}/orden-linea-modificadores`, {
+        orden_linea_id: linea.id,
+        modificador_id: m.modificador_id,
+        precio_extra:   m.precio_extra,
+      }).catch(() => {}),
+    ));
+  }
+};
+
 export const confirmarCobro = (ordenId: number, pagos: PagoAplicado[]) =>
   http.post(`${BASE}/ordenes/${ordenId}/cobrar`, {
     pagos: pagos.map(({ forma_pago_id, monto, cuenta_num, referencia }) => ({
@@ -172,7 +198,7 @@ export const getImpuestosCaja = async (sucursalId: number): Promise<ImpuestoCaja
 
 type RawLinea = LineaCobro & {
   articulo?: { nombre: string };
-  modificadores?: Array<{ modificador_id: number; precio_extra: string | number; nombre_modificador?: string; modificador?: { nombre: string } }>;
+  modificadores?: Array<{ id?: number; modificador_id: number; precio_extra: string | number; nombre_modificador?: string; modificador?: { nombre: string } }>;
 };
 
 export const fetchLineasOrden = async (ordenId: number): Promise<LineaCobro[]> => {
@@ -191,6 +217,7 @@ export const fetchLineasOrden = async (ordenId: number): Promise<LineaCobro[]> =
     cuenta_num:      l.cuenta_num ?? 1,
     modificadores:   (l.modificadores ?? []).map(m => ({
       id:                 m.id ?? 0,
+      modificador_id:     m.modificador_id,
       nombre_modificador: m.nombre_modificador ?? (m as any).modificador?.nombre ?? '',
       precio_extra:       Number(m.precio_extra),
     })),

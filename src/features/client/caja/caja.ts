@@ -15,7 +15,7 @@ import { CajaStore } from './caja.store';
 import {
   getQueue, removeFromQueue, confirmarCobro, getFormasPago, fetchLineasOrden,
   getSucursalInfo, getImpuestosCaja, tipoToFaIcon, fetchOrdenesEnCola,
-  updateLineaCuenta, saveCuentasNombres,
+  updateLineaCuenta, updateLineaCaja, crearLineaOrden, saveCuentasNombres,
 } from './caja.service';
 import type { TicketCola } from './caja.types';
 
@@ -707,7 +707,7 @@ class CajaPage {
     });
   }
 
-  private _aplicarSplitModalResult(result: SplitConfirmResult): void {
+  private async _aplicarSplitModalResult(result: SplitConfirmResult): Promise<void> {
     const { ticketId, lineas } = this._store.state;
     if (!ticketId) return;
 
@@ -723,13 +723,46 @@ class CajaPage {
       }
     });
 
-    // 3. Guardar nombres en localStorage
+    // 3. Manejar desgloses: partir líneas agrupadas en unidades individuales
+    if (result.desglosadas.length > 0) {
+      await Promise.all(result.desglosadas.map(async d => {
+        const full = original.find(l => l.id === d.originalId);
+        if (!full) return;
+        const subtotalUnit = Math.round(full.precio_unitario * 100) / 100;
+
+        await updateLineaCaja(d.originalId, {
+          cantidad:       1,
+          subtotal_linea: subtotalUnit,
+          cuenta_num:     d.cuentaNums[0],
+        }).catch(() => {});
+
+        for (let i = 1; i < d.cuentaNums.length; i++) {
+          await crearLineaOrden(ticketId, {
+            articulo_id:     full.articulo_id,
+            cantidad:        1,
+            precio_unitario: full.precio_unitario,
+            subtotal_linea:  subtotalUnit,
+            cuenta_num:      d.cuentaNums[i],
+            estado:          full.estado,
+            modificadores:   full.modificadores.map(m => ({ modificador_id: m.modificador_id, precio_extra: m.precio_extra })),
+          }).catch(() => {});
+        }
+      }));
+
+      // Recargar líneas desde servidor para obtener IDs reales de las nuevas líneas
+      const freshLineas = await fetchLineasOrden(ticketId).catch(() => null);
+      if (freshLineas) {
+        this._store.setLineas(freshLineas);
+      }
+    }
+
+    // 4. Guardar nombres en localStorage
     saveCuentasNombres(ticketId, result.cuentasNombres);
 
-    // 4. Actualizar cola local + BroadcastChannel
+    // 5. Actualizar cola local + BroadcastChannel
     this._actualizarQueueConSplitActual();
 
-    // 5. Emitir socket para sincronizar con el camarero
+    // 6. Emitir socket para sincronizar con el camarero
     const { splitMode, numCuentas: nc, cuentasNombres: cn, lineas: ls, mesaId } = this._store.state;
     if (mesaId) {
       posSocket.emitSplitActualizado({
@@ -742,10 +775,10 @@ class CajaPage {
       });
     }
 
-    // 6. Actualizar visual del botón
+    // 7. Actualizar visual del botón
     document.getElementById('btn-split-caja')?.classList.toggle('active', splitMode);
 
-    // 7. Re-renderizar
+    // 8. Re-renderizar
     this._renderCuentasTabs();
     this._renderCobroLineas();
     this._renderCobroTotales();
