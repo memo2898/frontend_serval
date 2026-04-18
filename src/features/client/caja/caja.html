@@ -39,6 +39,9 @@
       <div class="queue-header">
         <div class="queue-title">Por cobrar</div>
         <div class="queue-count" id="queue-count">Sin órdenes</div>
+        <button class="btn-historial" id="btn-historial" title="Ver órdenes despachadas">
+          <i class="fa-solid fa-clock-rotate-left"></i> Historial
+        </button>
       </div>
       <div class="queue-list" id="queue-list"></div>
       <div class="queue-empty" id="queue-empty">
@@ -131,6 +134,45 @@
     <button class="btn-cerrar-cambio" id="btn-cerrar-cambio">
       <i class="fa-solid fa-check"></i> Cerrar y finalizar
     </button>
+  </div>
+</div>
+
+<!-- Modal historial de órdenes despachadas -->
+<div id="modal-historial" class="historial-overlay" style="display:none">
+  <div class="historial-panel">
+    <div class="historial-header">
+      <div class="historial-title">
+        <i class="fa-solid fa-clock-rotate-left"></i> Órdenes Despachadas
+      </div>
+      <button id="btn-cerrar-historial" class="historial-close" title="Cerrar">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="historial-filtros">
+      <div class="historial-filtro-grupo">
+        <label class="historial-label">Desde</label>
+        <input type="date" id="historial-desde" class="historial-date-input">
+      </div>
+      <div class="historial-filtro-grupo">
+        <label class="historial-label">Hasta</label>
+        <input type="date" id="historial-hasta" class="historial-date-input">
+      </div>
+      <button id="btn-buscar-historial" class="btn-buscar-historial">
+        <i class="fa-solid fa-magnifying-glass"></i> Buscar
+      </button>
+    </div>
+    <div class="historial-acciones" id="historial-acciones" style="display:none">
+      <span class="historial-count" id="historial-count">0 órdenes</span>
+      <button id="btn-reimprimir-todas" class="btn-reimprimir-todas">
+        <i class="fa-solid fa-print"></i> Reimprimir todas
+      </button>
+    </div>
+    <div id="historial-body" class="historial-body">
+      <div class="historial-empty" id="historial-empty">
+        <i class="fa-solid fa-receipt" style="font-size:32px;opacity:0.2;margin-bottom:10px"></i>
+        <div>Ingresa un rango de fechas y presiona Buscar</div>
+      </div>
+    </div>
   </div>
 </div>
 

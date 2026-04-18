@@ -1,6 +1,6 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import type { TicketCola, PagoAplicado, LineaCobro, ImpuestoCaja } from './caja.types';
+import type { TicketCola, PagoAplicado, LineaCobro, ImpuestoCaja, OrdenDespachada } from './caja.types';
 import { CAJA_QUEUE_KEY } from '../shared/services/pos-channel';
 
 const BASE = `${SERVER_ROUTE}/api`;
@@ -163,6 +163,51 @@ interface SucursalInfo {
 
 export const getSucursalInfo = (id: number) =>
   http.get<SucursalInfo>(`${BASE}/sucursales/${id}`);
+
+// ─── Órdenes cobradas (historial) ────────────────────────────────────────────
+
+interface RawOrdenCobrada {
+  id: number;
+  mesa_id: number | null;
+  numero_orden: number | null;
+  estado: string;
+  subtotal: string | number | null;
+  impuestos_total: string | number | null;
+  total: string | number | null;
+  fecha_apertura?: string;
+  fecha_cierre?: string;
+  agregado_en?: string;
+  mesa?: { id: number; nombre: string };
+}
+
+export const fetchOrdenesCobradas = async (
+  sucursalId: number,
+  desde: string,
+  hasta: string,
+): Promise<OrdenDespachada[]> => {
+  interface Paginado<T> { data: T[] }
+  const params = new URLSearchParams({
+    estado: 'cobrada',
+    sucursal_id: String(sucursalId),
+    fecha_cierre_desde: desde,
+    fecha_cierre_hasta: hasta,
+    sort: 'fecha_cierre:DESC',
+  });
+  const raw = await http.get<Paginado<RawOrdenCobrada> | RawOrdenCobrada[]>(
+    `${BASE}/ordenes?${params}`,
+  );
+  const list = Array.isArray(raw) ? raw : (raw?.data ?? []);
+  return list
+    .filter(o => o.id != null)
+    .map(o => ({
+      id:           o.id,
+      mesaLabel:    o.mesa?.nombre ?? `Mesa ${o.mesa_id ?? '?'}`,
+      numeroOrden:  o.numero_orden ?? o.id,
+      subtotal:     Number(o.subtotal ?? 0),
+      total:        Number(o.total ?? 0),
+      fechaCierre:  o.fecha_cierre ?? o.agregado_en ?? '',
+    }));
+};
 
 // ─── Impuestos ────────────────────────────────────────────────────────────────
 

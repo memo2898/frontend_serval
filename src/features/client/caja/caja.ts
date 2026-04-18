@@ -16,8 +16,9 @@ import {
   getQueue, removeFromQueue, confirmarCobro, getFormasPago, fetchLineasOrden,
   getSucursalInfo, getImpuestosCaja, tipoToFaIcon, fetchOrdenesEnCola,
   updateLineaCuenta, updateLineaCaja, crearLineaOrden, saveCuentasNombres,
+  fetchOrdenesCobradas,
 } from './caja.service';
-import type { TicketCola } from './caja.types';
+import type { TicketCola, OrdenDespachada, LineaCobro } from './caja.types';
 
 // ─── Orchestrador ────────────────────────────────────────────────────────────
 
@@ -29,6 +30,7 @@ class CajaPage {
   private _nombreSucursal = '';
   private _logoEmpresa   = '';
   private _cuentaNombreNum = 0;
+  private _historialOrdenes: OrdenDespachada[] = [];
 
   init(): void {
     this._applyTheme();
@@ -722,6 +724,212 @@ class CajaPage {
     setTimeout(() => this._loadQueue(), 400);
   }
 
+  // ─── Historial de órdenes despachadas ────────────────────────────────────
+
+  private _hoyISO(): string {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  private _abrirHistorial(): void {
+    const hoy = this._hoyISO();
+    const desdeEl = document.getElementById('historial-desde') as HTMLInputElement;
+    const hastaEl = document.getElementById('historial-hasta') as HTMLInputElement;
+    if (desdeEl && !desdeEl.value) desdeEl.value = hoy;
+    if (hastaEl && !hastaEl.value) hastaEl.value = hoy;
+    document.getElementById('modal-historial')!.style.display = 'flex';
+    if (desdeEl?.value && hastaEl?.value) this._buscarHistorial();
+  }
+
+  private _cerrarHistorial(): void {
+    document.getElementById('modal-historial')!.style.display = 'none';
+  }
+
+  private _buscarHistorial(): void {
+    const desdeEl = document.getElementById('historial-desde') as HTMLInputElement;
+    const hastaEl = document.getElementById('historial-hasta') as HTMLInputElement;
+    const desde = desdeEl?.value;
+    const hasta = hastaEl?.value;
+    if (!desde || !hasta) { return; }
+
+    const bodyEl   = document.getElementById('historial-body')!;
+    const accionEl = document.getElementById('historial-acciones')!;
+    const buscarBtn = document.getElementById('btn-buscar-historial') as HTMLButtonElement;
+
+    bodyEl.innerHTML = '<div class="historial-empty"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px;opacity:0.4"></i></div>';
+    accionEl.style.display = 'none';
+    buscarBtn.disabled = true;
+
+    const desdeStr = `${desde} 00:00:00`;
+    const hastaStr = `${hasta} 23:59:59`;
+
+    fetchOrdenesCobradas(this._sucursalId, desdeStr, hastaStr)
+      .then(ordenes => {
+        this._historialOrdenes = ordenes;
+        this._renderHistorial(ordenes);
+      })
+      .catch(() => {
+        bodyEl.innerHTML = '<div class="historial-empty">Error al cargar las órdenes. Intenta de nuevo.</div>';
+      })
+      .finally(() => { buscarBtn.disabled = false; });
+  }
+
+  private _renderHistorial(ordenes: OrdenDespachada[]): void {
+    const bodyEl    = document.getElementById('historial-body')!;
+    const accionEl  = document.getElementById('historial-acciones')!;
+    const countEl   = document.getElementById('historial-count')!;
+    const reimpBtn  = document.getElementById('btn-reimprimir-todas') as HTMLButtonElement;
+
+    if (!ordenes.length) {
+      bodyEl.innerHTML = '<div class="historial-empty"><i class="fa-solid fa-receipt" style="font-size:32px;opacity:0.2;margin-bottom:10px"></i><div>Sin órdenes en ese rango de fechas</div></div>';
+      accionEl.style.display = 'none';
+      return;
+    }
+
+    countEl.textContent = ordenes.length + (ordenes.length === 1 ? ' orden' : ' órdenes');
+    reimpBtn.disabled = false;
+    accionEl.style.display = 'flex';
+
+    bodyEl.innerHTML = ordenes.map(o => {
+      const hora = o.fechaCierre
+        ? new Date(o.fechaCierre).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' })
+        : '—';
+      const numStr = String(o.numeroOrden).padStart(4, '0');
+      return `<div class="historial-row" data-orden-id="${o.id}">
+        <span class="historial-row-num">#${numStr}</span>
+        <span class="historial-row-mesa">${o.mesaLabel}</span>
+        <span class="historial-row-hora">${hora}</span>
+        <span class="historial-row-total">${fmt(o.total)}</span>
+        <button class="btn-reimprimir-uno" data-reimprimir="${o.id}" title="Reimprimir esta orden">
+          <i class="fa-solid fa-print"></i> Reimprimir
+        </button>
+      </div>`;
+    }).join('');
+  }
+
+  private async _reimprimirOrdenHistorial(ordenId: number): Promise<void> {
+    const orden = this._historialOrdenes.find(o => o.id === ordenId);
+    if (!orden) return;
+    const lineas = await fetchLineasOrden(ordenId).catch(() => null);
+    if (!lineas) { toast('Error al cargar las líneas de la orden', 'error'); return; }
+    this._generarTicketHistorial([{ orden, lineas }]);
+  }
+
+  private async _reimprimirTodasHistorial(): Promise<void> {
+    if (!this._historialOrdenes.length) return;
+    const reimpBtn = document.getElementById('btn-reimprimir-todas') as HTMLButtonElement;
+    reimpBtn.disabled = true;
+    try {
+      const datos = await Promise.all(
+        this._historialOrdenes.map(async o => ({
+          orden:  o,
+          lineas: await fetchLineasOrden(o.id).catch(() => [] as LineaCobro[]),
+        })),
+      );
+      this._generarTicketHistorial(datos);
+    } finally {
+      reimpBtn.disabled = false;
+    }
+  }
+
+  private _generarTicketHistorial(items: Array<{ orden: OrdenDespachada; lineas: LineaCobro[] }>): void {
+    const { impuestos: tasas } = this._store.state;
+    const logoHtml    = this._logoEmpresa ? `<img src="${this._logoEmpresa}" alt="logo" style="max-width:80px;max-height:60px;object-fit:contain;display:block;margin:0 auto 6px;">` : '';
+    const empresaHtml = this._nombreEmpresa ? `<h1>${this._nombreEmpresa}</h1>` : '<h1>Serval</h1>';
+    const sucursalHtml = this._nombreSucursal ? `<div class="sub sucursal">${this._nombreSucursal}</div>` : '';
+    const ahora = new Date().toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' });
+
+    const ticketsCuerpo = items.map(({ orden, lineas }, idx) => {
+      const numOrden    = String(orden.numeroOrden).padStart(4, '0');
+      const cobradoEn   = orden.fechaCierre
+        ? new Date(orden.fechaCierre).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' })
+        : '—';
+
+      const maxCuenta  = lineas.reduce((mx, l) => Math.max(mx, l.cuenta_num || 1), 1);
+      const splitMode  = maxCuenta > 1;
+
+      const fmtLineasCuenta = (cuentaNum: number | null) => {
+        const src = cuentaNum == null ? lineas : lineas.filter(l => (l.cuenta_num || 1) === cuentaNum);
+        return src.map(l => `<tr>
+          <td>${l.cantidad}x</td>
+          <td>${l.nombre_articulo}${l.modificadores?.length ? '<br><small>' + l.modificadores.map(m => '└ ' + m.nombre_modificador).join(' · ') + '</small>' : ''}</td>
+          <td class="r">${fmt(l.subtotal_linea)}</td>
+        </tr>`).join('');
+      };
+
+      const totalesHTML = (sub: number) => {
+        if (tasas.length) {
+          const desglose = tasas.map(i => ({ nombre: i.nombre, porcentaje: i.porcentaje, monto: Math.round(sub * (i.porcentaje / 100) * 100) / 100 }));
+          const impTotal = Math.round(desglose.reduce((s, d) => s + d.monto, 0) * 100) / 100;
+          const total    = Math.round((sub + impTotal) * 100) / 100;
+          return `<tr class="sep"><td colspan="3"></td></tr>
+            <tr><td colspan="2">Subtotal</td><td class="r">${fmt(sub)}</td></tr>
+            ${desglose.map(d => `<tr><td colspan="2">${d.nombre} ${d.porcentaje}%</td><td class="r">${fmt(d.monto)}</td></tr>`).join('')}
+            <tr class="grand"><td colspan="2">TOTAL</td><td class="r">${fmt(total)}</td></tr>`;
+        }
+        return `<tr class="sep"><td colspan="3"></td></tr>
+          <tr><td colspan="2">Subtotal</td><td class="r">${fmt(sub)}</td></tr>
+          <tr class="grand"><td colspan="2">TOTAL</td><td class="r">${fmt(orden.total)}</td></tr>`;
+      };
+
+      let cuerpo = '';
+      if (splitMode) {
+        for (let n = 1; n <= maxCuenta; n++) {
+          const linCuenta = lineas.filter(l => (l.cuenta_num || 1) === n);
+          const subCuenta = Math.round(linCuenta.reduce((s, l) => s + l.subtotal_linea, 0) * 100) / 100;
+          cuerpo += `<tr class="cuenta-header"><td colspan="3">Cuenta ${n}</td></tr>`;
+          cuerpo += fmtLineasCuenta(n);
+          cuerpo += totalesHTML(subCuenta);
+          if (n < maxCuenta) cuerpo += '<tr class="cut"><td colspan="3">· · · · · · · · · · · · · · · · · ·</td></tr>';
+        }
+      } else {
+        cuerpo = fmtLineasCuenta(null) + totalesHTML(orden.subtotal);
+      }
+
+      const separator = idx < items.length - 1 ? '<div class="page-cut"></div>' : '';
+      return `<div class="ticket">
+        ${logoHtml}${empresaHtml}${sucursalHtml}
+        <div class="sub">Mesa ${orden.mesaLabel}</div>
+        <div class="sub" style="font-weight:bold;font-size:13px;">Orden #${numOrden}</div>
+        <div class="sub">Cobrado: ${cobradoEn}</div>
+        <div class="sub">Reimpresión: ${ahora}</div>
+        <div class="sep-line"></div>
+        <table><tbody>${cuerpo}</tbody></table>
+        <div class="footer">¡Gracias por su visita!</div>
+      </div>${separator}`;
+    }).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reimpresión</title>
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { font-family: 'Courier New', monospace; font-size: 12px; color: #000; width: 80mm; padding: 6mm; }
+      h1 { font-size: 18px; text-align: center; margin-bottom: 2px; }
+      .sub { text-align: center; font-size: 11px; margin-bottom: 4px; color: #555; }
+      .sub.sucursal { font-size: 13px; font-weight: bold; color: #222; margin-bottom: 6px; }
+      .sep-line { border-top: 1px dashed #000; margin: 6px 0; }
+      table { width: 100%; border-collapse: collapse; }
+      td { padding: 2px 0; vertical-align: top; }
+      td:first-child { width: 26px; }
+      td.r { text-align: right; white-space: nowrap; }
+      .cuenta-header td { font-weight: bold; padding-top: 6px; border-bottom: 1px solid #000; }
+      tr.sep td { padding: 3px 0; border-top: 1px dashed #aaa; }
+      tr.grand td { font-weight: bold; font-size: 14px; padding-top: 4px; border-top: 2px solid #000; }
+      tr.cut td { text-align: center; padding: 6px 0; color: #aaa; }
+      small { font-size: 10px; color: #555; }
+      .footer { text-align: center; margin-top: 10px; font-size: 11px; color: #555; }
+      .page-cut { border-top: 2px dashed #aaa; margin: 12px 0; page-break-after: always; }
+      @media print { body { width: 100%; } .page-cut { page-break-after: always; } }
+    </style></head><body>${ticketsCuerpo}</body></html>`;
+
+    const w = window.open('', '_blank', 'width=400,height=700');
+    if (!w) { toast('Permite las ventanas emergentes para imprimir'); return; }
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); w.close(); }, 400);
+  }
+
   // ─── Wiring ───────────────────────────────────────────────────────────────
 
   // ─── Abrir modal de división ─────────────────────────────────────────────────
@@ -916,6 +1124,25 @@ class CajaPage {
     document.getElementById('btn-exit')?.addEventListener('click', () => {
       posSocket.disconnect();
       doLogout();
+    });
+
+    // Historial
+    document.getElementById('btn-historial')?.addEventListener('click', () => this._abrirHistorial());
+    document.getElementById('btn-cerrar-historial')?.addEventListener('click', () => this._cerrarHistorial());
+    document.getElementById('btn-buscar-historial')?.addEventListener('click', () => this._buscarHistorial());
+    document.getElementById('btn-reimprimir-todas')?.addEventListener('click', () => this._reimprimirTodasHistorial());
+    document.getElementById('historial-body')?.addEventListener('click', e => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-reimprimir]');
+      if (btn) this._reimprimirOrdenHistorial(Number(btn.dataset.reimprimir));
+    });
+    document.getElementById('modal-historial')?.addEventListener('click', e => {
+      if ((e.target as HTMLElement).id === 'modal-historial') this._cerrarHistorial();
+    });
+    document.getElementById('historial-desde')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') this._buscarHistorial();
+    });
+    document.getElementById('historial-hasta')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') this._buscarHistorial();
     });
 
     // Doble click en tab de cuenta → renombrar

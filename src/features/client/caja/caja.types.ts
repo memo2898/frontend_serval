@@ -65,6 +65,15 @@ export interface ImpuestoCaja {
   porcentaje: number;
 }
 
+export interface OrdenDespachada {
+  id: number;
+  mesaLabel: string;
+  numeroOrden: number;
+  subtotal: number;
+  total: number;
+  fechaCierre: string;
+}
+
 export interface CajaState {
   queue: TicketCola[];
   // Ticket activo
