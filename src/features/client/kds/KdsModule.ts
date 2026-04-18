@@ -320,6 +320,7 @@ export class KdsModule {
             <span class="comanda-num">${c.numero}</span>
             <span class="comanda-mesa">${c.tipo === 'mesa' ? 'Mesa ' + c.mesa : ''}</span>
             <span class="comanda-tipo tipo-${c.tipo}">${TIPO_LABEL[c.tipo]}</span>
+            <span class="comanda-count">${c.lineas.length} plato${c.lineas.length !== 1 ? 's' : ''}</span>
             <div class="comanda-spacer"></div>
             <span class="timer-wrap">
               <span class="timer-label">⏱</span>
@@ -328,20 +329,22 @@ export class KdsModule {
               <span class="timer timer-prep" data-iniciado="${c.iniciado ?? ''}">${tiempoStr(prepMs)}</span>` : ''}
             </span>
           </div>
-          <div class="comanda-lineas">
-            ${c.lineas.map(l => `
-              <div class="linea-kds">
-                <div class="linea-check ${l.done ? 'checked' : ''} ${!enPrep ? 'disabled' : ''}"
-                  data-cmd="${c.kds_orden_id}" data-linea="${l.kds_orden_id}"></div>
-                <div class="linea-info">
-                  <div class="linea-nombre ${l.done ? 'done' : ''}">
-                    <span class="linea-qty">${l.qty}x</span>${l.nombre}
+          <div class="comanda-lineas-wrap">
+            <div class="comanda-lineas">
+              ${[...c.lineas].sort((a, b) => Number(a.done) - Number(b.done)).map(l => `
+                <div class="linea-kds">
+                  <div class="linea-check ${l.done ? 'checked' : ''} ${!enPrep ? 'disabled' : ''}"
+                    data-cmd="${c.kds_orden_id}" data-linea="${l.kds_orden_id}"></div>
+                  <div class="linea-info">
+                    <div class="linea-nombre ${l.done ? 'done' : ''}">
+                      <span class="linea-qty">${l.qty}x</span>${l.nombre}
+                    </div>
+                    ${l.mods ? `<div class="linea-mods">${l.mods}</div>` : ''}
+                    ${l.nota ? `<button class="btn-nota-kds" data-nota-kds="${l.nota.replace(/"/g,'&quot;')}"><i class="fa-solid fa-comment-dots"></i> Nota</button>` : ''}
                   </div>
-                  ${l.mods ? `<div class="linea-mods">${l.mods}</div>` : ''}
-                  ${l.nota ? `<button class="btn-nota-kds" data-nota-kds="${l.nota.replace(/"/g,'&quot;')}"><i class="fa-solid fa-comment-dots"></i> Nota</button>` : ''}
                 </div>
-              </div>
-            `).join('')}
+              `).join('')}
+            </div>
           </div>
           <div class="comanda-footer">
             <button class="btn-accion btn-reimprimir" data-reimprimir="${c.kds_orden_id}">⎙</button>
@@ -351,6 +354,18 @@ export class KdsModule {
         </div>
       `;
     }).join('');
+
+    // Activar fade en wraps cuyo contenido desborda
+    grid.querySelectorAll<HTMLElement>('.comanda-lineas-wrap').forEach(wrap => {
+      const lineas = wrap.querySelector<HTMLElement>('.comanda-lineas');
+      if (!lineas) return;
+      const update = () => wrap.classList.toggle(
+        'has-more',
+        lineas.scrollHeight > lineas.clientHeight + 4 && lineas.scrollTop + lineas.clientHeight < lineas.scrollHeight - 4,
+      );
+      update();
+      lineas.addEventListener('scroll', update, { passive: true });
+    });
 
   }
 
