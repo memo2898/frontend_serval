@@ -24,6 +24,8 @@ import {
 } from './mesas.service';
 import { fmt } from '../shared/utils/format';
 import { notifStore } from '../shared/services/notificaciones.store';
+import { SplitModal } from '../shared/components/split-modal';
+import type { SplitConfirmResult } from '../shared/components/split-modal';
 
 // ─── Orchestrador ────────────────────────────────────────────────────────────
 
@@ -54,6 +56,8 @@ class MesasPage {
       toast(`${mesasIds.length} mesa(s) unidas ✓`, 'success');
     },
   );
+
+  private readonly _splitModal = new SplitModal();
 
   private _sucursalId   = 0;
   private _usuarioId    = 0;
@@ -785,18 +789,7 @@ class MesasPage {
     // ── TPV: acciones ──
     document.querySelector('[data-enviar-cocina]')?.addEventListener('click', () => this._enviarCocina());
     document.querySelector('[data-pedir-cuenta]')?.addEventListener('click', () => this._pedirCuenta());
-    document.getElementById('btn-split')?.addEventListener('click', () => {
-      const { lineas, ordenId } = this._store.state;
-      this._store.toggleSplit();
-      // Si se desactivó split, limpiar cuenta_num en BD
-      if (!this._store.state.splitMode) {
-        lineas.forEach(l => {
-          if (l.id > 0) updateLinea(ordenId ?? 0, l.id, { cuenta_num: 1 }).catch(() => {});
-        });
-      }
-      this._emitirSplitSiPorCobrar();
-      this._tpv.renderOrden();
-    });
+    document.getElementById('btn-split')?.addEventListener('click', () => this._openSplitModal());
 
     // ── Modal modificadores ──
     document.getElementById('modal-grupos')?.addEventListener('click', e => {
@@ -1136,6 +1129,48 @@ class MesasPage {
       this._renderNotifDrawer();
       this._floorPlan.renderMesas();
     });
+  }
+
+  // ─── Modal de división (staged editing) ──────────────────────────────────────
+
+  private _openSplitModal(): void {
+    const { mesaLabel, lineas, numCuentas, cuentasNombres, numComensales, impuestos } = this._store.state;
+
+    this._splitModal.open({
+      mesaLabel: mesaLabel ?? '',
+      lineas: lineas.map(l => ({ ...l, modificadores: (l.modificadores ?? []).map(m => ({ nombre_modificador: m.nombre_modificador })) })),
+      numCuentas,
+      cuentasNombres: { ...cuentasNombres },
+      maxCuentas: Math.max(numComensales || 2, 2),
+      impuestos: impuestos.map(i => ({ nombre: i.impuesto?.nombre ?? '', porcentaje: Number(i.impuesto?.porcentaje ?? 0) })),
+      onConfirm: (result: SplitConfirmResult) => this._aplicarSplitModalResult(result),
+      onCancel: () => {},
+    });
+  }
+
+  private _aplicarSplitModalResult(result: SplitConfirmResult): void {
+    const { ordenId, mesaId, lineas } = this._store.state;
+
+    // 1. Aplicar al store (actualiza lineas, splitMode, numCuentas, cuentasNombres)
+    this._store.applySplitResult(result);
+
+    // 2. Persistir en BD solo las líneas cuyo cuenta_num cambió
+    result.lineas.forEach(r => {
+      const orig = lineas.find(l => l.id === r.id);
+      if (orig && orig.cuenta_num !== r.cuenta_num && r.id > 0) {
+        updateLinea(ordenId ?? 0, r.id, { cuenta_num: r.cuenta_num })
+          .catch(() => {});
+      }
+    });
+
+    // 3. Emitir por socket/BroadcastChannel si la orden ya es por_cobrar
+    this._emitirSplitSiPorCobrar();
+
+    // 4. Re-renderizar TPV
+    this._tpv.renderOrden();
+
+    // Emitir mesa:estado_cambio para que otros vean el floor plan actualizado (si aplica)
+    if (mesaId) posSocket.emitUsuarioEntro(mesaId);
   }
 
   // ─── Emisión split en tiempo real ────────────────────────────────────────────

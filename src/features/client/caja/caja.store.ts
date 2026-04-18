@@ -191,16 +191,14 @@ export class CajaStore {
 
   getTotalActivo(): number {
     if (this._state.splitMode) return this.getTotalCuenta(this._state.cuentaActivaCobro).total;
-    // Recalcular desde las tasas reales para no depender de orden.total (puede estar desactualizado)
-    if (this._state.impuestos.length && this._state.orden) {
-      const sub = this._state.orden.subtotal ?? 0;
-      const imp = Math.round(
-        this._state.impuestos.reduce((s, i) => s + Math.round(sub * (i.porcentaje / 100) * 100) / 100, 0)
-        * 100
-      ) / 100;
-      return Math.round((sub + imp) * 100) / 100;
-    }
-    return this._state.orden?.total ?? 0;
+    // Siempre calcular desde el subtotal de líneas + impuestos configurados.
+    // No depender de orden.total de la BD (no se actualiza automáticamente).
+    const sub = this._state.orden?.subtotal ?? 0;
+    const imp = Math.round(
+      this._state.impuestos.reduce((s, i) => s + Math.round(sub * (i.porcentaje / 100) * 100) / 100, 0)
+      * 100
+    ) / 100;
+    return Math.round((sub + imp) * 100) / 100;
   }
 
   getPagosActivos(): PagoAplicado[] {
@@ -217,6 +215,24 @@ export class CajaStore {
   getCambio():    number { return Math.max(0, this.getTotalPagado() - this.getTotalActivo()); }
 
   // ─── Reset ───────────────────────────────────────────────────────────────────
+
+  /** Aplica el resultado de una edición de split desde el modal (staged → confirmado). */
+  applySplitResult(result: { lineas: Array<{ id: number; cuenta_num: number }>; numCuentas: number; cuentasNombres: Record<number, string> }): void {
+    result.lineas.forEach(r => {
+      const l = this._state.lineas.find(l => l.id === r.id);
+      if (l) l.cuenta_num = r.cuenta_num;
+    });
+    const splitMode = result.numCuentas > 1;
+    this._state.numCuentas      = result.numCuentas;
+    this._state.splitMode       = splitMode;
+    this._state.cuentasNombres  = { ...result.cuentasNombres };
+    if (!splitMode) {
+      this._state.cuentaActivaCobro = 1;
+      this._state.cuentasCobradas   = new Set();
+      this._state.pagos             = [];
+    }
+    this._notify();
+  }
 
   resetTicket(): void {
     this._state.ticketId = null; this._state.mesaId = null; this._state.mesaLabel = '';

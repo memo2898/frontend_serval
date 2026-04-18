@@ -324,6 +324,22 @@ export class MesasStore {
     this._notify();
   }
 
+  /** Aplica el resultado de una edición de split desde el modal (staged → confirmado). */
+  applySplitResult(result: { lineas: Array<{ id: number; cuenta_num: number }>; numCuentas: number; cuentasNombres: Record<number, string> }): void {
+    result.lineas.forEach(r => {
+      const l = this._state.lineas.find(l => l.id === r.id);
+      if (l) l.cuenta_num = r.cuenta_num;
+    });
+    const splitMode = result.numCuentas > 1;
+    this._state.numCuentas     = result.numCuentas;
+    this._state.splitMode      = splitMode;
+    this._state.cuentasNombres = { ...result.cuentasNombres };
+    if (this._state.ordenId) {
+      saveCuentasNombres(this._state.ordenId, splitMode ? result.cuentasNombres : {});
+    }
+    this._notify();
+  }
+
   toggleSplit(): void {
     this._state.splitMode = !this._state.splitMode;
     if (!this._state.splitMode) {

@@ -3,6 +3,7 @@ import type { GruposModificadores, GruposModificadoresGridRow } from '../gruposm
 export interface GruposModificadoresHandlers {
   onEdit: (gruposModificadores: GruposModificadores) => void;
   onDelete: (gruposModificadores: GruposModificadores) => void;
+  onModificadores: (gruposModificadores: GruposModificadores) => void;
 }
 
 const actionButtonStyles = `
@@ -33,6 +34,9 @@ const actionButtonStyles = `
     .btn-delete { color: #dc2626; border-color: #fee2e2; background: #fef2f2; }
     .btn-delete:hover   { background: #fee2e2; border-color: #fecaca; }
     .btn-delete:active  { background: #fecaca; }
+    .btn-modificadores { color: #7c3aed; border-color: #ede9fe; background: #f5f3ff; }
+    .btn-modificadores:hover   { background: #ede9fe; border-color: #c4b5fd; }
+    .btn-modificadores:active  { background: #ddd6fe; }
     @media (max-width: 768px) {
       .btn-action span { display: none; }
       .btn-action { padding: 8px; min-width: 36px; }
@@ -54,6 +58,21 @@ export const toGruposModificadoresGridRow = (gruposModificadores: GruposModifica
   actualizado_en: gruposModificadores.actualizado_en,
   actualizado_por: gruposModificadores.actualizado_por,
   actions: [
+    {
+      content: `
+        ${actionButtonStyles}
+        <button class="btn-action btn-modificadores" title="Modificadores">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            <path d="M4.93 4.93a10 10 0 0 0 0 14.14"/>
+          </svg>
+          <span>Modificadores</span>
+        </button>
+      `,
+      event: 'click',
+      funct: () => handlers.onModificadores(gruposModificadores),
+    },
     {
       content: `
         ${actionButtonStyles}

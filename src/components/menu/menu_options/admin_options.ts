@@ -67,7 +67,7 @@ export const ADMIN_OPTIONS: MenuItem[] = [
     href: '#',
     submenu: [
       { text: 'Grupos Modificadores',          href: '/gruposmodificadores' },
-      { text: 'Modificadores',                 href: '/modificadores' },
+    //  { text: 'Modificadores',                 href: '/modificadores' },
      // { text: 'Artículo Grupos Modificadores', href: '/articulogruposmodificadores' },
     ],
   },

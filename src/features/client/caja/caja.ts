@@ -2,6 +2,9 @@ import { checkRoleAccess } from '@/global/guards_auth';
 import { doLogout } from '@/global/logOut';
 const _allowed = checkRoleAccess(['cajero']);
 
+import { SplitModal } from '../shared/components/split-modal';
+import type { SplitConfirmResult } from '../shared/components/split-modal';
+
 import { getSucursalId, getUser, getContext } from '@/global/session.service';
 import { route } from '@/global/saveRoutes';
 import { fmt, tiempoDesde } from '../shared/utils/format';
@@ -19,13 +22,12 @@ import type { TicketCola } from './caja.types';
 // ─── Orchestrador ────────────────────────────────────────────────────────────
 
 class CajaPage {
-  private readonly _store = new CajaStore();
-  private _sucursalId = 0;
+  private readonly _store      = new CajaStore();
+  private readonly _splitModal = new SplitModal();
+  private _sucursalId    = 0;
   private _nombreEmpresa = '';
   private _nombreSucursal = '';
-  private _logoEmpresa = '';
-  private _cuentaNombreNum = 0;
-  private _longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  private _logoEmpresa   = '';
 
   init(): void {
     this._applyTheme();
@@ -61,7 +63,7 @@ class CajaPage {
           this._setMontoPago();
         }
       })
-      .catch(() => {});
+      .catch(err => console.warn('[Caja] No se cargaron impuestos:', err));
 
     this._loadFormasPago();
     this._loadQueue();
@@ -257,7 +259,7 @@ class CajaPage {
       const tasas  = this._store.state.impuestos;
       const total  = tasas.length
         ? Math.round((sub + tasas.reduce((s, i) => s + Math.round(sub * (i.porcentaje / 100) * 100) / 100, 0)) * 100) / 100
-        : (t.orden?.total ?? 0);
+        : (t.orden?.total || sub);
       const items  = t.lineas?.length ?? 0;
       const mins   = Math.floor((Date.now() - t.timestamp) / 60000);
       const tc     = mins >= 20 ? 'late' : mins >= 10 ? 'warn' : 'normal';
@@ -414,26 +416,18 @@ class CajaPage {
       ).join('');
     } else {
       subtotal = orden?.subtotal ?? 0;
-      if (impuestos.length) {
-        // Recalcular desde las tasas reales (no confiar en orden.total que puede estar desactualizado)
-        const desglose = impuestos.map(i => ({
-          nombre:     i.nombre,
-          porcentaje: i.porcentaje,
-          monto:      Math.round(subtotal * (i.porcentaje / 100) * 100) / 100,
-        }));
-        impuestoTotal = Math.round(desglose.reduce((s, d) => s + d.monto, 0) * 100) / 100;
-        total         = Math.round((subtotal + impuestoTotal) * 100) / 100;
-        desgloseHtml  = desglose.map(d =>
-          `<div class="cobro-total-row"><span>${d.nombre} ${d.porcentaje}%</span><span class="cobro-total-val">${fmt(d.monto)}</span></div>`
-        ).join('');
-      } else {
-        // Sin tasas cargadas aún: usar valores del ticket
-        impuestoTotal = orden?.impuestos_total ?? 0;
-        total         = orden?.total           ?? 0;
-        desgloseHtml  = impuestoTotal
-          ? `<div class="cobro-total-row"><span>Impuestos</span><span class="cobro-total-val">${fmt(impuestoTotal)}</span></div>`
-          : '';
-      }
+      // Calcular siempre desde el subtotal real de líneas.
+      // Si no hay tasas configuradas, el total es el subtotal (sin impuestos).
+      const desglose = impuestos.map(i => ({
+        nombre:     i.nombre,
+        porcentaje: i.porcentaje,
+        monto:      Math.round(subtotal * (i.porcentaje / 100) * 100) / 100,
+      }));
+      impuestoTotal = Math.round(desglose.reduce((s, d) => s + d.monto, 0) * 100) / 100;
+      total         = Math.round((subtotal + impuestoTotal) * 100) / 100;
+      desgloseHtml  = desglose.map(d =>
+        `<div class="cobro-total-row"><span>${d.nombre} ${d.porcentaje}%</span><span class="cobro-total-val">${fmt(d.monto)}</span></div>`
+      ).join('');
     }
 
     const nombre = splitMode ? (cuentasNombres[cuentaActivaCobro] ?? '') : '';
@@ -668,7 +662,10 @@ class CajaPage {
     if (!mesaId || !ticketId) return;
 
     confirmarCobro(ticketId, pagos)
-      .catch(() => toast('Advertencia: error al sincronizar cobro con el servidor'));
+      .catch((err: Error) => {
+        console.error('[Caja] Error al cobrar:', err?.message ?? err);
+        toast('Error al cobrar: ' + (err?.message ?? 'ver consola'), 'error');
+      });
 
     removeFromQueue(mesaId);
     mesasChannel.send({ tipo: 'mesa_liberada', mesaId });
@@ -691,33 +688,69 @@ class CajaPage {
 
   // ─── Wiring ───────────────────────────────────────────────────────────────
 
-  // ─── Modal nombre de cuenta (caja) ───────────────────────────────────────────
+  // ─── Abrir modal de división ─────────────────────────────────────────────────
 
-  private _abrirModalCuentaNombreCaja(num: number): void {
-    this._cuentaNombreNum = num;
-    const titulo = document.getElementById('cuenta-nombre-caja-titulo');
-    if (titulo) titulo.textContent = `Cuenta ${num}`;
-    const input = document.getElementById('cuenta-nombre-caja-input') as HTMLInputElement | null;
-    if (input) input.value = this._store.state.cuentasNombres[num] ?? '';
-    document.getElementById('modal-cuenta-nombre-caja')!.style.display = 'flex';
-    setTimeout(() => input?.focus(), 50);
+  private _openSplitModal(): void {
+    const { ticketId, lineas, numCuentas, cuentasNombres, numComensales, impuestos, mesaLabel } = this._store.state;
+    if (!ticketId) return;
+
+    this._splitModal.open({
+      mesaLabel: mesaLabel ?? '',
+      lineas: lineas.map(l => ({ ...l, modificadores: (l.modificadores ?? []).map(m => ({ nombre_modificador: m.nombre_modificador })) })),
+      numCuentas,
+      cuentasNombres: { ...cuentasNombres },
+      maxCuentas: Math.max(numComensales || 2, 2),
+      impuestos,
+      onConfirm: (result: SplitConfirmResult) => this._aplicarSplitModalResult(result),
+      onCancel: () => {},
+    });
   }
 
-  private _cerrarModalCuentaNombreCaja(): void {
-    document.getElementById('modal-cuenta-nombre-caja')!.style.display = 'none';
-  }
+  private _aplicarSplitModalResult(result: SplitConfirmResult): void {
+    const { ticketId, lineas } = this._store.state;
+    if (!ticketId) return;
 
-  private _confirmarCuentaNombreCaja(): void {
-    const input = document.getElementById('cuenta-nombre-caja-input') as HTMLInputElement | null;
-    const nombre = input?.value ?? '';
-    this._store.setCuentaNombre(this._cuentaNombreNum, nombre);
-    const { ticketId, cuentasNombres } = this._store.state;
-    if (ticketId) saveCuentasNombres(ticketId, cuentasNombres);
-    this._cerrarModalCuentaNombreCaja();
+    // 1. Aplicar al store (actualiza lineas, splitMode, numCuentas, cuentasNombres)
+    this._store.applySplitResult(result);
+
+    // 2. Persistir en BD: solo las líneas cuyo cuenta_num cambió
+    const original = lineas;
+    result.lineas.forEach(r => {
+      const orig = original.find(l => l.id === r.id);
+      if (orig && orig.cuenta_num !== r.cuenta_num) {
+        updateLineaCuenta(r.id, r.cuenta_num).catch(() => {});
+      }
+    });
+
+    // 3. Guardar nombres en localStorage
+    saveCuentasNombres(ticketId, result.cuentasNombres);
+
+    // 4. Actualizar cola local + BroadcastChannel
+    this._actualizarQueueConSplitActual();
+
+    // 5. Emitir socket para sincronizar con el camarero
+    const { splitMode, numCuentas: nc, cuentasNombres: cn, lineas: ls, mesaId } = this._store.state;
+    if (mesaId) {
+      posSocket.emitSplitActualizado({
+        orden_id:        ticketId,
+        mesa_id:         mesaId,
+        split_mode:      splitMode,
+        num_cuentas:     nc,
+        cuentas_nombres: { ...cn },
+        lineas:          ls.map(l => ({ id: l.id, cuenta_num: l.cuenta_num || 1 })),
+      });
+    }
+
+    // 6. Actualizar visual del botón
+    document.getElementById('btn-split-caja')?.classList.toggle('active', splitMode);
+
+    // 7. Re-renderizar
     this._renderCuentasTabs();
     this._renderCobroLineas();
+    this._renderCobroTotales();
+    this._renderCobro();
+    this._setMontoPago();
     this._renderPrintButtons();
-    this._actualizarQueueConSplitActual();
   }
 
   /** Persiste el split actual del ticket activo en la cola local y emite por BroadcastChannel. */
@@ -801,65 +834,14 @@ class CajaPage {
       this._imprimirCuenta(cn != null ? Number(cn) : undefined);
     });
 
-    // Botón dividir cuenta en caja
-    document.getElementById('btn-split-caja')?.addEventListener('click', () => {
-      if (!this._store.state.ticketId) return;
-      this._store.toggleSplit();
-      // Si se activó, actualizar cuenta_num = 1 en BD para todas las líneas (limpieza)
-      const { splitMode, lineas } = this._store.state;
-      if (!splitMode) {
-        lineas.forEach(l => updateLineaCuenta(l.id, 1).catch(() => {}));
-      }
-      document.getElementById('btn-split-caja')?.classList.toggle('active', splitMode);
-      this._renderCuentasTabs();
-      this._renderCobroLineas();
-      this._renderCobroTotales();
-      this._renderCobro();
-      this._setMontoPago();
-      this._renderPrintButtons();
-      this._actualizarQueueConSplitActual();
-    });
+    // Botón dividir cuenta en caja → abre el modal de edición staged
+    document.getElementById('btn-split-caja')?.addEventListener('click', () => this._openSplitModal());
 
-    // Ciclar cuenta desde caja (click en badge de cobro-lineas)
+    // Badges en cobro-lineas son indicadores de solo lectura — la edición se hace en el modal
+    // (click en badge abre el modal directamente para mayor comodidad)
     document.getElementById('cobro-lineas')?.addEventListener('click', e => {
       const badge = (e.target as HTMLElement).closest<HTMLElement>('[data-ciclar-caja]');
-      if (!badge) return;
-      const lineaId = Number(badge.dataset.ciclarCaja);
-      this._store.ciclarCuenta(lineaId);
-      updateLineaCuenta(lineaId, this._store.state.lineas.find(l => l.id === lineaId)?.cuenta_num ?? 1).catch(() => {});
-      this._renderCuentasTabs();
-      this._renderCobroLineas();
-      this._renderCobroTotales();
-      this._renderCobro();
-      this._setMontoPago();
-      this._renderPrintButtons();
-      this._actualizarQueueConSplitActual();
-    });
-
-    // Long-press en badge para nombrar cuenta (caja)
-    document.getElementById('cobro-lineas')?.addEventListener('pointerdown', e => {
-      const badge = (e.target as HTMLElement).closest<HTMLElement>('[data-ciclar-caja]');
-      if (!badge) return;
-      this._longPressTimer = setTimeout(() => {
-        this._longPressTimer = null;
-        const lineaId = Number(badge.dataset.ciclarCaja);
-        const linea = this._store.state.lineas.find(l => l.id === lineaId);
-        if (linea) this._abrirModalCuentaNombreCaja(linea.cuenta_num || 1);
-      }, 500);
-    });
-    document.getElementById('cobro-lineas')?.addEventListener('pointerup', () => {
-      if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
-    });
-    document.getElementById('cobro-lineas')?.addEventListener('pointermove', () => {
-      if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
-    });
-
-    // Modal nombre de cuenta (caja)
-    document.getElementById('btn-cerrar-cuenta-nombre-caja')?.addEventListener('click', () => this._cerrarModalCuentaNombreCaja());
-    document.getElementById('btn-confirmar-cuenta-nombre-caja')?.addEventListener('click', () => this._confirmarCuentaNombreCaja());
-    document.getElementById('cuenta-nombre-caja-input')?.addEventListener('keydown', e => {
-      if (e.key === 'Enter') this._confirmarCuentaNombreCaja();
-      if (e.key === 'Escape') this._cerrarModalCuentaNombreCaja();
+      if (badge) this._openSplitModal();
     });
 
     document.getElementById('btn-exit')?.addEventListener('click', () => {
