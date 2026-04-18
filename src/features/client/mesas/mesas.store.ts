@@ -335,6 +335,14 @@ export class MesasStore {
     this._notify();
   }
 
+  /** Restaura splitMode y numCuentas a partir de los cuenta_num de las líneas actuales. */
+  restoreSplitFromLineas(): void {
+    const max = this._state.lineas.reduce((mx, l) => Math.max(mx, l.cuenta_num || 1), 1);
+    this._state.splitMode  = max > 1;
+    this._state.numCuentas = max > 1 ? max : 1;
+    this._notify();
+  }
+
   setNota(nota: string): void {
     if (this._state.orden) this._state.orden.notas = nota;
   }

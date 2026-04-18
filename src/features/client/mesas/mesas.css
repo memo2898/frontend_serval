@@ -588,5 +588,14 @@
 .unir-mesa-btn.selected { background: rgba(197,98,0,0.10); border-color: var(--orange); color: var(--orange); }
 .unir-mesa-nombre { font-size: 16px; font-weight: 700; }
 
-/* Mini-menú acción mesa */
+/* Mini-menú acción mesa / cuenta */
 .accion-menu { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+
+.btn-mover-mesa-item {
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding: 12px 14px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text); cursor: pointer; font-family: inherit;
+  transition: all 0.15s; width: 100%; text-align: left; gap: 2px;
+}
+.btn-mover-mesa-item:hover { background: var(--surface3); border-color: var(--accent); }

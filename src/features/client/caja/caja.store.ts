@@ -119,6 +119,43 @@ export class CajaStore {
     this._notify();
   }
 
+  toggleSplit(): void {
+    this._state.splitMode = !this._state.splitMode;
+    if (!this._state.splitMode) {
+      this._state.lineas.forEach(l => { l.cuenta_num = 1; });
+      this._state.numCuentas = 1;
+      this._state.cuentaActivaCobro = 1;
+      this._state.cuentasCobradas = new Set();
+      this._state.pagos = [];
+    }
+    this._notify();
+  }
+
+  /** Cicla el cuenta_num de una línea. Devuelve el nuevo cuenta_num. */
+  ciclarCuenta(lineaId: number): number {
+    const linea = this._state.lineas.find(l => l.id === lineaId);
+    if (!linea) return 1;
+    const MAX = Math.max(this._state.numComensales, 2);
+    const next = (linea.cuenta_num || 1) + 1;
+    if (next > this._state.numCuentas && this._state.numCuentas < MAX) {
+      this._state.numCuentas = next;
+      linea.cuenta_num = next;
+    } else {
+      linea.cuenta_num = next > this._state.numCuentas ? 1 : next;
+    }
+    this._notify();
+    return linea.cuenta_num;
+  }
+
+  setCuentaNombre(num: number, nombre: string): void {
+    if (nombre.trim()) {
+      this._state.cuentasNombres[num] = nombre.trim();
+    } else {
+      delete this._state.cuentasNombres[num];
+    }
+    this._notify();
+  }
+
   confirmarCuentaActiva(): 'siguiente' | 'fin' {
     this._state.cuentasCobradas.add(this._state.cuentaActivaCobro);
     const siguiente = Array.from({ length: this._state.numCuentas }, (_, i) => i + 1)

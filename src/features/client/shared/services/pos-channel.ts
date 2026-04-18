@@ -2,6 +2,7 @@
 
 export type PosMessageCaja =
   | { tipo: 'nueva_orden'; ticket: unknown }
+  | { tipo: 'split_actualizado'; ordenId: number; splitMode: boolean; numCuentas: number; cuentasNombres: Record<number, string>; lineas: Array<{ id: number; cuenta_num: number }> }
 
 export type PosMessageMesas =
   | { tipo: 'mesa_liberada'; mesaId: number }

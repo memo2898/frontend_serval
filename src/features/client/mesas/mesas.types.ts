@@ -78,7 +78,7 @@ export interface GrupoModificador {
 // ─── Orden ───────────────────────────────────────────────────────────────────
 
 export type EstadoOrden =
-  | 'abierta' | 'en_preparacion' | 'lista' | 'cobrada' | 'cancelada' | 'anulada';
+  | 'abierta' | 'en_preparacion' | 'lista' | 'por_cobrar' | 'cobrada' | 'cancelada' | 'anulada';
 
 export interface Orden {
   id: number;
@@ -240,6 +240,15 @@ export interface CajaOrdenAnuladaPayload {
   orden_id: number;
   mesa_id: number;
   motivo?: string;
+}
+
+export interface OrdenSplitActualizadoPayload {
+  orden_id: number;
+  mesa_id: number;
+  split_mode: boolean;
+  num_cuentas: number;
+  cuentas_nombres: Record<number, string>;
+  lineas: Array<{ id: number; cuenta_num: number }>;
 }
 
 export interface ErrorEventoPayload {

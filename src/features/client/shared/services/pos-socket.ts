@@ -15,6 +15,7 @@ import type {
   ErrorEventoPayload,
   OrdenLineasConfirmadasPayload,
   OrdenLineaSincronizadaPayload,
+  OrdenSplitActualizadoPayload,
 } from '../../mesas/mesas.types';
 
 // ─── Tipos de eventos ─────────────────────────────────────────────────────────
@@ -26,6 +27,7 @@ interface ClientToServerEvents {
   'mesa:mesas_unidas':         (data: { principal_id: number; mesas_ids: number[] }) => void;
   'orden:enviar_a_cocina':     (data: { orden_id: number; linea_ids: number[] }) => void;
   'orden:linea_sincronizada':  (data: OrdenLineaSincronizadaPayload) => void;
+  'orden:split_actualizado':   (data: OrdenSplitActualizadoPayload) => void;
   'kds:linea_en_preparacion':  (data: { kds_orden_id: number }) => void;
   'kds:linea_lista':           (data: { kds_orden_id: number }) => void;
   'kds:batch_lista':           (data: { kds_orden_ids: number[] }) => void;
@@ -44,6 +46,7 @@ interface ServerToClientEvents {
   'kds:lineas_entregadas':     (data: KdsLineasEntregadasPayload) => void;
   'orden:lineas_confirmadas':  (data: OrdenLineasConfirmadasPayload) => void;
   'orden:linea_sincronizada':  (data: OrdenLineaSincronizadaPayload) => void;
+  'orden:split_actualizado':   (data: OrdenSplitActualizadoPayload) => void;
   'caja:orden_lista_cobrar':   (data: CajaOrdenListaCobrarPayload) => void;
   'caja:pago_registrado':      (data: CajaPagoRegistradoPayload) => void;
   'caja:turno_abierto':        (data: CajaTurnoPayload) => void;
@@ -132,6 +135,10 @@ export class PosSocketService {
     this._socket?.emit('kds:lineas_entregadas', { orden_linea_ids: ordenLineaIds });
   }
 
+  emitSplitActualizado(data: OrdenSplitActualizadoPayload): void {
+    this._socket?.emit('orden:split_actualizado', data);
+  }
+
   // ─── Suscripciones (Servidor → Cliente) ──────────────────────────────────
   // Cada método devuelve una función de cleanup para desuscribirse.
 
@@ -213,6 +220,11 @@ export class PosSocketService {
   onOrdenLineaSincronizada(cb: (data: OrdenLineaSincronizadaPayload) => void): () => void {
     this._socket?.on('orden:linea_sincronizada', cb);
     return () => this._socket?.off('orden:linea_sincronizada', cb);
+  }
+
+  onOrdenSplitActualizado(cb: (data: OrdenSplitActualizadoPayload) => void): () => void {
+    this._socket?.on('orden:split_actualizado', cb);
+    return () => this._socket?.off('orden:split_actualizado', cb);
   }
 }
 

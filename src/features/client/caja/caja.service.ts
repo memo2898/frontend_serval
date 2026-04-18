@@ -5,6 +5,27 @@ import { CAJA_QUEUE_KEY } from '../shared/services/pos-channel';
 
 const BASE = `${SERVER_ROUTE}/api`;
 
+// ─── Nombres de cuenta (misma clave que mesas para compartir entre pestañas) ──
+
+const CUENTAS_NOMBRES_PREFIX = 'serval_cuentas_';
+
+function loadCuentasNombres(ordenId: number): Record<number, string> {
+  try {
+    const raw = localStorage.getItem(CUENTAS_NOMBRES_PREFIX + ordenId);
+    return raw ? (JSON.parse(raw) as Record<number, string>) : {};
+  } catch { return {}; }
+}
+
+export function saveCuentasNombres(ordenId: number, nombres: Record<number, string>): void {
+  try {
+    if (Object.keys(nombres).length === 0) {
+      localStorage.removeItem(CUENTAS_NOMBRES_PREFIX + ordenId);
+    } else {
+      localStorage.setItem(CUENTAS_NOMBRES_PREFIX + ordenId, JSON.stringify(nombres));
+    }
+  } catch { /* ignorar */ }
+}
+
 // ─── Cola local (localStorage) — solo cache de sesión ────────────────────────
 
 export function getQueue(): TicketCola[] {
@@ -48,6 +69,10 @@ export const fetchOrdenesEnCola = async (sucursalId: number): Promise<TicketCola
     const lineas = await fetchLineasOrden(o.id);
     const subtotal = Math.round(lineas.reduce((s, l) => s + l.subtotal_linea, 0) * 100) / 100;
 
+    // Derivar split desde las líneas (cuenta_num persiste en BD)
+    const maxCuenta = lineas.reduce((mx, l) => Math.max(mx, l.cuenta_num || 1), 1);
+    const splitMode = maxCuenta > 1;
+
     return {
       id:            o.id,
       mesaId:        o.mesa_id!,
@@ -64,15 +89,18 @@ export const fetchOrdenesEnCola = async (sucursalId: number): Promise<TicketCola
         notas:           o.notas,
       },
       lineas,
-      splitMode:      false,
-      numCuentas:     1,
-      cuentasNombres: {},
+      splitMode,
+      numCuentas:     splitMode ? maxCuenta : 1,
+      cuentasNombres: loadCuentasNombres(o.id),
       timestamp:      o.agregado_en ? new Date(o.agregado_en).getTime() : Date.now(),
     };
   }));
 };
 
 // ─── API ─────────────────────────────────────────────────────────────────────
+
+export const updateLineaCuenta = (lineaId: number, cuentaNum: number): Promise<void> =>
+  http.patch(`${BASE}/orden-lineas/${lineaId}`, { cuenta_num: cuentaNum }).then(() => {});
 
 export const confirmarCobro = (ordenId: number, pagos: PagoAplicado[]) =>
   http.post(`${BASE}/ordenes/${ordenId}/cobrar`, {
@@ -163,7 +191,7 @@ export const fetchLineasOrden = async (ordenId: number): Promise<LineaCobro[]> =
     cuenta_num:      l.cuenta_num ?? 1,
     modificadores:   (l.modificadores ?? []).map(m => ({
       id:                 m.id ?? 0,
-      nombre_modificador: m.nombre_modificador ?? m.modificador?.nombre ?? '',
+      nombre_modificador: m.nombre_modificador ?? (m as any).modificador?.nombre ?? '',
       precio_extra:       Number(m.precio_extra),
     })),
   }));

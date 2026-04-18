@@ -49,6 +49,16 @@
 .detalle-orden-num { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--accent); font-weight: 700; }
 .detalle-meta      { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
+.btn-split-caja {
+  display: flex; align-items: center; gap: 5px;
+  padding: 7px 10px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text-muted); font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all 0.15s; flex-shrink: 0;
+}
+.btn-split-caja:hover { background: var(--surface3); color: var(--text); }
+.btn-split-caja.active { background: rgba(197,98,0,0.10); border-color: var(--orange, #c56200); color: var(--orange, #c56200); }
+
 .btn-imprimir {
   display: flex; align-items: center; gap: 6px;
   padding: 7px 12px; border-radius: var(--radius);

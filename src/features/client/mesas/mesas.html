@@ -170,6 +170,37 @@
   </div>
 </div>
 
+<!-- Modal acción cuenta (admin/encargado) — aparece antes del modal de nombre -->
+<div id="modal-accion-cuenta" class="comensales-modal" style="display:none">
+  <div class="comensales-box">
+    <div class="comensales-title" id="accion-cuenta-titulo">Cuenta 1</div>
+    <div class="comensales-sub">¿Qué deseas hacer con esta cuenta?</div>
+    <div class="accion-menu">
+      <button class="btn-confirm-com" id="btn-accion-cuenta-nombre">
+        <i class="fa-solid fa-user-tag"></i> &nbsp;Asignar nombre al propietario
+      </button>
+      <button class="btn-confirm-com" id="btn-accion-cuenta-mover" style="margin-top:6px;background:rgba(0,100,200,0.12);border-color:rgba(0,100,200,0.3);color:#0064c8">
+        <i class="fa-solid fa-arrow-right-arrow-left"></i> &nbsp;Mover artículo a otra mesa
+      </button>
+      <button class="btn-cancel-com" id="btn-cerrar-accion-cuenta" style="margin-top:4px">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal mover artículo a otra mesa -->
+<div id="modal-mover-mesa" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">Mover artículo a otra mesa</div>
+      <div class="modal-subtitle">Selecciona la mesa destino</div>
+    </div>
+    <div class="unir-mesas-grid" id="mover-mesa-grid" style="max-height:280px;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" id="btn-cerrar-mover-mesa">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════ NOTIFICACIONES DRAWER ══════════════ -->
 <div id="notif-overlay" class="notif-overlay" style="display:none"></div>
 <div id="notif-drawer" class="notif-drawer" aria-hidden="true">

@@ -12,6 +12,7 @@ import { CajaStore } from './caja.store';
 import {
   getQueue, removeFromQueue, confirmarCobro, getFormasPago, fetchLineasOrden,
   getSucursalInfo, getImpuestosCaja, tipoToFaIcon, fetchOrdenesEnCola,
+  updateLineaCuenta, saveCuentasNombres,
 } from './caja.service';
 import type { TicketCola } from './caja.types';
 
@@ -23,6 +24,8 @@ class CajaPage {
   private _nombreEmpresa = '';
   private _nombreSucursal = '';
   private _logoEmpresa = '';
+  private _cuentaNombreNum = 0;
+  private _longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
   init(): void {
     this._applyTheme();
@@ -126,9 +129,15 @@ class CajaPage {
               this._renderCobroTotales();
               this._renderCobro();
               this._setMontoPago();
+              this._renderPrintButtons();
             }
           })
           .catch(() => {});
+      });
+
+      // Split actualizado por el camarero en tiempo real
+      posSocket.onOrdenSplitActualizado(({ orden_id, split_mode, num_cuentas, cuentas_nombres, lineas }) => {
+        this._aplicarSplitActualizado(orden_id, split_mode, num_cuentas, cuentas_nombres, lineas);
       });
 
       // Pago registrado (confirmado por el servidor)
@@ -177,19 +186,54 @@ class CajaPage {
   private _syncFromDB(): void {
     fetchOrdenesEnCola(this._sucursalId)
       .then(ordenes => {
-        // Conservar datos de sesión (splitMode, cuentas) si la orden ya estaba en cola
+        // fetchOrdenesEnCola ya deriva splitMode/numCuentas/cuentasNombres desde la BD.
+        // Si la sesión activa tiene nombres más recientes (editados en esta sesión), preservarlos.
         const local = this._store.state.queue;
         const merged = ordenes.map(o => {
           const existing = local.find(l => l.id === o.id);
-          return existing
-            ? { ...o, splitMode: existing.splitMode, numCuentas: existing.numCuentas, cuentasNombres: existing.cuentasNombres }
-            : o;
+          if (!existing) return o;
+          // Unir nombres de cuenta: los de sesión tienen prioridad sobre los de BD
+          const cuentasNombres = { ...o.cuentasNombres, ...existing.cuentasNombres };
+          return { ...o, cuentasNombres };
         });
         this._store.setQueue(merged);
         localStorage.setItem(CAJA_QUEUE_KEY, JSON.stringify(merged));
         this._renderQueue();
       })
       .catch(() => { /* mantener cache local si falla la red */ });
+  }
+
+  /** Aplica un split actualizado recibido por socket o BroadcastChannel. */
+  private _aplicarSplitActualizado(
+    ordenId: number,
+    splitMode: boolean,
+    numCuentas: number,
+    cuentasNombres: Record<number, string>,
+    lineas: Array<{ id: number; cuenta_num: number }>,
+  ): void {
+    const queue = this._store.state.queue.map(t => {
+      if (t.id !== ordenId) return t;
+      const lineasActualizadas = t.lineas.map(l => {
+        const upd = lineas.find(u => u.id === l.id);
+        return upd ? { ...l, cuenta_num: upd.cuenta_num } : l;
+      });
+      return { ...t, splitMode, numCuentas, cuentasNombres, lineas: lineasActualizadas };
+    });
+    this._store.setQueue(queue);
+    localStorage.setItem(CAJA_QUEUE_KEY, JSON.stringify(queue));
+    this._renderQueue();
+
+    // Si el ticket activo es el que cambió, actualizarlo en el detalle
+    if (this._store.state.ticketId === ordenId) {
+      const updated = queue.find(t => t.id === ordenId);
+      if (updated) this._store.selectTicket(updated);
+      this._renderCuentasTabs();
+      this._renderCobroLineas();
+      this._renderCobroTotales();
+      this._renderCobro();
+      this._setMontoPago();
+      this._renderPrintButtons();
+    }
   }
 
   private _renderQueue(): void {
@@ -257,11 +301,16 @@ class CajaPage {
     this._renderFormasPago();
     this._renderCobro();
     this._setMontoPago();
+    this._renderPrintButtons();
 
     document.getElementById('detalle-empty')!.style.display   = 'none';
     document.getElementById('detalle-content')!.style.display = 'flex';
     document.getElementById('pago-empty')!.style.display      = 'none';
     document.getElementById('pago-content')!.style.display    = 'flex';
+
+    // Actualizar estado visual del botón de split
+    const { splitMode } = this._store.state;
+    document.getElementById('btn-split-caja')?.classList.toggle('active', splitMode);
   }
 
   // ─── Detalle ──────────────────────────────────────────────────────────────
@@ -292,6 +341,28 @@ class CajaPage {
         ${pagada ? '<i class="fa-solid fa-check"></i> ' : ''}C${n}${nombre} · ${fmt(total)}
       </button>`;
     }).join('');
+    this._renderPrintButtons();
+  }
+
+  /** Renderiza el/los botón(es) de impresión. Sin split: botón único. Con split: uno por cuenta. */
+  private _renderPrintButtons(): void {
+    const { splitMode, numCuentas, cuentasNombres } = this._store.state;
+    const container = document.getElementById('print-buttons');
+    if (!container) return;
+
+    if (!splitMode || numCuentas <= 1) {
+      container.innerHTML = `<button class="btn-imprimir" id="btn-imprimir" title="Imprimir cuenta">
+        <i class="fa-solid fa-print"></i> Imprimir
+      </button>`;
+    } else {
+      const btns = Array.from({ length: numCuentas }, (_, i) => i + 1).map(n => {
+        const nombre = cuentasNombres[n] ? cuentasNombres[n] : `C${n}`;
+        return `<button class="btn-imprimir" data-print-cuenta="${n}" title="Imprimir ${nombre}">
+          <i class="fa-solid fa-print"></i> ${nombre}
+        </button>`;
+      }).join('');
+      container.innerHTML = btns;
+    }
   }
 
   private _renderCobroLineas(): void {
@@ -310,7 +381,7 @@ class CajaPage {
       const nombre = cuentasNombres[cn];
       const badgeLabel = nombre ? nombre : `C${cn}`;
       const badge = splitMode
-        ? `<span class="cuenta-badge-cobro ${bc}" title="${nombre ? 'Cuenta ' + cn + ': ' + nombre : ''}">${badgeLabel}</span>`
+        ? `<span class="cuenta-badge-cobro ${bc}" data-ciclar-caja="${l.id}" title="Click para cambiar cuenta${nombre ? ' · ' + nombre : ''}">${badgeLabel}</span>`
         : '';
       const mods = l.modificadores?.length
         ? `<div class="cobro-linea-mods">${l.modificadores.map(m => `└ ${m.nombre_modificador}`).join('  ')}</div>`
@@ -445,7 +516,7 @@ class CajaPage {
 
   // ─── Imprimir cuenta ──────────────────────────────────────────────────────
 
-  private _imprimirCuenta(): void {
+  private _imprimirCuenta(soloCuenta?: number): void {
     const { orden, mesaLabel, lineas, splitMode, numCuentas, cuentasNombres, ticketId } = this._store.state;
     if (!ticketId) return;
 
@@ -502,7 +573,14 @@ class CajaPage {
     };
 
     let cuerpo = '';
-    if (splitMode && numCuentas > 1) {
+    if (soloCuenta != null) {
+      // Imprimir solo una cuenta individual
+      const nombre = cuentasNombres[soloCuenta] ? ` — ${cuentasNombres[soloCuenta]}` : '';
+      cuerpo += `<tr class="cuenta-header"><td colspan="3">Cuenta ${soloCuenta}${nombre}</td></tr>`;
+      cuerpo += fmtLineasCuenta(soloCuenta);
+      cuerpo += totales(soloCuenta);
+    } else if (splitMode && numCuentas > 1) {
+      // Imprimir todas las cuentas con separadores
       for (let n = 1; n <= numCuentas; n++) {
         const nombre = cuentasNombres[n] ? ` — ${cuentasNombres[n]}` : '';
         cuerpo += `<tr class="cuenta-header"><td colspan="3">Cuenta ${n}${nombre}</td></tr>`;
@@ -613,6 +691,55 @@ class CajaPage {
 
   // ─── Wiring ───────────────────────────────────────────────────────────────
 
+  // ─── Modal nombre de cuenta (caja) ───────────────────────────────────────────
+
+  private _abrirModalCuentaNombreCaja(num: number): void {
+    this._cuentaNombreNum = num;
+    const titulo = document.getElementById('cuenta-nombre-caja-titulo');
+    if (titulo) titulo.textContent = `Cuenta ${num}`;
+    const input = document.getElementById('cuenta-nombre-caja-input') as HTMLInputElement | null;
+    if (input) input.value = this._store.state.cuentasNombres[num] ?? '';
+    document.getElementById('modal-cuenta-nombre-caja')!.style.display = 'flex';
+    setTimeout(() => input?.focus(), 50);
+  }
+
+  private _cerrarModalCuentaNombreCaja(): void {
+    document.getElementById('modal-cuenta-nombre-caja')!.style.display = 'none';
+  }
+
+  private _confirmarCuentaNombreCaja(): void {
+    const input = document.getElementById('cuenta-nombre-caja-input') as HTMLInputElement | null;
+    const nombre = input?.value ?? '';
+    this._store.setCuentaNombre(this._cuentaNombreNum, nombre);
+    const { ticketId, cuentasNombres } = this._store.state;
+    if (ticketId) saveCuentasNombres(ticketId, cuentasNombres);
+    this._cerrarModalCuentaNombreCaja();
+    this._renderCuentasTabs();
+    this._renderCobroLineas();
+    this._renderPrintButtons();
+    this._actualizarQueueConSplitActual();
+  }
+
+  /** Persiste el split actual del ticket activo en la cola local y emite por BroadcastChannel. */
+  private _actualizarQueueConSplitActual(): void {
+    const { ticketId, splitMode, numCuentas, cuentasNombres, lineas } = this._store.state;
+    if (!ticketId) return;
+    const queue = this._store.state.queue.map(t =>
+      t.id !== ticketId ? t : { ...t, splitMode, numCuentas, cuentasNombres }
+    );
+    this._store.setQueue(queue);
+    localStorage.setItem(CAJA_QUEUE_KEY, JSON.stringify(queue));
+    // Notificar al módulo mesas (mismo dispositivo) por si alguien re-abre el TPV
+    cajaChannel.send({
+      tipo: 'split_actualizado',
+      ordenId: ticketId,
+      splitMode,
+      numCuentas,
+      cuentasNombres,
+      lineas: lineas.map(l => ({ id: l.id, cuenta_num: l.cuenta_num || 1 })),
+    });
+  }
+
   private _wireEvents(): void {
     document.getElementById('queue-list')?.addEventListener('click', e => {
       const card = (e.target as HTMLElement).closest<HTMLElement>('[data-ticket]');
@@ -665,7 +792,75 @@ class CajaPage {
 
     document.getElementById('btn-confirmar')?.addEventListener('click', () => this._confirmarCobro());
     document.getElementById('btn-cerrar-cambio')?.addEventListener('click', () => this._finalizarCobro());
-    document.getElementById('btn-imprimir')?.addEventListener('click', () => this._imprimirCuenta());
+
+    // Botón(es) de impresión — delegado en container porque son dinámicos
+    document.getElementById('print-buttons')?.addEventListener('click', e => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-print-cuenta],[id="btn-imprimir"]');
+      if (!btn) return;
+      const cn = btn.dataset.printCuenta;
+      this._imprimirCuenta(cn != null ? Number(cn) : undefined);
+    });
+
+    // Botón dividir cuenta en caja
+    document.getElementById('btn-split-caja')?.addEventListener('click', () => {
+      if (!this._store.state.ticketId) return;
+      this._store.toggleSplit();
+      // Si se activó, actualizar cuenta_num = 1 en BD para todas las líneas (limpieza)
+      const { splitMode, lineas } = this._store.state;
+      if (!splitMode) {
+        lineas.forEach(l => updateLineaCuenta(l.id, 1).catch(() => {}));
+      }
+      document.getElementById('btn-split-caja')?.classList.toggle('active', splitMode);
+      this._renderCuentasTabs();
+      this._renderCobroLineas();
+      this._renderCobroTotales();
+      this._renderCobro();
+      this._setMontoPago();
+      this._renderPrintButtons();
+      this._actualizarQueueConSplitActual();
+    });
+
+    // Ciclar cuenta desde caja (click en badge de cobro-lineas)
+    document.getElementById('cobro-lineas')?.addEventListener('click', e => {
+      const badge = (e.target as HTMLElement).closest<HTMLElement>('[data-ciclar-caja]');
+      if (!badge) return;
+      const lineaId = Number(badge.dataset.ciclarCaja);
+      this._store.ciclarCuenta(lineaId);
+      updateLineaCuenta(lineaId, this._store.state.lineas.find(l => l.id === lineaId)?.cuenta_num ?? 1).catch(() => {});
+      this._renderCuentasTabs();
+      this._renderCobroLineas();
+      this._renderCobroTotales();
+      this._renderCobro();
+      this._setMontoPago();
+      this._renderPrintButtons();
+      this._actualizarQueueConSplitActual();
+    });
+
+    // Long-press en badge para nombrar cuenta (caja)
+    document.getElementById('cobro-lineas')?.addEventListener('pointerdown', e => {
+      const badge = (e.target as HTMLElement).closest<HTMLElement>('[data-ciclar-caja]');
+      if (!badge) return;
+      this._longPressTimer = setTimeout(() => {
+        this._longPressTimer = null;
+        const lineaId = Number(badge.dataset.ciclarCaja);
+        const linea = this._store.state.lineas.find(l => l.id === lineaId);
+        if (linea) this._abrirModalCuentaNombreCaja(linea.cuenta_num || 1);
+      }, 500);
+    });
+    document.getElementById('cobro-lineas')?.addEventListener('pointerup', () => {
+      if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
+    });
+    document.getElementById('cobro-lineas')?.addEventListener('pointermove', () => {
+      if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
+    });
+
+    // Modal nombre de cuenta (caja)
+    document.getElementById('btn-cerrar-cuenta-nombre-caja')?.addEventListener('click', () => this._cerrarModalCuentaNombreCaja());
+    document.getElementById('btn-confirmar-cuenta-nombre-caja')?.addEventListener('click', () => this._confirmarCuentaNombreCaja());
+    document.getElementById('cuenta-nombre-caja-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') this._confirmarCuentaNombreCaja();
+      if (e.key === 'Escape') this._cerrarModalCuentaNombreCaja();
+    });
 
     document.getElementById('btn-exit')?.addEventListener('click', () => {
       posSocket.disconnect();
@@ -674,11 +869,18 @@ class CajaPage {
   }
 
   private _subscribeChannels(): void {
-    // Fallback same-device/same-browser: storage event (cross-tab) + BroadcastChannel
     window.addEventListener('storage', e => {
       if (e.key === CAJA_QUEUE_KEY) this._loadQueue();
     });
-    cajaChannel.on(() => this._loadQueue());
+    cajaChannel.on(msg => {
+      if (msg.tipo === 'split_actualizado') {
+        this._aplicarSplitActualizado(
+          msg.ordenId, msg.splitMode, msg.numCuentas, msg.cuentasNombres, msg.lineas,
+        );
+      } else {
+        this._loadQueue();
+      }
+    });
   }
 }
 
