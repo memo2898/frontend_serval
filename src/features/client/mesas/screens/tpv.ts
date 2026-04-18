@@ -173,17 +173,6 @@ export class TpvScreen {
     `;
   }
 
-  setupNotaDebounce(): void {
-    const input = document.getElementById('nota-input') as HTMLTextAreaElement | null;
-    if (!input) return;
-    input.value = this._store.state.orden?.notas ?? '';
-    input.addEventListener('input', () => {
-      if (this._notaTimer) clearTimeout(this._notaTimer);
-      this._notaTimer = setTimeout(() => {
-        this._store.setNota(input.value);
-      }, 800);
-    });
-  }
 
   private _getUserNombre(): string {
     try {

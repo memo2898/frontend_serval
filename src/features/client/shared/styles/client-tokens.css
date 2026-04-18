@@ -28,7 +28,8 @@
 
 /* ─── Reset mínimo ──────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; }
+html { height: 100dvh; }
+body { height: 100%; }
 body { background: var(--bg); color: var(--text); font-family: 'DM Sans', system-ui, sans-serif; font-size: 14px; }
 
 /* ─── Scrollbar ─────────────────────────────────────────────────────────────── */

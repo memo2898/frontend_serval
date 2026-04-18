@@ -502,9 +502,6 @@
 .btn-cobrar     { background: var(--accent); border: none; border-radius: var(--radius); padding: 14px; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
 .btn-cobrar:active { opacity: 0.85; }
 
-.nota-section   { padding: 8px 16px; border-top: 1px solid var(--border); }
-.nota-input     { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; resize: none; transition: border-color 0.2s; }
-.nota-input:focus { border-color: var(--accent); }
 
 .btn-split {
   width: 100%; padding: 10px; background: var(--surface2); border: 1px solid var(--border);

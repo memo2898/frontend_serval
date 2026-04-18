@@ -521,7 +521,6 @@ class MesasPage {
       })
       .then(() => {
         this._tpv.renderOrden();
-        this._tpv.setupNotaDebounce();
         this._goTo('tpv');
       })
       .catch(err => {
