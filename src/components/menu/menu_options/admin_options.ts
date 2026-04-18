@@ -173,6 +173,17 @@ export const ADMIN_OPTIONS: MenuItem[] = [
     ],
   },
 
+  // ── Reportes ─────────────────────────────────
+  {
+    id: 'reportes',
+    icon: 'fas fa-chart-bar',
+    text: 'Reportes',
+    href: '#',
+    submenu: [
+      { text: 'Ventas', href: '/reportes' },
+    ],
+  },
+
   // ── Inventario ───────────────────────────────
   {
     id: 'inventario',

@@ -10,6 +10,29 @@
 .cuenta-nombre-input:focus { border-color: var(--accent); }
 .cuenta-nombre-input::placeholder { color: var(--text-muted); }
 
+/* ─── Nota de línea ──────────────────────────────────────────────────────────── */
+.nota-linea-textarea {
+  width: 100%; box-sizing: border-box;
+  padding: 10px 12px; margin: 12px 0 4px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-size: 14px; font-family: inherit; resize: none;
+  outline: none; transition: border-color 0.15s;
+}
+.nota-linea-textarea:focus { border-color: var(--accent); }
+.nota-linea-textarea::placeholder { color: var(--text-muted); }
+
+.linea-nota-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 6px; border: none;
+  background: transparent; color: var(--text-muted);
+  cursor: pointer; font-size: 12px; padding: 0; flex-shrink: 0;
+  transition: color 0.15s;
+}
+.linea-nota-btn:hover { color: var(--text); }
+.linea-nota-btn.has-nota { color: var(--orange); }
+.linea-nota-btn:active { transform: scale(0.88); }
+
 /* Badge con nombre asignado: más ancho y redondeado */
 .cuenta-badge.has-nombre {
   max-width: 80px; overflow: hidden;

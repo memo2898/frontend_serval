@@ -28,6 +28,7 @@ export class KdsModule {
   private readonly _config: KdsConfig;
   private _comandas: Comanda[] = [];
   private _despachadas = new Set<number>(); // kds_orden_ids marcados como listos localmente
+  private _notaPopup: HTMLDivElement | null = null;
   private _filtroActivo: string;
   private _tickTimer: ReturnType<typeof setInterval> | null = null;
   private _pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -337,10 +338,7 @@ export class KdsModule {
                     <span class="linea-qty">${l.qty}x</span>${l.nombre}
                   </div>
                   ${l.mods ? `<div class="linea-mods">${l.mods}</div>` : ''}
-                  ${l.nota ? `
-                    <div class="linea-nota">
-                      <span class="linea-nota-icon">!</span>${l.nota}
-                    </div>` : ''}
+                  ${l.nota ? `<button class="btn-nota-kds" data-nota-kds="${l.nota.replace(/"/g,'&quot;')}"><i class="fa-solid fa-comment-dots"></i> Nota</button>` : ''}
                 </div>
               </div>
             `).join('')}
@@ -367,11 +365,42 @@ export class KdsModule {
     const reimp = target.closest<HTMLElement>('[data-reimprimir]');
     if (reimp) { this._reimprimir(Number(reimp.dataset.reimprimir)); return; }
 
+    const notaBtn = target.closest<HTMLElement>('[data-nota-kds]');
+    if (notaBtn) { this._mostrarNotaPopup(notaBtn.dataset.notaKds ?? '', notaBtn); return; }
+
     const check = target.closest<HTMLElement>('[data-linea]');
     if (check && !check.classList.contains('disabled')) {
       this._toggleLinea(Number(check.dataset.cmd), Number(check.dataset.linea));
     }
   };
+
+  // ─── Popup nota ──────────────────────────────────────────────────────────────
+
+  private _mostrarNotaPopup(nota: string, anchor: HTMLElement): void {
+    if (!this._notaPopup) {
+      this._notaPopup = document.createElement('div');
+      this._notaPopup.className = 'kds-nota-popup';
+      this._notaPopup.style.display = 'none';
+      document.body.appendChild(this._notaPopup);
+      document.addEventListener('click', (e) => {
+        if (this._notaPopup && !this._notaPopup.contains(e.target as Node) && !(e.target as HTMLElement).closest('[data-nota-kds]')) {
+          this._notaPopup.style.display = 'none';
+        }
+      });
+    }
+    if (this._notaPopup.style.display === 'block') {
+      this._notaPopup.style.display = 'none';
+      return;
+    }
+    this._notaPopup.textContent = nota;
+    this._notaPopup.style.display = 'block';
+    const rect = anchor.getBoundingClientRect();
+    const popW = 240;
+    let left = rect.left;
+    if (left + popW > window.innerWidth - 10) left = window.innerWidth - popW - 10;
+    this._notaPopup.style.left = left + 'px';
+    this._notaPopup.style.top = (rect.bottom + 6) + 'px';
+  }
 
   // ─── Reloj + timers ───────────────────────────────────────────────────────────
 

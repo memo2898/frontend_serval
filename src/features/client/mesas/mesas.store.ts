@@ -256,6 +256,13 @@ export class MesasStore {
     this._notify();
   }
 
+  setNotaLinea(lineaId: number, nota: string): void {
+    const linea = this._state.lineas.find(l => l.id === lineaId);
+    if (!linea) return;
+    linea.notas_linea = nota || undefined;
+    this._notify();
+  }
+
   cambiarCantidad(lineaId: number, delta: number): void {
     const linea = this._state.lineas.find(l => l.id === lineaId);
     if (!linea) return;

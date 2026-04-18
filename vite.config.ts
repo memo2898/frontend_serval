@@ -63,6 +63,7 @@ const URL_MAPPINGS: Record<string, string> = {
       '/usuariorol': '/src/features/backoffice/usuariorol/index.html',
         '/reservaciones': '/src/features/backoffice/reservaciones/index.html',
   '/sucursalimpuestos': '/src/features/backoffice/sucursalimpuestos/index.html',
+  '/reportes': '/src/features/backoffice/reportes/index.html',
   "/404": "/src/features/404/index.html",
   // ── POS / Client modules ──────────────────────────────────────────────────
   "/pos/mesas": "/src/features/client/mesas/mesas.html",
@@ -224,8 +225,10 @@ export default defineConfig({
   plugins: [htmlPathRewriter(), friendlyRoutes(), generateHtaccess()],
 
   server: {
+    host: '0.0.0.0',
     port: 5173,
     open: true,
+    allowedHosts: ['app.chuys.tech']
   },
 
   build: {

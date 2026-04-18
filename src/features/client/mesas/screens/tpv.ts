@@ -93,6 +93,7 @@ export class TpvScreen {
               <span class="linea-nombre">${l.cantidad}x ${l.nombre_articulo}</span>
               <span class="linea-precio">${fmt(l.subtotal_linea)}</span>
               ${estadoIcon}
+              <button class="linea-nota-btn${l.notas_linea ? ' has-nota' : ''}" data-nota-linea="${l.id}" title="${l.notas_linea ? l.notas_linea.replace(/"/g, '&quot;') : 'Añadir nota'}"><i class="fa-regular fa-comment"></i></button>
             </div>
             ${l.modificadores.map(m => `
               <div class="linea-mod">└─ ${m.nombre_modificador}${m.precio_extra ? ' +' + fmt(m.precio_extra) : ''}</div>

@@ -700,6 +700,17 @@ class MesasPage {
       if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
     });
 
+    // ── Modal nota de línea ──
+    document.querySelector('[data-cerrar-nota-linea]')?.addEventListener('click', () => {
+      this._cerrarModalNotaLinea();
+    });
+    document.querySelector('[data-confirmar-nota-linea]')?.addEventListener('click', () => {
+      this._confirmarNotaLinea();
+    });
+    document.getElementById('nota-linea-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Escape') this._cerrarModalNotaLinea();
+    });
+
     // ── Modal nombre cuenta ──
     document.querySelector('[data-cerrar-cuenta-nombre]')?.addEventListener('click', () => {
       this._cerrarModalCuentaNombre();
@@ -715,6 +726,13 @@ class MesasPage {
     // ── TPV: orden (líneas) ──
     document.getElementById('orden-lineas')?.addEventListener('click', e => {
       const target = e.target as HTMLElement;
+
+      const notaLinea = target.closest<HTMLElement>('[data-nota-linea]');
+      if (notaLinea) {
+        e.stopPropagation();
+        this._abrirModalNotaLinea(Number(notaLinea.dataset.notaLinea));
+        return;
+      }
 
       const ciclar = target.closest<HTMLElement>('[data-ciclar]');
       if (ciclar) {
@@ -1247,6 +1265,39 @@ class MesasPage {
   }
 
   // ─── Modal acción cuenta (admin/encargado) ────────────────────────────────────
+
+  // ─── Modal nota de línea ──────────────────────────────────────────────────────
+
+  private _notaLineaId = 0;
+
+  private _abrirModalNotaLinea(lineaId: number): void {
+    this._notaLineaId = lineaId;
+    const linea = this._store.state.lineas.find(l => l.id === lineaId);
+    const textarea = document.getElementById('nota-linea-input') as HTMLTextAreaElement | null;
+    if (textarea) textarea.value = linea?.notas_linea ?? '';
+    document.getElementById('modal-nota-linea')!.style.display = 'flex';
+    setTimeout(() => textarea?.focus(), 50);
+  }
+
+  private _cerrarModalNotaLinea(): void {
+    document.getElementById('modal-nota-linea')!.style.display = 'none';
+  }
+
+  private _confirmarNotaLinea(): void {
+    const textarea = document.getElementById('nota-linea-input') as HTMLTextAreaElement | null;
+    const nota = textarea?.value.trim() ?? '';
+    this._store.setNotaLinea(this._notaLineaId, nota);
+    this._cerrarModalNotaLinea();
+    const linea = this._store.state.lineas.find(l => l.id === this._notaLineaId);
+    const { ordenId, mesaId } = this._store.state;
+    if (linea && linea.id > 0 && ordenId) {
+      updateLinea(ordenId, linea.id, { notas_linea: nota || undefined }).catch(() => {});
+      if (mesaId) {
+        posSocket.emitLineaSincronizada({ orden_id: ordenId, mesa_id: mesaId, accion: 'update', linea: { ...linea, notas_linea: nota || undefined } });
+      }
+    }
+    this._tpv.renderOrden();
+  }
 
   private _lineaAccionId = 0; // ID de la línea sobre la que se hizo long-press
 

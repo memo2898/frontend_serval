@@ -101,16 +101,24 @@
 
 .linea-mods { font-size: 11px; color: var(--text-muted); margin-top: 3px; padding-left: 2px; line-height: 1.4; }
 
-.linea-nota {
-  font-size: 11px; color: var(--orange); margin-top: 4px; padding: 4px 8px;
-  background: rgba(197,98,0,0.07); border-radius: 6px; border-left: 2px solid var(--orange);
-  display: flex; align-items: flex-start; gap: 5px;
+.btn-nota-kds {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 5px; padding: 4px 9px; border-radius: 6px;
+  background: rgba(197,98,0,0.08); border: 1px solid rgba(197,98,0,0.22);
+  color: var(--orange); cursor: pointer; font-size: 11px; font-weight: 600;
+  font-family: inherit; transition: background 0.15s;
 }
-.linea-nota-icon {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 14px; height: 14px; border-radius: 50%;
-  background: rgba(197,98,0,0.15); font-size: 9px; font-weight: 700;
-  flex-shrink: 0; margin-top: 1px;
+.btn-nota-kds:hover { background: rgba(197,98,0,0.16); }
+.btn-nota-kds:active { transform: scale(0.95); }
+
+.kds-nota-popup {
+  position: fixed; z-index: 9999;
+  background: var(--surface); border: 1px solid rgba(197,98,0,0.35);
+  border-left: 3px solid var(--orange);
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 13px; color: var(--text); max-width: 240px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+  line-height: 1.5; word-break: break-word;
 }
 
 /* Footer */

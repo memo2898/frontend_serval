@@ -28,6 +28,7 @@ class CajaPage {
   private _nombreEmpresa = '';
   private _nombreSucursal = '';
   private _logoEmpresa   = '';
+  private _cuentaNombreNum = 0;
 
   init(): void {
     this._applyTheme();
@@ -339,7 +340,7 @@ class CajaPage {
       const pagada = cuentasCobradas.has(n);
       const activa = n === cuentaActivaCobro && !pagada;
       const nombre = cuentasNombres[n] ? ` · ${cuentasNombres[n]}` : '';
-      return `<button class="cuenta-tab ${activa ? 'active' : ''} ${pagada ? 'pagada' : ''}" data-cuenta="${n}">
+      return `<button class="cuenta-tab ${activa ? 'active' : ''} ${pagada ? 'pagada' : ''}" data-cuenta="${n}" data-nombre-cuenta="${n}" title="Doble click para renombrar">
         ${pagada ? '<i class="fa-solid fa-check"></i> ' : ''}C${n}${nombre} · ${fmt(total)}
       </button>`;
     }).join('');
@@ -848,6 +849,46 @@ class CajaPage {
       posSocket.disconnect();
       doLogout();
     });
+
+    // Doble click en tab de cuenta → renombrar
+    document.getElementById('cuentas-tabs')?.addEventListener('dblclick', e => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-nombre-cuenta]');
+      if (btn) this._abrirModalCuentaNombreCaja(Number(btn.dataset.nombreCuenta));
+    });
+
+    document.getElementById('btn-cerrar-cuenta-nombre-caja')?.addEventListener('click', () => this._cerrarModalCuentaNombreCaja());
+    document.getElementById('btn-confirmar-cuenta-nombre-caja')?.addEventListener('click', () => this._confirmarCuentaNombreCaja());
+    document.getElementById('cuenta-nombre-caja-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') this._confirmarCuentaNombreCaja();
+      if (e.key === 'Escape') this._cerrarModalCuentaNombreCaja();
+    });
+  }
+
+  // ─── Modal nombre de cuenta ───────────────────────────────────────────────
+
+  private _abrirModalCuentaNombreCaja(num: number): void {
+    this._cuentaNombreNum = num;
+    const titulo = document.getElementById('cuenta-nombre-caja-titulo');
+    if (titulo) titulo.textContent = `Cuenta ${num}`;
+    const input = document.getElementById('cuenta-nombre-caja-input') as HTMLInputElement | null;
+    if (input) input.value = this._store.state.cuentasNombres[num] ?? '';
+    document.getElementById('modal-cuenta-nombre-caja')!.style.display = 'flex';
+    setTimeout(() => input?.focus(), 50);
+  }
+
+  private _cerrarModalCuentaNombreCaja(): void {
+    document.getElementById('modal-cuenta-nombre-caja')!.style.display = 'none';
+  }
+
+  private _confirmarCuentaNombreCaja(): void {
+    const input = document.getElementById('cuenta-nombre-caja-input') as HTMLInputElement | null;
+    const nombre = input?.value ?? '';
+    this._store.setCuentaNombre(this._cuentaNombreNum, nombre);
+    saveCuentasNombres(this._store.state.ticketId!, this._store.state.cuentasNombres);
+    this._cerrarModalCuentaNombreCaja();
+    this._renderCuentasTabs();
+    this._renderCobroLineas();
+    this._actualizarQueueConSplitActual();
   }
 
   private _subscribeChannels(): void {
