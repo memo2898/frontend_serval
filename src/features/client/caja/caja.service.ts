@@ -5,7 +5,7 @@ import { CAJA_QUEUE_KEY } from '../shared/services/pos-channel';
 
 const BASE = `${SERVER_ROUTE}/api`;
 
-// ─── Cola local (localStorage) ────────────────────────────────────────────────
+// ─── Cola local (localStorage) — solo cache de sesión ────────────────────────
 
 export function getQueue(): TicketCola[] {
   try {
@@ -19,6 +19,58 @@ export function removeFromQueue(mesaId: number): void {
   const queue = getQueue().filter(t => t.mesaId !== mesaId);
   localStorage.setItem(CAJA_QUEUE_KEY, JSON.stringify(queue));
 }
+
+// ─── Cola desde BD — fuente de verdad ────────────────────────────────────────
+
+interface RawOrden {
+  id: number;
+  mesa_id: number | null;
+  numero_orden: number | null;
+  estado: string;
+  subtotal: string | number | null;
+  impuestos_total: string | number | null;
+  total: string | number | null;
+  notas?: string;
+  agregado_en?: string;
+  mesa?: { id: number; nombre: string; personas?: number | null };
+}
+
+export const fetchOrdenesEnCola = async (sucursalId: number): Promise<TicketCola[]> => {
+  interface Paginado<T> { data: T[] }
+  const raw = await http.get<Paginado<RawOrden> | RawOrden[]>(
+    `${BASE}/ordenes?estado=por_cobrar&sucursal_id=${sucursalId}`,
+  );
+  const list = Array.isArray(raw) ? raw : (raw?.data ?? []);
+  const filtered = list.filter(o => o.id != null && o.mesa_id != null);
+
+  // Pre-cargar líneas de cada orden: necesitamos el conteo real y subtotales frescos
+  return Promise.all(filtered.map(async o => {
+    const lineas = await fetchLineasOrden(o.id);
+    const subtotal = Math.round(lineas.reduce((s, l) => s + l.subtotal_linea, 0) * 100) / 100;
+
+    return {
+      id:            o.id,
+      mesaId:        o.mesa_id!,
+      mesaLabel:     o.mesa?.nombre ?? `Mesa ${o.mesa_id}`,
+      numComensales: o.mesa?.personas ?? 1,
+      orden: {
+        id:              o.id,
+        numero_orden:    o.numero_orden ?? o.id,
+        mesa_id:         o.mesa_id!,
+        estado:          o.estado,
+        subtotal,
+        impuestos_total: Number(o.impuestos_total ?? 0),
+        total:           Number(o.total ?? 0),
+        notas:           o.notas,
+      },
+      lineas,
+      splitMode:      false,
+      numCuentas:     1,
+      cuentasNombres: {},
+      timestamp:      o.agregado_en ? new Date(o.agregado_en).getTime() : Date.now(),
+    };
+  }));
+};
 
 // ─── API ─────────────────────────────────────────────────────────────────────
 
@@ -111,7 +163,7 @@ export const fetchLineasOrden = async (ordenId: number): Promise<LineaCobro[]> =
     cuenta_num:      l.cuenta_num ?? 1,
     modificadores:   (l.modificadores ?? []).map(m => ({
       id:                 m.id ?? 0,
-      nombre_modificador: m.nombre_modificador ?? '',
+      nombre_modificador: m.nombre_modificador ?? m.modificador?.nombre ?? '',
       precio_extra:       Number(m.precio_extra),
     })),
   }));

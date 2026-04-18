@@ -6,12 +6,12 @@ import { getSucursalId, getUser, getContext } from '@/global/session.service';
 import { route } from '@/global/saveRoutes';
 import { fmt, tiempoDesde } from '../shared/utils/format';
 import { toast } from '../shared/utils/toast';
-import { mesasChannel, CAJA_QUEUE_KEY, MESAS_UPDATE_KEY } from '../shared/services/pos-channel';
+import { cajaChannel, mesasChannel, CAJA_QUEUE_KEY, MESAS_UPDATE_KEY } from '../shared/services/pos-channel';
 import { posSocket } from '../shared/services/pos-socket';
 import { CajaStore } from './caja.store';
 import {
   getQueue, removeFromQueue, confirmarCobro, getFormasPago, fetchLineasOrden,
-  getSucursalInfo, getImpuestosCaja, tipoToFaIcon,
+  getSucursalInfo, getImpuestosCaja, tipoToFaIcon, fetchOrdenesEnCola,
 } from './caja.service';
 import type { TicketCola } from './caja.types';
 
@@ -77,52 +77,50 @@ class CajaPage {
   private _connectSocket(): void {
     import('@/global/session.service').then(({ getToken }) => {
       const tk = getToken();
-      if (tk) posSocket.connect(tk, this._sucursalId, 'caja');
-    });
+      if (!tk) return;
 
-    // Nueva orden lista para cobrar
-    posSocket.onCajaOrdenListaCobrar(({ mesa_id, mesa_nombre, orden_id, total }) => {
-      const yaEnCola = this._store.state.queue.some(t => t.mesaId === mesa_id);
-      if (yaEnCola) return;
+      posSocket.connect(tk, this._sucursalId, 'caja');
 
-      const ticketBasico: TicketCola = {
-        id: orden_id, mesaId: mesa_id, mesaLabel: mesa_nombre,
-        numComensales: 1,
-        orden: { id: orden_id, numero_orden: orden_id, mesa_id, estado: 'por_cobrar',
-                 subtotal: 0, impuestos_total: 0, total },
-        lineas: [], splitMode: false, numCuentas: 1,
-        cuentasNombres: {},
-        timestamp: Date.now(),
-      };
+      // Nueva orden lista para cobrar
+      posSocket.onCajaOrdenListaCobrar(({ mesa_id, mesa, orden_id }) => {
+        const yaEnCola = this._store.state.queue.some(t => t.mesaId === mesa_id);
+        if (!yaEnCola) {
+          // Mostrar card provisional mientras llegan los datos reales
+          const ticketBasico: TicketCola = {
+            id: orden_id, mesaId: mesa_id, mesaLabel: mesa,
+            numComensales: 1,
+            orden: { id: orden_id, numero_orden: orden_id, mesa_id, estado: 'por_cobrar',
+                     subtotal: 0, impuestos_total: 0, total: 0 },
+            lineas: [], splitMode: false, numCuentas: 1,
+            cuentasNombres: {},
+            timestamp: Date.now(),
+          };
+          this._store.setQueue([...this._store.state.queue, ticketBasico]);
+          this._renderQueue();
+          toast(`Nueva orden: ${mesa}`, 'success');
+        }
+        // Siempre sincronizar con la BD para obtener totales y líneas reales
+        this._syncFromDB();
+      });
 
-      // Cargar las líneas en segundo plano para que el cajero las vea al seleccionar
-      fetchLineasOrden(orden_id)
-        .then(lineas => { ticketBasico.lineas = lineas; })
-        .catch(() => {});
+      // Pago registrado (confirmado por el servidor)
+      posSocket.onCajaPagoRegistrado(({ mesa_id }) => {
+        if (mesa_id == null) return;
+        const enCola = this._store.state.queue.some(t => t.mesaId === mesa_id);
+        if (enCola) {
+          removeFromQueue(mesa_id);
+          this._store.setQueue(getQueue());
+          this._renderQueue();
+        }
+      });
 
-      const queue = this._store.state.queue;
-      this._store.setQueue([...queue, ticketBasico]);
-      this._renderQueue();
-      toast(`Nueva orden: Mesa ${mesa_nombre}`, 'success');
-    });
-
-    // Pago registrado (confirmado por el servidor)
-    posSocket.onCajaPagoRegistrado(({ mesa_id }) => {
-      if (mesa_id == null) return;
-      const enCola = this._store.state.queue.some(t => t.mesaId === mesa_id);
-      if (enCola) {
+      // Orden anulada
+      posSocket.onCajaOrdenAnulada(({ mesa_id }) => {
         removeFromQueue(mesa_id);
         this._store.setQueue(getQueue());
         this._renderQueue();
-      }
-    });
-
-    // Orden anulada
-    posSocket.onCajaOrdenAnulada(({ mesa_id }) => {
-      removeFromQueue(mesa_id);
-      this._store.setQueue(getQueue());
-      this._renderQueue();
-      toast('Orden anulada');
+        toast('Orden anulada');
+      });
     });
   }
 
@@ -140,8 +138,30 @@ class CajaPage {
   // ─── Cola ─────────────────────────────────────────────────────────────────
 
   private _loadQueue(): void {
+    // Mostrar el cache local inmediatamente mientras llega la BD
     this._store.setQueue(getQueue());
     this._renderQueue();
+
+    // Sincronizar con BD (fuente de verdad)
+    this._syncFromDB();
+  }
+
+  private _syncFromDB(): void {
+    fetchOrdenesEnCola(this._sucursalId)
+      .then(ordenes => {
+        // Conservar datos de sesión (splitMode, cuentas) si la orden ya estaba en cola
+        const local = this._store.state.queue;
+        const merged = ordenes.map(o => {
+          const existing = local.find(l => l.id === o.id);
+          return existing
+            ? { ...o, splitMode: existing.splitMode, numCuentas: existing.numCuentas, cuentasNombres: existing.cuentasNombres }
+            : o;
+        });
+        this._store.setQueue(merged);
+        localStorage.setItem(CAJA_QUEUE_KEY, JSON.stringify(merged));
+        this._renderQueue();
+      })
+      .catch(() => { /* mantener cache local si falla la red */ });
   }
 
   private _renderQueue(): void {
@@ -192,15 +212,14 @@ class CajaPage {
     if (!ticket) return;
     this._store.selectTicket(ticket);
 
-    // Si el ticket vino por socket y no tiene líneas, cargarlas ahora
-    if (!ticket.lineas.length) {
-      fetchLineasOrden(ticket.id)
-        .then(lineas => {
-          this._store.setLineas(lineas);
-          this._renderCobroLineas();
-        })
-        .catch(() => {});
-    }
+    // Siempre refrescar líneas desde la BD al seleccionar:
+    // garantiza ver artículos agregados después de pedir la cuenta
+    fetchLineasOrden(ticket.id)
+      .then(lineas => {
+        this._store.setLineas(lineas);
+        this._renderCobroLineas();
+      })
+      .catch(() => {});
 
     this._renderQueue();
     this._renderDetalleHeader();
@@ -627,9 +646,11 @@ class CajaPage {
   }
 
   private _subscribeChannels(): void {
+    // Fallback same-device/same-browser: storage event (cross-tab) + BroadcastChannel
     window.addEventListener('storage', e => {
       if (e.key === CAJA_QUEUE_KEY) this._loadQueue();
     });
+    cajaChannel.on(() => this._loadQueue());
   }
 }
 

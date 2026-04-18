@@ -218,7 +218,7 @@ export interface OrdenLineaSincronizadaPayload {
 export interface CajaOrdenListaCobrarPayload {
   orden_id: number;
   mesa_id: number;
-  mesa_nombre: string;
+  mesa: string;
   total: number;
 }
 
