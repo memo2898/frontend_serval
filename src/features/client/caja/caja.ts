@@ -103,6 +103,35 @@ class CajaPage {
         this._syncFromDB();
       });
 
+      // Línea añadida/modificada/eliminada en una orden que está en caja
+      posSocket.onOrdenLineaSincronizada(({ orden_id, mesa_id }) => {
+        const enCola = this._store.state.queue.some(t => t.id === orden_id);
+        if (!enCola) return;
+
+        fetchLineasOrden(orden_id)
+          .then(lineas => {
+            const subtotal = Math.round(lineas.reduce((s, l) => s + l.subtotal_linea, 0) * 100) / 100;
+
+            // Actualizar líneas y subtotal en el ticket de la cola
+            const queue = this._store.state.queue.map(t =>
+              t.id !== orden_id ? t : { ...t, lineas, orden: { ...t.orden, subtotal } },
+            );
+            this._store.setQueue(queue);
+            localStorage.setItem(CAJA_QUEUE_KEY, JSON.stringify(queue));
+            this._renderQueue();
+
+            // Si el ticket afectado está abierto en el panel de detalle, re-renderizarlo
+            if (this._store.state.ticketId === orden_id) {
+              this._store.setLineas(lineas);
+              this._renderCobroLineas();
+              this._renderCobroTotales();
+              this._renderCobro();
+              this._setMontoPago();
+            }
+          })
+          .catch(() => {});
+      });
+
       // Pago registrado (confirmado por el servidor)
       posSocket.onCajaPagoRegistrado(({ mesa_id }) => {
         if (mesa_id == null) return;

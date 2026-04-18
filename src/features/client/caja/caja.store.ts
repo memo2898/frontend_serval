@@ -69,6 +69,13 @@ export class CajaStore {
 
   setLineas(lineas: import('./caja.types').LineaCobro[]): void {
     this._state.lineas = lineas.map(l => ({ ...l }));
+    // Recalcular subtotal de la orden activa desde las líneas reales
+    if (this._state.orden) {
+      this._state.orden = {
+        ...this._state.orden,
+        subtotal: Math.round(lineas.reduce((s, l) => s + Number(l.subtotal_linea), 0) * 100) / 100,
+      };
+    }
     this._notify();
   }
 
