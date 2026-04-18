@@ -42,6 +42,12 @@ export const notifStore = {
     notify();
   },
 
+  marcarPorLineas(lineaIds: number[]): void {
+    const antes = _entregas.length;
+    _entregas = _entregas.filter(e => !e.orden_linea_ids.some(id => lineaIds.includes(id)));
+    if (_entregas.length !== antes) { _save(_entregas); notify(); }
+  },
+
   getAll: (): EntregaPendiente[] => _entregas,
 
   getMias: (userId: number): EntregaPendiente[] =>

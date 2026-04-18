@@ -18,7 +18,7 @@ import {
   getZonas, getMesasByZona, getFamilias, getArticulos, getAllArticulos, getModificadores,
   getImpuestosSucursal,
   createOrden, getOrdenActivaMesa, getUltimaOrdenMesa, getLineas,
-  createLinea, updateLinea, deleteLinea,
+  createLinea, updateLinea, deleteLinea, updateOrden,
   marcarOrdenEnPreparacion, marcarOrdenPorCobrar,
   patchEstadoMesa, patchMesaPersonas, patchMesaData,
 } from './mesas.service';
@@ -212,6 +212,11 @@ class MesasPage {
 
       // KDS lineas entregadas (confirmación del backend)
       posSocket.onKdsLineasEntregadas(({ orden_id, orden_linea_ids }) => {
+        // Quitar notificaciones de cualquier camarero que haya recogido estas líneas
+        if (orden_linea_ids?.length) {
+          notifStore.marcarPorLineas(orden_linea_ids);
+          this._updateNotifBadge();
+        }
         if (orden_id === this._store.state.ordenId && orden_linea_ids?.length) {
           this._store.marcarLineasEntregadas(orden_linea_ids);
           if (document.getElementById('screen-tpv')?.classList.contains('active')) {
@@ -499,9 +504,9 @@ class MesasPage {
     })
       .then(orden => {
         const numComensales = this._store.state.numComensales;
+        // Marcar ocupada solo localmente; el broadcast se hace al enviar a cocina
         this._store.patchMesa(mesa.id, { estado: 'ocupada', personas: numComensales });
         this._store.openTPV(mesa.id, mesa.nombre, numComensales, orden);
-        patchEstadoMesa(mesa.id, 'ocupada').catch(() => {});
         patchMesaPersonas(mesa.id, numComensales).catch(() => {});
         posSocket.emitUsuarioEntro(mesa.id, numComensales);
         this._loadTPVScreen();
@@ -681,7 +686,15 @@ class MesasPage {
 
     // ── TPV: volver a mesas ──
     document.querySelector('[data-back-mesas]')?.addEventListener('click', () => {
-      const mesaId = this._store.state.mesaId;
+      const { mesaId, lineas, ordenId } = this._store.state;
+      // Si no hay nada digitado, liberar y cancelar la orden vacía automáticamente
+      if (!lineas.length && ordenId) {
+        updateOrden(ordenId, { estado: 'cancelada' }).catch(() => {});
+        if (mesaId) {
+          patchEstadoMesa(mesaId, 'libre').catch(() => {});
+          this._liberarMesaConUnidas(mesaId);
+        }
+      }
       if (mesaId) posSocket.emitUsuarioSalio(mesaId);
       this._store.resetTPV();
       this._floorPlan.renderMesas();
@@ -894,6 +907,7 @@ class MesasPage {
     document.querySelector('[data-enviar-cocina]')?.addEventListener('click', () => this._enviarCocina());
     document.querySelector('[data-pedir-cuenta]')?.addEventListener('click', () => this._pedirCuenta());
     document.getElementById('btn-split')?.addEventListener('click', () => this._openSplitModal());
+    document.querySelector('[data-liberar-mesa]')?.addEventListener('click', () => this._liberarMesaVacia());
 
     // ── Modal modificadores ──
     document.getElementById('modal-grupos')?.addEventListener('click', e => {
@@ -994,10 +1008,42 @@ class MesasPage {
         posSocket.emitEnviarCocina(ordenId, linea_ids);
         this._store.marcarEnviadas(linea_ids);
         this._store.setOrdenCompleta(false); // esperar confirmación de KDS
+        // Persistir estado 'ocupada' en BD solo al primer envío a cocina
+        const { mesaId } = this._store.state;
+        if (mesaId) patchEstadoMesa(mesaId, 'ocupada').catch(() => {});
         toast('Enviado a cocina ✓', 'success');
         this._tpv.renderOrden();
       })
       .catch(() => toast('Error al enviar a cocina'))
+      .finally(() => this._store.setCargando(false));
+  }
+
+  private _liberarMesaVacia(): void {
+    const { lineas, ordenId, mesaId } = this._store.state;
+    if (lineas.length) {
+      toast('No se puede liberar: hay artículos en la orden', 'error');
+      return;
+    }
+    if (!confirm('¿Liberar la mesa? Se cancelará la orden vacía.')) return;
+
+    this._store.setCargando(true);
+    const cancelar = ordenId
+      ? updateOrden(ordenId, { estado: 'cancelada' }).catch(() => {})
+      : Promise.resolve();
+
+    cancelar
+      .then(() => {
+        if (mesaId) {
+          patchEstadoMesa(mesaId, 'libre').catch(() => {});
+          posSocket.emitUsuarioSalio(mesaId);
+          this._liberarMesaConUnidas(mesaId);
+        }
+        this._store.resetTPV();
+        this._goTo('mesas');
+        this._floorPlan.renderMesas();
+        toast('Mesa liberada', 'success');
+      })
+      .catch(() => toast('Error al liberar la mesa', 'error'))
       .finally(() => this._store.setCargando(false));
   }
 
