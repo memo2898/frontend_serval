@@ -241,7 +241,7 @@ export class OrdenPagosFeature {
           };
 
           if (isEdit) {
-            await ordenPagosService.update(initialData.id, data);
+            await ordenPagosService.update(initialData.id!, data);
             toastx.success('OrdenPagos actualizado correctamente');
           } else {
             await ordenPagosService.create(data);
@@ -291,7 +291,7 @@ export class OrdenPagosFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await ordenPagosService.remove(this._selectedOrdenPagos.id);
+        await ordenPagosService.remove(this._selectedOrdenPagos.id!);
         toastx.success('OrdenPagos eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

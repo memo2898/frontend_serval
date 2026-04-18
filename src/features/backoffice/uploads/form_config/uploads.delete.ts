@@ -11,7 +11,7 @@ export function buildDeleteBody(item: Uploads): HTMLElement {
   card.style.cssText = 'padding:16px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca';
 
   const primary = document.createElement('strong');
-  primary.textContent = String(item.0 ?? item.id);
+  primary.textContent = String(item[0] ?? item.id);
 
   card.appendChild(primary);
 

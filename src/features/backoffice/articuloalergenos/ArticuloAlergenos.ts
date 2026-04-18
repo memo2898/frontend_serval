@@ -246,7 +246,7 @@ export class ArticuloAlergenosFeature {
           };
 
           if (isEdit) {
-            await articuloAlergenosService.update(initialData.id, data);
+            await articuloAlergenosService.update(initialData.id!, data);
             toastx.success('ArticuloAlergenos actualizado correctamente');
           } else {
             await articuloAlergenosService.create(data);
@@ -297,7 +297,7 @@ export class ArticuloAlergenosFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await articuloAlergenosService.remove(this._selectedArticuloAlergenos.id);
+        await articuloAlergenosService.remove(this._selectedArticuloAlergenos.id!);
         toastx.success('ArticuloAlergenos eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

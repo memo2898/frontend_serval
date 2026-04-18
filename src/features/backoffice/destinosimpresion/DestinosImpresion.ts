@@ -241,7 +241,7 @@ export class DestinosImpresionFeature {
           };
 
           if (isEdit) {
-            await destinosImpresionService.update(initialData.id, data);
+            await destinosImpresionService.update(initialData.id!, data);
             toastx.success('DestinosImpresion actualizado correctamente');
           } else {
             await destinosImpresionService.create(data);
@@ -291,7 +291,7 @@ export class DestinosImpresionFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await destinosImpresionService.remove(this._selectedDestinosImpresion.id);
+        await destinosImpresionService.remove(this._selectedDestinosImpresion.id!);
         toastx.success('DestinosImpresion eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

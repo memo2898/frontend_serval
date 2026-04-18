@@ -256,7 +256,7 @@ export class SucursalesFeature {
           };
 
           if (isEdit) {
-            await sucursalesService.update(initialData.id, data);
+            await sucursalesService.update(initialData.id!, data);
             toastx.success('Sucursales actualizado correctamente');
           } else {
             await sucursalesService.create(data);
@@ -306,7 +306,7 @@ export class SucursalesFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await sucursalesService.remove(this._selectedSucursales.id);
+        await sucursalesService.remove(this._selectedSucursales.id!);
         toastx.success('Sucursales eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

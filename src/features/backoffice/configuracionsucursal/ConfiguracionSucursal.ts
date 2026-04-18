@@ -249,7 +249,7 @@ export class ConfiguracionSucursalFeature {
           };
 
           if (isEdit) {
-            await configuracionSucursalService.update(initialData.id, data);
+            await configuracionSucursalService.update(initialData.id!, data);
             toastx.success('ConfiguracionSucursal actualizado correctamente');
           } else {
             await configuracionSucursalService.create(data);
@@ -299,7 +299,7 @@ export class ConfiguracionSucursalFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await configuracionSucursalService.remove(this._selectedConfiguracionSucursal.id);
+        await configuracionSucursalService.remove(this._selectedConfiguracionSucursal.id!);
         toastx.success('ConfiguracionSucursal eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

@@ -1,4 +1,6 @@
+import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
+import type { Uploads, UploadsCreateDTO, UploadsUpdateDTO, UploadsFilters, PaginatedResponse } from './uploads.types';
 
 const BASE = `${SERVER_ROUTE}/api/uploads`;
 
@@ -84,6 +86,35 @@ export const getFileUrl = async (filePath: string): Promise<string> => {
 
   const data: any = await res.json();
   return data.url ?? `${BASE}/${filePath}`;
+};
+
+
+// ─── CRUD methods (used by UploadsFeature) ───────────────────────────────────
+
+export const getAll = async (): Promise<Uploads[]> => {
+  return await http.get<Uploads[]>(BASE);
+};
+
+export const create = async (data: UploadsCreateDTO): Promise<Uploads> => {
+  return await http.post<Uploads>(BASE, data);
+};
+
+export const update = async (id: number, data: UploadsUpdateDTO): Promise<Uploads> => {
+  return await http.patch<Uploads>(`${BASE}/${id}`, data);
+};
+
+export const remove = async (id: number): Promise<void> => {
+  return await http.delete<void>(`${BASE}/${id}`);
+};
+
+export const getPaginated = async (filters: UploadsFilters = {}): Promise<PaginatedResponse<Uploads>> => {
+  const query = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query.append(key, String(value));
+    }
+  });
+  return await http.get<PaginatedResponse<Uploads>>(`${BASE}/paginated?${query.toString()}`);
 };
 
 

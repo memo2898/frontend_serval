@@ -245,7 +245,7 @@ export class DescuentosFeature {
           };
 
           if (isEdit) {
-            await descuentosService.update(initialData.id, data);
+            await descuentosService.update(initialData.id!, data);
             toastx.success('Descuentos actualizado correctamente');
           } else {
             await descuentosService.create(data);
@@ -295,7 +295,7 @@ export class DescuentosFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await descuentosService.remove(this._selectedDescuentos.id);
+        await descuentosService.remove(this._selectedDescuentos.id!);
         toastx.success('Descuentos eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

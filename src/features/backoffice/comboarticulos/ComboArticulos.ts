@@ -248,7 +248,7 @@ export class ComboArticulosFeature {
           };
 
           if (isEdit) {
-            await comboArticulosService.update(initialData.id, data);
+            await comboArticulosService.update(initialData.id!, data);
             toastx.success('ComboArticulos actualizado correctamente');
           } else {
             await comboArticulosService.create(data);
@@ -299,7 +299,7 @@ export class ComboArticulosFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await comboArticulosService.remove(this._selectedComboArticulos.id);
+        await comboArticulosService.remove(this._selectedComboArticulos.id!);
         toastx.success('ComboArticulos eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

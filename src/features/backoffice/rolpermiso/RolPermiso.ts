@@ -246,7 +246,7 @@ export class RolPermisoFeature {
           };
 
           if (isEdit) {
-            await rolPermisoService.update(initialData.id, data);
+            await rolPermisoService.update(initialData.id!, data);
             toastx.success('RolPermiso actualizado correctamente');
           } else {
             await rolPermisoService.create(data);
@@ -297,7 +297,7 @@ export class RolPermisoFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await rolPermisoService.remove(this._selectedRolPermiso.id);
+        await rolPermisoService.remove(this._selectedRolPermiso.id!);
         toastx.success('RolPermiso eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

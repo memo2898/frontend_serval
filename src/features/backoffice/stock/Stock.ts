@@ -248,7 +248,7 @@ export class StockFeature {
           };
 
           if (isEdit) {
-            await stockService.update(initialData.id, data);
+            await stockService.update(initialData.id!, data);
             toastx.success('Stock actualizado correctamente');
           } else {
             await stockService.create(data);
@@ -299,7 +299,7 @@ export class StockFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await stockService.remove(this._selectedStock.id);
+        await stockService.remove(this._selectedStock.id!);
         toastx.success('Stock eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

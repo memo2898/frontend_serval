@@ -239,7 +239,7 @@ export class TarifasFeature {
           };
 
           if (isEdit) {
-            await tarifasService.update(initialData.id, data);
+            await tarifasService.update(initialData.id!, data);
             toastx.success('Tarifas actualizado correctamente');
           } else {
             await tarifasService.create(data);
@@ -289,7 +289,7 @@ export class TarifasFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await tarifasService.remove(this._selectedTarifas.id);
+        await tarifasService.remove(this._selectedTarifas.id!);
         toastx.success('Tarifas eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

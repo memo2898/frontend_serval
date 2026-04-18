@@ -255,7 +255,7 @@ export class OrdenLineasFeature {
           };
 
           if (isEdit) {
-            await ordenLineasService.update(initialData.id, data);
+            await ordenLineasService.update(initialData.id!, data);
             toastx.success('OrdenLineas actualizado correctamente');
           } else {
             await ordenLineasService.create(data);
@@ -306,7 +306,7 @@ export class OrdenLineasFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await ordenLineasService.remove(this._selectedOrdenLineas.id);
+        await ordenLineasService.remove(this._selectedOrdenLineas.id!);
         toastx.success('OrdenLineas eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { Stock, StockCreateDTO, StockUpdateDTO, StockFilters, PaginatedResponse } from './stock.types';
 
 const BASE = `${SERVER_ROUTE}/api/stock`;
@@ -48,17 +47,17 @@ const buildQuery = (params: object): string => {
 
 // ─── Endpoints adicionales ────────────────────────────────────────────────────
 // Obtener un stock por ID
-export const getCustom = async (articuloId: number, sucursalId: number, id: number) => {
+export const getCustom = async (articuloId: number, sucursalId: number, _id: number) => {
   return await http.get<any>(`${BASE}/${articuloId}/${sucursalId}`);
 };
 
 // Actualizar un stock
-export const patchCustom = async (articuloId: number, sucursalId: number, id: number, data: any) => {
+export const patchCustom = async (articuloId: number, sucursalId: number, _id: number, data: any) => {
   return await http.patch<any>(`${BASE}/${articuloId}/${sucursalId}`, data);
 };
 
 // Eliminar un stock
-export const deleteCustom = async (articuloId: number, sucursalId: number, id: number) => {
+export const deleteCustom = async (articuloId: number, sucursalId: number, _id: number) => {
   return await http.delete<any>(`${BASE}/${articuloId}/${sucursalId}`);
 };
 

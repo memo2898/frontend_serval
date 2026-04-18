@@ -12,7 +12,9 @@ export type ValidationType =
   | "max"
   | "pattern"
   | "url"
-  | "phone";
+  | "phone"
+  | "positive"
+  | "integer";
 
 export interface ValidationRule {
   type: ValidationType;

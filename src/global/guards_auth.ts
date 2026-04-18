@@ -72,6 +72,8 @@ export function checkIsSuperAdmin(): void {
 
 export function checkMustChangePassword(): void {
   if (!mustChangePassword()) return;
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore — no declaration file for this JS module
   import('@/components/passwordModal/passwordModal').then((m: any) => {
     m.openForcedPasswordModal();
   });

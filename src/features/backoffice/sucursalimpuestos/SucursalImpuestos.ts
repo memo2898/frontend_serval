@@ -248,7 +248,7 @@ export class SucursalImpuestosFeature {
           };
 
           if (isEdit) {
-            await sucursalImpuestosService.update(initialData.id, data);
+            await sucursalImpuestosService.update(initialData.id!, data);
             toastx.success('SucursalImpuestos actualizado correctamente');
           } else {
             await sucursalImpuestosService.create(data);
@@ -299,7 +299,7 @@ export class SucursalImpuestosFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await sucursalImpuestosService.remove(this._selectedSucursalImpuestos.id);
+        await sucursalImpuestosService.remove(this._selectedSucursalImpuestos.id!);
         toastx.success('SucursalImpuestos eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

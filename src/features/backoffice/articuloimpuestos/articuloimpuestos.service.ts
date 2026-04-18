@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { ArticuloImpuestos, ArticuloImpuestosCreateDTO, ArticuloImpuestosUpdateDTO, ArticuloImpuestosFilters, PaginatedResponse } from './articuloimpuestos.types';
 
 const BASE = `${SERVER_ROUTE}/api/articulo-impuestos`;
@@ -48,17 +47,17 @@ const buildQuery = (params: object): string => {
 
 // ─── Endpoints adicionales ────────────────────────────────────────────────────
 // Obtener un articulo_impuesto por ID
-export const getCustom = async (articuloId: number, impuestoId: number, id: number) => {
+export const getCustom = async (articuloId: number, impuestoId: number, _id: number) => {
   return await http.get<any>(`${BASE}/${articuloId}/${impuestoId}`);
 };
 
 // Actualizar un articulo_impuesto
-export const patchCustom = async (articuloId: number, impuestoId: number, id: number, data: any) => {
+export const patchCustom = async (articuloId: number, impuestoId: number, _id: number, data: any) => {
   return await http.patch<any>(`${BASE}/${articuloId}/${impuestoId}`, data);
 };
 
 // Eliminar un articulo_impuesto
-export const deleteCustom = async (articuloId: number, impuestoId: number, id: number) => {
+export const deleteCustom = async (articuloId: number, impuestoId: number, _id: number) => {
   return await http.delete<any>(`${BASE}/${articuloId}/${impuestoId}`);
 };
 

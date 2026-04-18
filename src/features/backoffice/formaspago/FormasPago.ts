@@ -241,7 +241,7 @@ export class FormasPagoFeature {
           };
 
           if (isEdit) {
-            await formasPagoService.update(initialData.id, data);
+            await formasPagoService.update(initialData.id!, data);
             toastx.success('FormasPago actualizado correctamente');
           } else {
             await formasPagoService.create(data);
@@ -291,7 +291,7 @@ export class FormasPagoFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await formasPagoService.remove(this._selectedFormasPago.id);
+        await formasPagoService.remove(this._selectedFormasPago.id!);
         toastx.success('FormasPago eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

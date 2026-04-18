@@ -13,7 +13,7 @@ import { TpvScreen } from './screens/tpv';
 import { ComensalesModal } from './modals/comensales.modal';
 import { ModificadoresModal } from './modals/modificadores.modal';
 import { UnirMesaModal } from './modals/unir-mesa.modal';
-import type { Mesa, Orden } from './mesas.types';
+import type { Mesa, Orden, LineaOrden } from './mesas.types';
 import {
   getZonas, getMesasByZona, getFamilias, getArticulos, getModificadores,
   getImpuestosSucursal,
@@ -123,6 +123,7 @@ class MesasPage {
 
       // caja:pago_registrado — libera la mesa automáticamente
       posSocket.onCajaPagoRegistrado(({ mesa_id }) => {
+        if (mesa_id == null) return;
         this._store.patchMesa(mesa_id, { estado: 'libre', personas: 0 });
         if (document.getElementById('screen-mesas')?.classList.contains('active')) {
           this._floorPlan.renderMesas();
@@ -379,7 +380,7 @@ class MesasPage {
   private _intentarCargarDesdeQueue(mesaId: number): void {
     try {
       const queue = JSON.parse(localStorage.getItem(CAJA_QUEUE_KEY) ?? '[]') as Array<{
-        mesaId: number; id: number; orden: Orden; lineas: typeof this._store.state.lineas;
+        mesaId: number; id: number; orden: Orden; lineas: LineaOrden[];
         numComensales: number; splitMode: boolean; numCuentas: number;
       }>;
       const ticket = queue.find(t => t.mesaId === mesaId);

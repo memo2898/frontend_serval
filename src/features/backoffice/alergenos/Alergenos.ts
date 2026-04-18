@@ -203,7 +203,7 @@ export class AlergenosFeature {
           };
 
           if (isEdit) {
-            await alergenosService.update(initialData.id, data);
+            await alergenosService.update(initialData.id!, data);
             toastx.success('Alergenos actualizado correctamente');
           } else {
             await alergenosService.create(data);
@@ -251,7 +251,7 @@ export class AlergenosFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await alergenosService.remove(this._selectedAlergenos.id);
+        await alergenosService.remove(this._selectedAlergenos.id!);
         toastx.success('Alergenos eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

@@ -140,12 +140,6 @@ export class RolesFeature {
 
   // ---- Open modals ----
 
-  private _openCreate(): void {
-    this._selectedRoles = null;
-    this._modalCreate.setBody(this._buildForm(null, this._modalCreate));
-    this._modalCreate.open();
-  }
-
   private _openEdit(item: Roles): void {
     this._selectedRoles = item;
     const editForm = this._buildForm(item, this._modalEdit);
@@ -206,7 +200,7 @@ export class RolesFeature {
           };
 
           if (isEdit) {
-            await rolesService.update(initialData.id, data);
+            await rolesService.update(initialData.id!, data);
             toastx.success('Roles actualizado correctamente');
           } else {
             await rolesService.create(data);
@@ -254,7 +248,7 @@ export class RolesFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await rolesService.remove(this._selectedRoles.id);
+        await rolesService.remove(this._selectedRoles.id!);
         toastx.success('Roles eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

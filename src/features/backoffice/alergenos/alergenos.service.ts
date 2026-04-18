@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { Alergenos, AlergenosCreateDTO, AlergenosUpdateDTO, AlergenosFilters, PaginatedResponse } from './alergenos.types';
 
 const BASE = `${SERVER_ROUTE}/api/alergenos`;

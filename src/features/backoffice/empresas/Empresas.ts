@@ -258,7 +258,7 @@ export class EmpresasFeature {
           logoUrl = uploaded.url;
         }
 
-        await empresasService.update(initialData.id, { ...baseFields, logo: logoUrl });
+        await empresasService.update(initialData.id!, { ...baseFields, logo: logoUrl });
         toastx.success('Empresa actualizada correctamente');
       } else {
         // ── Creación ───────────────────────────────────────────────
@@ -268,7 +268,7 @@ export class EmpresasFeature {
         // 2. Subir logo si se seleccionó uno
         if (logoFiles && logoFiles.length > 0) {
           const uploaded = await uploadImage(`empresas/${created.id}/logo`, logoFiles[0]);
-          await empresasService.update(created.id, { logo: uploaded.url });
+          await empresasService.update(created.id!, { logo: uploaded.url });
         }
 
         toastx.success('Empresa creada correctamente');
@@ -319,7 +319,7 @@ export class EmpresasFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await empresasService.remove(this._selectedEmpresas.id);
+        await empresasService.remove(this._selectedEmpresas.id!);
         toastx.success('Empresas eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

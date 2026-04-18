@@ -246,7 +246,7 @@ export class ArticuloImpuestosFeature {
           };
 
           if (isEdit) {
-            await articuloImpuestosService.update(initialData.id, data);
+            await articuloImpuestosService.update(initialData.id!, data);
             toastx.success('ArticuloImpuestos actualizado correctamente');
           } else {
             await articuloImpuestosService.create(data);
@@ -297,7 +297,7 @@ export class ArticuloImpuestosFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await articuloImpuestosService.remove(this._selectedArticuloImpuestos.id);
+        await articuloImpuestosService.remove(this._selectedArticuloImpuestos.id!);
         toastx.success('ArticuloImpuestos eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

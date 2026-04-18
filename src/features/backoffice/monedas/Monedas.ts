@@ -205,7 +205,7 @@ export class MonedasFeature {
           };
 
           if (isEdit) {
-            await monedasService.update(initialData.id, data);
+            await monedasService.update(initialData.id!, data);
             toastx.success('Monedas actualizado correctamente');
           } else {
             await monedasService.create(data);
@@ -253,7 +253,7 @@ export class MonedasFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await monedasService.remove(this._selectedMonedas.id);
+        await monedasService.remove(this._selectedMonedas.id!);
         toastx.success('Monedas eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { RolPermiso, RolPermisoCreateDTO, RolPermisoUpdateDTO, RolPermisoFilters, PaginatedResponse } from './rolpermiso.types';
 
 const BASE = `${SERVER_ROUTE}/api/rol-permiso`;
@@ -48,17 +47,17 @@ const buildQuery = (params: object): string => {
 
 // ─── Endpoints adicionales ────────────────────────────────────────────────────
 // Obtener un rol_permiso por ID
-export const getCustom = async (rolId: number, permisoId: number, id: number) => {
+export const getCustom = async (rolId: number, permisoId: number, _id: number) => {
   return await http.get<any>(`${BASE}/${rolId}/${permisoId}`);
 };
 
 // Actualizar un rol_permiso
-export const patchCustom = async (rolId: number, permisoId: number, id: number, data: any) => {
+export const patchCustom = async (rolId: number, permisoId: number, _id: number, data: any) => {
   return await http.patch<any>(`${BASE}/${rolId}/${permisoId}`, data);
 };
 
 // Eliminar un rol_permiso
-export const deleteCustom = async (rolId: number, permisoId: number, id: number) => {
+export const deleteCustom = async (rolId: number, permisoId: number, _id: number) => {
   return await http.delete<any>(`${BASE}/${rolId}/${permisoId}`);
 };
 

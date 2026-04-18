@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { Utils, UtilsCreateDTO, UtilsUpdateDTO, UtilsFilters, PaginatedResponse } from './utils.types';
 
 const BASE = `${SERVER_ROUTE}/api/utils/health`;

@@ -252,7 +252,7 @@ export class FacturasFeature {
           };
 
           if (isEdit) {
-            await facturasService.update(initialData.id, data);
+            await facturasService.update(initialData.id!, data);
             toastx.success('Facturas actualizado correctamente');
           } else {
             await facturasService.create(data);
@@ -303,7 +303,7 @@ export class FacturasFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await facturasService.remove(this._selectedFacturas.id);
+        await facturasService.remove(this._selectedFacturas.id!);
         toastx.success('Facturas eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

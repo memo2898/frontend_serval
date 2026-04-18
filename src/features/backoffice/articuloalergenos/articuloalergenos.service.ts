@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { ArticuloAlergenos, ArticuloAlergenosCreateDTO, ArticuloAlergenosUpdateDTO, ArticuloAlergenosFilters, PaginatedResponse } from './articuloalergenos.types';
 
 const BASE = `${SERVER_ROUTE}/api/articulo-alergenos`;
@@ -48,17 +47,17 @@ const buildQuery = (params: object): string => {
 
 // ─── Endpoints adicionales ────────────────────────────────────────────────────
 // Obtener un articulo_alergeno por ID
-export const getCustom = async (articuloId: number, alergenoId: number, id: number) => {
+export const getCustom = async (articuloId: number, alergenoId: number, _id: number) => {
   return await http.get<any>(`${BASE}/${articuloId}/${alergenoId}`);
 };
 
 // Actualizar un articulo_alergeno
-export const patchCustom = async (articuloId: number, alergenoId: number, id: number, data: any) => {
+export const patchCustom = async (articuloId: number, alergenoId: number, _id: number, data: any) => {
   return await http.patch<any>(`${BASE}/${articuloId}/${alergenoId}`, data);
 };
 
 // Eliminar un articulo_alergeno
-export const deleteCustom = async (articuloId: number, alergenoId: number, id: number) => {
+export const deleteCustom = async (articuloId: number, alergenoId: number, _id: number) => {
   return await http.delete<any>(`${BASE}/${articuloId}/${alergenoId}`);
 };
 

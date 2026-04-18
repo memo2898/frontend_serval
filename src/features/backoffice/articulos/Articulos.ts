@@ -580,7 +580,7 @@ export class ArticulosFeature {
               imagenUrl = uploaded.url;
             }
 
-            await articulosService.update(initialData.id, { ...baseFields, imagen: imagenUrl });
+            await articulosService.update(initialData.id!, { ...baseFields, imagen: imagenUrl });
             toastx.success('Articulos actualizado correctamente');
           } else {
             // ── Creación ───────────────────────────────────────────────
@@ -590,7 +590,7 @@ export class ArticulosFeature {
             // 2. Subir imagen si se seleccionó una
             if (imagenFiles && imagenFiles.length > 0) {
               const uploaded = await uploadImage(`articulos/${created.id}/imagen`, imagenFiles[0]);
-              await articulosService.update(created.id, { imagen: uploaded.url });
+              await articulosService.update(created.id!, { imagen: uploaded.url });
             }
 
             toastx.success('Articulos creado correctamente');
@@ -641,7 +641,7 @@ export class ArticulosFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await articulosService.remove(this._selectedArticulos.id);
+        await articulosService.remove(this._selectedArticulos.id!);
         toastx.success('Articulos eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { Auth, AuthCreateDTO, AuthUpdateDTO, AuthFilters, PaginatedResponse } from './auth.types';
 
 const BASE = `${SERVER_ROUTE}/api/auth/login`;

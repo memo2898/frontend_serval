@@ -241,7 +241,7 @@ export class KdsOrdenesFeature {
           };
 
           if (isEdit) {
-            await kdsOrdenesService.update(initialData.id, data);
+            await kdsOrdenesService.update(initialData.id!, data);
             toastx.success('KdsOrdenes actualizado correctamente');
           } else {
             await kdsOrdenesService.create(data);
@@ -291,7 +291,7 @@ export class KdsOrdenesFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await kdsOrdenesService.remove(this._selectedKdsOrdenes.id);
+        await kdsOrdenesService.remove(this._selectedKdsOrdenes.id!);
         toastx.success('KdsOrdenes eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

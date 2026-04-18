@@ -240,7 +240,7 @@ export class ZonasFeature {
           };
 
           if (isEdit) {
-            await zonasService.update(initialData.id, data);
+            await zonasService.update(initialData.id!, data);
             toastx.success('Zonas actualizado correctamente');
           } else {
             await zonasService.create(data);
@@ -290,7 +290,7 @@ export class ZonasFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await zonasService.remove(this._selectedZonas.id);
+        await zonasService.remove(this._selectedZonas.id!);
         toastx.success('Zonas eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

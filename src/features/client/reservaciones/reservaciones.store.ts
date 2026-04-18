@@ -1,5 +1,5 @@
 import type {
-  Zona, Mesa, Reservacion, ReservacionesState, EstadoMesa,
+  Zona, Mesa, Reservacion, ReservacionesState,
 } from './reservaciones.types';
 
 export class ReservacionesStore {

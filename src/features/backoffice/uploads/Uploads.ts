@@ -202,7 +202,7 @@ export class UploadsFeature {
           };
 
           if (isEdit) {
-            await uploadsService.update(initialData.id, data);
+            await uploadsService.update(initialData.id!, data);
             toastx.success('Uploads actualizado correctamente');
           } else {
             await uploadsService.create(data);
@@ -250,7 +250,7 @@ export class UploadsFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await uploadsService.remove(this._selectedUploads.id);
+        await uploadsService.remove(this._selectedUploads.id!);
         toastx.success('Uploads eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

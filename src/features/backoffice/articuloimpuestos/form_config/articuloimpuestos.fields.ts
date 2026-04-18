@@ -1,4 +1,3 @@
-import { InputX } from '@/lib/uiX/components/InputX';
 import { SelectX } from '@/lib/uiX/components/SelectX';
 import type { ArticuloImpuestos } from '../articuloimpuestos.types';
 

@@ -205,7 +205,7 @@ export class MovimientosCajaFeature {
           };
 
           if (isEdit) {
-            await movimientosCajaService.update(initialData.id, data);
+            await movimientosCajaService.update(initialData.id!, data);
             toastx.success('MovimientosCaja actualizado correctamente');
           } else {
             await movimientosCajaService.create(data);
@@ -253,7 +253,7 @@ export class MovimientosCajaFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await movimientosCajaService.remove(this._selectedMovimientosCaja.id);
+        await movimientosCajaService.remove(this._selectedMovimientosCaja.id!);
         toastx.success('MovimientosCaja eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

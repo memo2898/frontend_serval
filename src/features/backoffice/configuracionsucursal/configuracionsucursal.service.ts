@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { ConfiguracionSucursal, ConfiguracionSucursalCreateDTO, ConfiguracionSucursalUpdateDTO, ConfiguracionSucursalFilters, PaginatedResponse } from './configuracionsucursal.types';
 
 const BASE = `${SERVER_ROUTE}/api/configuracion-sucursal`;

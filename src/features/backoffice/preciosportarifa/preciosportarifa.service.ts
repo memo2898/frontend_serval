@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { PreciosPorTarifa, PreciosPorTarifaCreateDTO, PreciosPorTarifaUpdateDTO, PreciosPorTarifaFilters, PaginatedResponse } from './preciosportarifa.types';
 
 const BASE = `${SERVER_ROUTE}/api/precios-por-tarifa`;

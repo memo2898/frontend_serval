@@ -9,6 +9,17 @@ export interface Notification {
   type: 'info' | 'success' | 'warning' | 'error';
   time: string;
   read: boolean;
+  // Extended fields used by the notifications service
+  id_notificacion?: number;
+  tabla_origen?: string;
+  entidad_id?: number;
+}
+
+export interface NotificationCallbacks {
+  onOpen?: () => void;
+  onMarkAsRead?: (id: number) => void;
+  onMarkAllAsRead?: () => void;
+  onClickNotification?: (notif: Notification) => void;
 }
 
 const TYPE_ICONS: Record<Notification['type'], string> = {
@@ -20,6 +31,7 @@ const TYPE_ICONS: Record<Notification['type'], string> = {
 
 export class NotificationsComponent {
   private _notifications: Notification[] = [];
+  private _callbacks: NotificationCallbacks = {};
   private _wrapper!: HTMLElement;
   private _btn!: HTMLButtonElement;
   private _badge!: HTMLElement;
@@ -133,12 +145,14 @@ export class NotificationsComponent {
     // Marcar todas como leídas
     this._dropdown.querySelector('.notif_mark_all')?.addEventListener('click', () => {
       this.markAllAsRead();
+      this._callbacks.onMarkAllAsRead?.();
     });
   }
 
   private _open(): void {
     this._isOpen = true;
     this._dropdown.classList.add('open');
+    this._callbacks.onOpen?.();
   }
 
   private _close(): void {
@@ -152,6 +166,10 @@ export class NotificationsComponent {
       notif.read = true;
       this._renderList();
       this._updateBadge();
+      if (notif.id_notificacion != null) {
+        this._callbacks.onMarkAsRead?.(notif.id_notificacion);
+      }
+      this._callbacks.onClickNotification?.(notif);
     }
   }
 
@@ -171,6 +189,20 @@ export class NotificationsComponent {
     this._notifications.unshift(notification);
     this._renderList();
     this._updateBadge();
+  }
+
+  setCallbacks(callbacks: NotificationCallbacks): void {
+    this._callbacks = callbacks;
+  }
+
+  setBadgeCount(count: number): void {
+    if (!this._badge) return;
+    if (count > 0) {
+      this._badge.textContent = count > 99 ? '99+' : String(count);
+      this._badge.classList.remove('hidden');
+    } else {
+      this._badge.classList.add('hidden');
+    }
   }
 }
 

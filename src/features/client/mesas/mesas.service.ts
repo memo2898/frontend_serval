@@ -165,7 +165,7 @@ const normalizeLinea = (l: LineaOrden & { modificadores?: RawModLinea[] }): Line
   modificadores:   (l.modificadores ?? []).map(m => ({
     id:                m.id,
     modificador_id:    m.modificador_id,
-    nombre_modificador: m.nombre_modificador ?? m.modificador?.nombre ?? '',
+    nombre_modificador: m.nombre_modificador ?? '',
     precio_extra:      Number(m.precio_extra),
   })),
 });

@@ -243,7 +243,7 @@ export class FamiliasFeature {
           };
 
           if (isEdit) {
-            await familiasService.update(initialData.id, data);
+            await familiasService.update(initialData.id!, data);
             toastx.success('Familias actualizado correctamente');
           } else {
             await familiasService.create(data);
@@ -293,7 +293,7 @@ export class FamiliasFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await familiasService.remove(this._selectedFamilias.id);
+        await familiasService.remove(this._selectedFamilias.id!);
         toastx.success('Familias eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

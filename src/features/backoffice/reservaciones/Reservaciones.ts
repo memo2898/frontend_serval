@@ -279,7 +279,7 @@ export class ReservacionesFeature {
           };
 
           if (isEdit) {
-            await reservacionesService.update(initialData.id, data);
+            await reservacionesService.update(initialData.id!, data);
             toastx.success('Reservaciones actualizado correctamente');
           } else {
             await reservacionesService.create(data);
@@ -351,7 +351,7 @@ export class ReservacionesFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await reservacionesService.remove(this._selectedReservaciones.id);
+        await reservacionesService.remove(this._selectedReservaciones.id!);
         toastx.success('Reservaciones eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

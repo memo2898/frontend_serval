@@ -247,7 +247,7 @@ export class PreciosPorTarifaFeature {
           };
 
           if (isEdit) {
-            await preciosPorTarifaService.update(initialData.id, data);
+            await preciosPorTarifaService.update(initialData.id!, data);
             toastx.success('PreciosPorTarifa actualizado correctamente');
           } else {
             await preciosPorTarifaService.create(data);
@@ -298,7 +298,7 @@ export class PreciosPorTarifaFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await preciosPorTarifaService.remove(this._selectedPreciosPorTarifa.id);
+        await preciosPorTarifaService.remove(this._selectedPreciosPorTarifa.id!);
         toastx.success('PreciosPorTarifa eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

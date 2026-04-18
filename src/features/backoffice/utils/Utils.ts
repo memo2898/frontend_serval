@@ -203,7 +203,7 @@ export class UtilsFeature {
           };
 
           if (isEdit) {
-            await utilsService.update(initialData.id, data);
+            await utilsService.update(initialData.id!, data);
             toastx.success('Utils actualizado correctamente');
           } else {
             await utilsService.create(data);
@@ -251,7 +251,7 @@ export class UtilsFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await utilsService.remove(this._selectedUtils.id);
+        await utilsService.remove(this._selectedUtils.id!);
         toastx.success('Utils eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

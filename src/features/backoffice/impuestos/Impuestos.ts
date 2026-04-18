@@ -242,7 +242,7 @@ export class ImpuestosFeature {
           };
 
           if (isEdit) {
-            await impuestosService.update(initialData.id, data);
+            await impuestosService.update(initialData.id!, data);
             toastx.success('Impuestos actualizado correctamente');
           } else {
             await impuestosService.create(data);
@@ -292,7 +292,7 @@ export class ImpuestosFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await impuestosService.remove(this._selectedImpuestos.id);
+        await impuestosService.remove(this._selectedImpuestos.id!);
         toastx.success('Impuestos eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

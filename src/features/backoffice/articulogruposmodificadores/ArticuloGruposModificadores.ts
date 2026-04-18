@@ -236,12 +236,10 @@ export class ArticuloGruposModificadoresFeature {
           const data: ArticuloGruposModificadoresCreateDTO = {
             articulo_id: result.body['articulo_id'] as number,
             grupo_modificador_id: result.body['grupo_modificador_id'] as number,
-            articuloId: result.body['articuloId'] as number,
-            grupoId: result.body['grupoId'] as number,
           };
 
           if (isEdit) {
-            await articuloGruposModificadoresService.update(initialData.id, data);
+            await articuloGruposModificadoresService.update(initialData.id!, data);
             toastx.success('ArticuloGruposModificadores actualizado correctamente');
           } else {
             await articuloGruposModificadoresService.create(data);
@@ -291,7 +289,7 @@ export class ArticuloGruposModificadoresFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await articuloGruposModificadoresService.remove(this._selectedArticuloGruposModificadores.id);
+        await articuloGruposModificadoresService.remove(this._selectedArticuloGruposModificadores.id!);
         toastx.success('ArticuloGruposModificadores eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

@@ -257,7 +257,7 @@ export class MovimientosStockFeature {
           };
 
           if (isEdit) {
-            await movimientosStockService.update(initialData.id, data);
+            await movimientosStockService.update(initialData.id!, data);
             toastx.success('MovimientosStock actualizado correctamente');
           } else {
             await movimientosStockService.create(data);
@@ -309,7 +309,7 @@ export class MovimientosStockFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await movimientosStockService.remove(this._selectedMovimientosStock.id);
+        await movimientosStockService.remove(this._selectedMovimientosStock.id!);
         toastx.success('MovimientosStock eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

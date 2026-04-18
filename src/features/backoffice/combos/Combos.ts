@@ -240,7 +240,7 @@ export class CombosFeature {
           };
 
           if (isEdit) {
-            await combosService.update(initialData.id, data);
+            await combosService.update(initialData.id!, data);
             toastx.success('Combos actualizado correctamente');
           } else {
             await combosService.create(data);
@@ -290,7 +290,7 @@ export class CombosFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await combosService.remove(this._selectedCombos.id);
+        await combosService.remove(this._selectedCombos.id!);
         toastx.success('Combos eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

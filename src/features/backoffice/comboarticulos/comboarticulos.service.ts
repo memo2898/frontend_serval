@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { ComboArticulos, ComboArticulosCreateDTO, ComboArticulosUpdateDTO, ComboArticulosFilters, PaginatedResponse } from './comboarticulos.types';
 
 const BASE = `${SERVER_ROUTE}/api/combo-articulos`;

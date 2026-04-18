@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { MovimientosStock, MovimientosStockCreateDTO, MovimientosStockUpdateDTO, MovimientosStockFilters, PaginatedResponse } from './movimientosstock.types';
 
 const BASE = `${SERVER_ROUTE}/api/movimientos-stock`;

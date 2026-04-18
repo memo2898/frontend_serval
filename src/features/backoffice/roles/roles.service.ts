@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { Roles, RolesCreateDTO, RolesUpdateDTO, RolesFilters, PaginatedResponse } from './roles.types';
 
 const BASE = `${SERVER_ROUTE}/api/roles`;

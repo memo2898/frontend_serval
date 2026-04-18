@@ -43,7 +43,7 @@ const actionButtonStyles = `
 export const toMesasGridRow = (mesas: Mesas, handlers: MesasHandlers): MesasGridRow => ({
   id: mesas.id,
   //zona_id: mesas.zona_id,
-  zona: mesas.zona.nombre,
+  zona: mesas.zona?.nombre,
   nombre: mesas.nombre,
   capacidad: mesas.capacidad,
   mesa_principal_id: mesas.mesa_principal_id,

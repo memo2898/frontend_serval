@@ -111,7 +111,7 @@ export const fetchLineasOrden = async (ordenId: number): Promise<LineaCobro[]> =
     cuenta_num:      l.cuenta_num ?? 1,
     modificadores:   (l.modificadores ?? []).map(m => ({
       id:                 m.id ?? 0,
-      nombre_modificador: m.nombre_modificador ?? m.modificador?.nombre ?? '',
+      nombre_modificador: m.nombre_modificador ?? '',
       precio_extra:       Number(m.precio_extra),
     })),
   }));

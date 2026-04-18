@@ -1,5 +1,5 @@
 import { getUser, saveSelectedRole, saveContext, clearSession, isLoggedIn } from '@/global/session.service';
-import { getDefaultRoute, isSuperAdmin } from '@/global/guards_auth';
+import { getDefaultRoute } from '@/global/guards_auth';
 import { navigateTo, route } from '@/global/saveRoutes';
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';

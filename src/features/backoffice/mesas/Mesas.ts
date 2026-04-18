@@ -243,7 +243,7 @@ export class MesasFeature {
           };
 
           if (isEdit) {
-            await mesasService.update(initialData.id, data);
+            await mesasService.update(initialData.id!, data);
             toastx.success('Mesas actualizado correctamente');
           } else {
             await mesasService.create(data);
@@ -293,7 +293,7 @@ export class MesasFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await mesasService.remove(this._selectedMesas.id);
+        await mesasService.remove(this._selectedMesas.id!);
         toastx.success('Mesas eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

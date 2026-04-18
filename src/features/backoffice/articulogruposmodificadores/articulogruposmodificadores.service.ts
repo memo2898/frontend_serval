@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { ArticuloGruposModificadores, ArticuloGruposModificadoresCreateDTO, ArticuloGruposModificadoresUpdateDTO, ArticuloGruposModificadoresFilters, PaginatedResponse } from './articulogruposmodificadores.types';
 
 const BASE = `${SERVER_ROUTE}/api/articulo-grupos-modificadores`;
@@ -48,17 +47,17 @@ const buildQuery = (params: object): string => {
 
 // ─── Endpoints adicionales ────────────────────────────────────────────────────
 // Obtener un articulo_grupos_modificadore por ID
-export const getCustom = async (articuloId: number, grupoId: number, id: number) => {
+export const getCustom = async (articuloId: number, grupoId: number, _id: number) => {
   return await http.get<any>(`${BASE}/${articuloId}/${grupoId}`);
 };
 
 // Actualizar un articulo_grupos_modificadore
-export const patchCustom = async (articuloId: number, grupoId: number, id: number, data: any) => {
+export const patchCustom = async (articuloId: number, grupoId: number, _id: number, data: any) => {
   return await http.patch<any>(`${BASE}/${articuloId}/${grupoId}`, data);
 };
 
 // Eliminar un articulo_grupos_modificadore
-export const deleteCustom = async (articuloId: number, grupoId: number, id: number) => {
+export const deleteCustom = async (articuloId: number, grupoId: number, _id: number) => {
   return await http.delete<any>(`${BASE}/${articuloId}/${grupoId}`);
 };
 

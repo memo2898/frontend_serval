@@ -246,7 +246,7 @@ export class UsuarioRolFeature {
           };
 
           if (isEdit) {
-            await usuarioRolService.update(initialData.id, data);
+            await usuarioRolService.update(initialData.id!, data);
             toastx.success('UsuarioRol actualizado correctamente');
           } else {
             await usuarioRolService.create(data);
@@ -297,7 +297,7 @@ export class UsuarioRolFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await usuarioRolService.remove(this._selectedUsuarioRol.id);
+        await usuarioRolService.remove(this._selectedUsuarioRol.id!);
         toastx.success('UsuarioRol eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

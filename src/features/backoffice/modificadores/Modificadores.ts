@@ -205,7 +205,7 @@ export class ModificadoresFeature {
           };
 
           if (isEdit) {
-            await modificadoresService.update(initialData.id, data);
+            await modificadoresService.update(initialData.id!, data);
             toastx.success('Modificadores actualizado correctamente');
           } else {
             await modificadoresService.create(data);
@@ -253,7 +253,7 @@ export class ModificadoresFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await modificadoresService.remove(this._selectedModificadores.id);
+        await modificadoresService.remove(this._selectedModificadores.id!);
         toastx.success('Modificadores eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

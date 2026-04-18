@@ -407,7 +407,7 @@ export class UsuariosFeature {
           };
 
           if (isEdit) {
-            await usuariosService.update(initialData.id, data);
+            await usuariosService.update(initialData.id!, data);
             toastx.success('Usuarios actualizado correctamente');
           } else {
             await usuariosService.create(data);
@@ -458,7 +458,7 @@ export class UsuariosFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await usuariosService.remove(this._selectedUsuarios.id);
+        await usuariosService.remove(this._selectedUsuarios.id!);
         toastx.success('Usuarios eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

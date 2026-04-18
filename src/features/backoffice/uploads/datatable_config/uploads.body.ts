@@ -42,7 +42,7 @@ const actionButtonStyles = `
 
 export const toUploadsGridRow = (uploads: Uploads, handlers: UploadsHandlers): UploadsGridRow => ({
   id: uploads.id,
-  0: uploads.0,
+  0: uploads[0],
   actions: [
     {
       content: `

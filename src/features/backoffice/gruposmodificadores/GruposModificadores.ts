@@ -209,7 +209,7 @@ export class GruposModificadoresFeature {
           };
 
           if (isEdit) {
-            await gruposModificadoresService.update(initialData.id, data);
+            await gruposModificadoresService.update(initialData.id!, data);
             toastx.success('GruposModificadores actualizado correctamente');
           } else {
             await gruposModificadoresService.create(data);
@@ -257,7 +257,7 @@ export class GruposModificadoresFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await gruposModificadoresService.remove(this._selectedGruposModificadores.id);
+        await gruposModificadoresService.remove(this._selectedGruposModificadores.id!);
         toastx.success('GruposModificadores eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

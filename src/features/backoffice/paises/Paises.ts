@@ -240,7 +240,7 @@ export class PaisesFeature {
           };
 
           if (isEdit) {
-            await paisesService.update(initialData.id, data);
+            await paisesService.update(initialData.id!, data);
             toastx.success('Paises actualizado correctamente');
           } else {
             await paisesService.create(data);
@@ -290,7 +290,7 @@ export class PaisesFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await paisesService.remove(this._selectedPaises.id);
+        await paisesService.remove(this._selectedPaises.id!);
         toastx.success('Paises eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

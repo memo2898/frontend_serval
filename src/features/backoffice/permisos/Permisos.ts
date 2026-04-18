@@ -138,12 +138,6 @@ export class PermisosFeature {
 
   // ---- Open modals ----
 
-  private _openCreate(): void {
-    this._selectedPermisos = null;
-    this._modalCreate.setBody(this._buildForm(null, this._modalCreate));
-    this._modalCreate.open();
-  }
-
   private _openEdit(item: Permisos): void {
     this._selectedPermisos = item;
     const editForm = this._buildForm(item, this._modalEdit);
@@ -204,7 +198,7 @@ export class PermisosFeature {
           };
 
           if (isEdit) {
-            await permisosService.update(initialData.id, data);
+            await permisosService.update(initialData.id!, data);
             toastx.success('Permisos actualizado correctamente');
           } else {
             await permisosService.create(data);
@@ -252,7 +246,7 @@ export class PermisosFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await permisosService.remove(this._selectedPermisos.id);
+        await permisosService.remove(this._selectedPermisos.id!);
         toastx.success('Permisos eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

@@ -203,7 +203,7 @@ export class AuthFeature {
           };
 
           if (isEdit) {
-            await authService.update(initialData.id, data);
+            await authService.update(initialData.id!, data);
             toastx.success('Auth actualizado correctamente');
           } else {
             await authService.create(data);
@@ -251,7 +251,7 @@ export class AuthFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await authService.remove(this._selectedAuth.id);
+        await authService.remove(this._selectedAuth.id!);
         toastx.success('Auth eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

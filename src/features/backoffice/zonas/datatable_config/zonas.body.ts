@@ -43,7 +43,7 @@ const actionButtonStyles = `
 export const toZonasGridRow = (zonas: Zonas, handlers: ZonasHandlers): ZonasGridRow => ({
   id: zonas.id,
   //sucursal_id: zonas.sucursal_id,
-  sucursal: zonas.sucursal.nombre,
+  sucursal: zonas.sucursal?.nombre,
   nombre: zonas.nombre,
   // orden_visual: zonas.orden_visual,
   // estado: zonas.estado,

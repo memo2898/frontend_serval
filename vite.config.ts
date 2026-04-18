@@ -207,7 +207,9 @@ ${Object.entries(URL_MAPPINGS)
   AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript
 </IfModule>`;
 
-      fs.writeFileSync(resolve(__dirname, "dist/.htaccess"), htaccessContent);
+      const distDir = resolve(__dirname, "dist");
+      if (!fs.existsSync(distDir)) fs.mkdirSync(distDir, { recursive: true });
+      fs.writeFileSync(resolve(distDir, ".htaccess"), htaccessContent);
       console.log("✅ .htaccess generado en dist/.htaccess");
     },
   };

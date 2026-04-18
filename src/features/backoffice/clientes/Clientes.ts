@@ -252,7 +252,7 @@ export class ClientesFeature {
           };
 
           if (isEdit) {
-            await clientesService.update(initialData.id, data);
+            await clientesService.update(initialData.id!, data);
             toastx.success('Clientes actualizado correctamente');
           } else {
             await clientesService.create(data);
@@ -303,7 +303,7 @@ export class ClientesFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await clientesService.remove(this._selectedClientes.id);
+        await clientesService.remove(this._selectedClientes.id!);
         toastx.success('Clientes eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

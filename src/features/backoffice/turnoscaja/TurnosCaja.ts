@@ -251,7 +251,7 @@ export class TurnosCajaFeature {
           };
 
           if (isEdit) {
-            await turnosCajaService.update(initialData.id, data);
+            await turnosCajaService.update(initialData.id!, data);
             toastx.success('TurnosCaja actualizado correctamente');
           } else {
             await turnosCajaService.create(data);
@@ -302,7 +302,7 @@ export class TurnosCajaFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await turnosCajaService.remove(this._selectedTurnosCaja.id);
+        await turnosCajaService.remove(this._selectedTurnosCaja.id!);
         toastx.success('TurnosCaja eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

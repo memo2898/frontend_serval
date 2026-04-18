@@ -239,7 +239,7 @@ export class TerminalesFeature {
           };
 
           if (isEdit) {
-            await terminalesService.update(initialData.id, data);
+            await terminalesService.update(initialData.id!, data);
             toastx.success('Terminales actualizado correctamente');
           } else {
             await terminalesService.create(data);
@@ -289,7 +289,7 @@ export class TerminalesFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await terminalesService.remove(this._selectedTerminales.id);
+        await terminalesService.remove(this._selectedTerminales.id!);
         toastx.success('Terminales eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

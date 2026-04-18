@@ -1,6 +1,5 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import { filterExcluded } from '@/utils/filterExcluded';
 import type { MovimientosCaja, MovimientosCajaCreateDTO, MovimientosCajaUpdateDTO, MovimientosCajaFilters, PaginatedResponse } from './movimientoscaja.types';
 
 const BASE = `${SERVER_ROUTE}/api/movimientos-caja`;

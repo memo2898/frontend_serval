@@ -10,7 +10,7 @@ export function getUploadsFields(
       label: '0',
       placeholder: 'Ingrese 0',
       type: 'text',
-      defaultValue: initialData?.0 != null ? String(initialData.0) : '',
+      defaultValue: initialData?.[0] != null ? String(initialData[0]) : '',
       rules: {
         validations: [
           { type: 'required', message: '0 es obligatorio' },

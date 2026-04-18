@@ -240,7 +240,7 @@ export class SubfamiliasFeature {
           };
 
           if (isEdit) {
-            await subfamiliasService.update(initialData.id, data);
+            await subfamiliasService.update(initialData.id!, data);
             toastx.success('Subfamilias actualizado correctamente');
           } else {
             await subfamiliasService.create(data);
@@ -290,7 +290,7 @@ export class SubfamiliasFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await subfamiliasService.remove(this._selectedSubfamilias.id);
+        await subfamiliasService.remove(this._selectedSubfamilias.id!);
         toastx.success('Subfamilias eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

@@ -212,7 +212,7 @@ export class TipoDocumentosFeature {
           };
 
           if (isEdit) {
-            await tipoDocumentosService.update(initialData.id, data);
+            await tipoDocumentosService.update(initialData.id!, data);
             toastx.success('TipoDocumentos actualizado correctamente');
           } else {
             await tipoDocumentosService.create(data);
@@ -260,7 +260,7 @@ export class TipoDocumentosFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await tipoDocumentosService.remove(this._selectedTipoDocumentos.id);
+        await tipoDocumentosService.remove(this._selectedTipoDocumentos.id!);
         toastx.success('TipoDocumentos eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();

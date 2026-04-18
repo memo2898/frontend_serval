@@ -204,7 +204,7 @@ export class MailFeature {
           };
 
           if (isEdit) {
-            await mailService.update(initialData.id, data);
+            await mailService.update(initialData.id!, data);
             toastx.success('Mail actualizado correctamente');
           } else {
             await mailService.create(data);
@@ -252,7 +252,7 @@ export class MailFeature {
       deleteBtn.textContent = 'Eliminando...';
 
       try {
-        await mailService.remove(this._selectedMail.id);
+        await mailService.remove(this._selectedMail.id!);
         toastx.success('Mail eliminado correctamente');
         this._modalDelete.close();
         await this._fetch();
