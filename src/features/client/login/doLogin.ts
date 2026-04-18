@@ -1,4 +1,4 @@
-import { saveSession, saveSelectedRole } from '@/global/session.service';
+import { saveSession, saveSelectedRole, clearSession } from '@/global/session.service';
 import { SERVER_ROUTE } from '@/config';
 
 interface LoginPayload {
@@ -29,13 +29,15 @@ export async function doLogin(data: LoginPayload): Promise<LoginResult> {
 
   const roles = result.user?.roles ?? [];
 
+  if (roles.length === 0) {
+    clearSession();
+    return { success: false, message: 'Este usuario no tiene roles asignados.' };
+  }
+
   if (roles.length > 1) {
     return { success: true, redirect: 'lobby' };
   }
 
-  if (roles.length === 1) {
-    saveSelectedRole(roles[0]);
-  }
-
+  saveSelectedRole(roles[0]);
   return { success: true, redirect: 'default' };
 }

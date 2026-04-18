@@ -19,7 +19,7 @@ export function isBackofficeRole(): boolean {
 
 export function getDefaultRoute(): string {
   const role = getSelectedRole();
-  if (!role) return route('/login');
+  if (!role) return route('/lobby');
   if (isSuperAdmin()) return route('/dashboard');
   const roleName = role.nombre?.toLowerCase() ?? '';
   return route(ROLE_DEFAULT_ROUTES[roleName] ?? '/login');
