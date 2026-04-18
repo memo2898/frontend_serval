@@ -103,8 +103,8 @@ class CajaPage {
         this._syncFromDB();
       });
 
-      // Línea añadida/modificada/eliminada en una orden que está en caja
-      posSocket.onOrdenLineaSincronizada(({ orden_id, mesa_id }) => {
+      // Artículos entregados al cliente: ahora sí actualizar la cuenta en caja
+      posSocket.onKdsLineasEntregadas(({ orden_id }) => {
         const enCola = this._store.state.queue.some(t => t.id === orden_id);
         if (!enCola) return;
 
@@ -112,7 +112,6 @@ class CajaPage {
           .then(lineas => {
             const subtotal = Math.round(lineas.reduce((s, l) => s + l.subtotal_linea, 0) * 100) / 100;
 
-            // Actualizar líneas y subtotal en el ticket de la cola
             const queue = this._store.state.queue.map(t =>
               t.id !== orden_id ? t : { ...t, lineas, orden: { ...t.orden, subtotal } },
             );
@@ -120,7 +119,7 @@ class CajaPage {
             localStorage.setItem(CAJA_QUEUE_KEY, JSON.stringify(queue));
             this._renderQueue();
 
-            // Si el ticket afectado está abierto en el panel de detalle, re-renderizarlo
+            // Si ese ticket está abierto en el detalle, actualizarlo también
             if (this._store.state.ticketId === orden_id) {
               this._store.setLineas(lineas);
               this._renderCobroLineas();
