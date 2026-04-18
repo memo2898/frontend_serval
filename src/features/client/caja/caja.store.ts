@@ -61,9 +61,25 @@ export class CajaStore {
     this._state.numCuentas      = ticket.numCuentas || 1;
     this._state.cuentasNombres  = { ...(ticket.cuentasNombres ?? {}) };
     this._state.formaSeleccionada = null;
-    this._state.pagos           = [];
-    this._state.cuentaActivaCobro = 1;
-    this._state.cuentasCobradas   = new Set();
+
+    // Restaurar pagos y cuentas cobradas si hay progreso guardado
+    this._state.pagos           = ticket.pagosEnProceso ? [...ticket.pagosEnProceso] : [];
+    this._state.cuentasCobradas = ticket.cuentasCobradas ? new Set(ticket.cuentasCobradas) : new Set();
+
+    // Auto-skip cuentas con total $0 (no deberían existir, pero por seguridad)
+    if (this._state.splitMode) {
+      for (let n = 1; n <= this._state.numCuentas; n++) {
+        if (this.getTotalCuenta(n).total < 0.005) {
+          this._state.cuentasCobradas.add(n);
+        }
+      }
+    }
+
+    // Posicionar en la primera cuenta pendiente de cobro
+    const primera = Array.from({ length: this._state.numCuentas }, (_, i) => i + 1)
+      .find(n => !this._state.cuentasCobradas.has(n));
+    this._state.cuentaActivaCobro = primera ?? 1;
+
     this._notify();
   }
 

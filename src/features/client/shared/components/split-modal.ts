@@ -206,6 +206,12 @@ const SPM_CSS = `
 .spm-btn-quitar:hover  { background:rgba(198,40,40,0.15); }
 .spm-btn-quitar-yes { border:none;background:var(--red,#c62828);color:#fff; }
 
+/* Error */
+.spm-footer-error {
+  width:100%;padding:6px 4px 0;font-size:12px;
+  color:var(--red,#c62828);display:flex;align-items:center;gap:5px;
+}
+
 /* Desglosar */
 .spm-btn-desglosar {
   background:none;border:none;cursor:pointer;
@@ -225,6 +231,7 @@ export class SplitModal {
   private _el: HTMLElement | null = null;
 
   // Estado local de edición (copia en memoria — no toca la BD hasta confirmar)
+  private _errorMsg = '';
   private _lineas: SplitLinea[] = [];
   private _numCuentas = 1;
   private _cuentasNombres: Record<number, string> = {};
@@ -256,6 +263,7 @@ export class SplitModal {
     this._virtualToOriginal    = new Map();
     this._originalLineasBackup = new Map();
     this._nextVirtualId        = -1;
+    this._errorMsg             = '';
 
     this._injectStyles();
     this._el = document.createElement('div');
@@ -424,7 +432,8 @@ export class SplitModal {
             <i class="fa-solid fa-check"></i> Confirmar división
           </button>
         </div>
-      </div>`;
+      </div>
+      ${this._errorMsg ? `<div class="spm-footer-error"><i class="fa-solid fa-circle-exclamation"></i> ${this._errorMsg}</div>` : ''}`;
   }
 
   // ─── Eventos ─────────────────────────────────────────────────────────────────
@@ -555,6 +564,27 @@ export class SplitModal {
   private _confirmar(): void {
     const realLineas    = this._lineas.filter(l => l.id > 0);
     const virtualLineas = this._lineas.filter(l => l.id < 0);
+
+    // Validar que no haya cuentas vacías (sin artículos asignados)
+    if (realLineas.length > 0 || virtualLineas.length > 0) {
+      const maxN = Math.max(
+        ...realLineas.map(l => l.cuenta_num || 1),
+        ...virtualLineas.map(l => l.cuenta_num || 1),
+        1,
+      );
+      const cuentasConItems = new Set([
+        ...realLineas.map(l => l.cuenta_num || 1),
+        ...virtualLineas.map(l => l.cuenta_num || 1),
+      ]);
+      for (let n = 1; n <= maxN; n++) {
+        if (!cuentasConItems.has(n)) {
+          this._errorMsg = `La cuenta ${n} no tiene artículos. Asígnale artículos o quita la división.`;
+          this._render();
+          return;
+        }
+      }
+    }
+    this._errorMsg = '';
 
     // Agrupar líneas virtuales por original → desglosadas
     const groups = new Map<number, number[]>();

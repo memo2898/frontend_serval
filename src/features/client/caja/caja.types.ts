@@ -49,6 +49,8 @@ export interface TicketCola {
   numCuentas: number;
   cuentasNombres?: Record<number, string>;
   timestamp: number;
+  pagosEnProceso?: PagoAplicado[];
+  cuentasCobradas?: number[];
 }
 
 export interface TotalesCuenta {
