@@ -197,13 +197,15 @@ export class GruposModificadoresFeature {
         submitBtn.textContent = 'Guardando...';
 
         try {
+          const rawMin = result.body['min_seleccion'] as string;
+          const rawMax = result.body['max_seleccion'] as string;
           const data: GruposModificadoresCreateDTO = {
             nombre: result.body['nombre'] as string,
-            tipo: result.body['tipo'] as string,
-            seleccion: result.body['seleccion'] as string,
-            obligatorio: result.body['obligatorio'] as boolean,
-            min_seleccion: result.body['min_seleccion'] as number,
-            max_seleccion: result.body['max_seleccion'] as number,
+            tipo: result.body['tipo'] as string | undefined,
+            seleccion: result.body['seleccion'] as string | undefined,
+            obligatorio: result.body['obligatorio'] === 'true',
+            min_seleccion: rawMin !== '' ? Number(rawMin) : undefined,
+            max_seleccion: rawMax !== '' ? Number(rawMax) : undefined,
           };
 
           if (isEdit) {

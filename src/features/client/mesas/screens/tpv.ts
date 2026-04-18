@@ -49,7 +49,7 @@ export class TpvScreen {
 
   renderOrden(): void {
     const { orden, lineas, mesaLabel, numComensales, lineaSeleccionada, splitMode,
-            ordenCompleta, lineasNuevasIds } = this._store.state;
+            ordenCompleta, lineasNuevasIds, cuentasNombres } = this._store.state;
     const user = this._getUserNombre();
 
     const numEl = document.getElementById('orden-num');
@@ -66,6 +66,8 @@ export class TpvScreen {
     const linesEl = document.getElementById('orden-lineas');
     if (!linesEl) return;
 
+    linesEl.classList.toggle('split-mode', splitMode);
+
     if (!lineas.length) {
       linesEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><i class="fa-solid fa-utensils"></i></div><span>Orden vacía</span></div>';
     } else {
@@ -73,17 +75,24 @@ export class TpvScreen {
         const sel      = lineaSeleccionada?.id === l.id;
         const cn       = l.cuenta_num || 1;
         const badgeCls = cn <= 3 ? 'c' + cn : 'cX';
-        const badge    = splitMode
-          ? `<span class="cuenta-badge ${badgeCls}" data-ciclar="${l.id}">C${cn}</span>`
+        const cuentaNombre = cuentasNombres[cn];
+        const badgeLabel   = cuentaNombre ? cuentaNombre : `C${cn}`;
+        const badgeExtra   = cuentaNombre ? ' has-nombre' : '';
+        const badge        = splitMode
+          ? `<span class="cuenta-badge ${badgeCls}${badgeExtra}" data-ciclar="${l.id}" title="${cuentaNombre ? 'Cuenta ' + cn + ': ' + cuentaNombre : 'Mantén pulsado para nombrar'}">${badgeLabel}</span>`
           : '';
         const bloqueada = l.enviado_a_cocina;
+        const estadoIcon =
+          l.estado === 'entregada'   ? '<span class="linea-estado entregada" title="Entregado">✓</span>' :
+          l.estado === 'lista'       ? '<span class="linea-estado lista"     title="Listo para recoger">🟢</span>' :
+          bloqueada                  ? '<span class="linea-lock"             title="En cocina">🔒</span>' : '';
         return `
-          <div class="orden-linea ${sel ? 'selected' : ''} ${bloqueada ? 'enviada' : ''}" data-linea-select="${l.id}">
+          <div class="orden-linea ${sel ? 'selected' : ''} ${bloqueada ? 'enviada' : ''} ${l.estado === 'entregada' ? 'entregada' : ''}" data-linea-select="${l.id}">
             <div class="linea-top">
               ${badge}
               <span class="linea-nombre">${l.cantidad}x ${l.nombre_articulo}</span>
               <span class="linea-precio">${fmt(l.subtotal_linea)}</span>
-              ${bloqueada ? '<span class="linea-lock" title="Enviada a cocina">🔒</span>' : ''}
+              ${estadoIcon}
             </div>
             ${l.modificadores.map(m => `
               <div class="linea-mod">└─ ${m.nombre_modificador}${m.precio_extra ? ' +' + fmt(m.precio_extra) : ''}</div>
@@ -113,11 +122,16 @@ export class TpvScreen {
       btnCocina.style.opacity = hayPendientes ? '' : '0.45';
     }
 
-    // ── Botón "Pedir cuenta": activo sólo cuando KDS despachó todo ──
-    // ordenCompleta = true cuando kds:orden_completa llega O todas las líneas
-    // ya estaban enviadas al cargar la orden desde la BD.
-    const hayNuevasSinEnviar = lineasNuevasIds.size > 0 || lineas.some(l => !l.enviado_a_cocina);
-    const canPedirCuenta = lineas.length > 0 && ordenCompleta && !hayNuevasSinEnviar;
+    // ── Botón "Pedir cuenta" ──────────────────────────────────────────────────
+    // Condiciones (todas deben cumplirse):
+    // 1. Hay líneas en la orden
+    // 2. No hay artículos sin enviar a cocina/barra
+    // 3. KDS despachó todo (ordenCompleta)
+    // 4. No quedan artículos en estado 'lista' esperando ser recogidos
+    //    (el camarero debe marcar como entregado antes de pedir la cuenta)
+    const hayNuevasSinEnviar    = lineasNuevasIds.size > 0 || lineas.some(l => !l.enviado_a_cocina);
+    const hayListasSinEntregar  = lineas.some(l => l.estado === 'lista');
+    const canPedirCuenta = lineas.length > 0 && !hayNuevasSinEnviar && ordenCompleta && !hayListasSinEntregar;
     const btnCobrar = document.querySelector<HTMLButtonElement>('[data-pedir-cuenta]');
     if (btnCobrar) {
       btnCobrar.disabled = !canPedirCuenta;
@@ -126,7 +140,9 @@ export class TpvScreen {
         ? ''
         : hayNuevasSinEnviar
           ? 'Primero envía los artículos a cocina'
-          : 'Espera a que cocina/barra despachen todo';
+          : hayListasSinEntregar
+            ? 'Recoge todos los pedidos antes de cobrar'
+            : 'Espera a que cocina/barra despachen todo';
     }
   }
 
@@ -135,14 +151,24 @@ export class TpvScreen {
     const totEl = document.getElementById('orden-totales');
     if (!totEl || !orden) return;
     const generales = impuestos.filter(i => i.impuesto != null);
+    const sub = orden.subtotal ?? 0;
+
+    let impuestoTotal = 0;
     const lineasImpuesto = generales.map(i => {
-      const monto = Math.round(orden.subtotal * (Number(i.impuesto.porcentaje) / 100) * 100) / 100;
+      const monto = Math.round(sub * (Number(i.impuesto.porcentaje) / 100) * 100) / 100;
+      impuestoTotal += monto;
       return `<div class="total-row"><span>${i.impuesto.nombre} ${i.impuesto.porcentaje}%</span><span class="total-val">${fmt(monto)}</span></div>`;
     }).join('');
+
+    // Recalcular el total desde las tasas cargadas (no confiar en orden.total de la BD)
+    const total = generales.length
+      ? Math.round((sub + impuestoTotal) * 100) / 100
+      : (orden.total ?? sub);
+
     totEl.innerHTML = `
-      <div class="total-row"><span>Subtotal</span><span class="total-val">${fmt(orden.subtotal)}</span></div>
+      <div class="total-row"><span>Subtotal</span><span class="total-val">${fmt(sub)}</span></div>
       ${lineasImpuesto}
-      <div class="total-row grand"><span>TOTAL</span><span class="total-val">${fmt(orden.total)}</span></div>
+      <div class="total-row grand"><span>TOTAL</span><span class="total-val">${fmt(total)}</span></div>
     `;
   }
 

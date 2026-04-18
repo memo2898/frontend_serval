@@ -1,4 +1,5 @@
 import { InputX } from '@/lib/uiX/components/InputX';
+import { SelectX } from '@/lib/uiX/components/SelectX';
 import type { GruposModificadores } from '../gruposmodificadores.types';
 
 export function getGruposModificadoresFields(
@@ -13,32 +14,35 @@ export function getGruposModificadoresFields(
       defaultValue: initialData?.nombre != null ? String(initialData.nombre) : '',
       rules: {
         validations: [
+          { type: 'required' },
           { type: 'maxLength', value: 255 },
         ],
       },
     }),
-    InputX({
+    SelectX({
       name: 'tipo',
       label: 'Tipo',
-      placeholder: 'Ingrese tipo',
-      type: 'text',
-      defaultValue: initialData?.tipo != null ? String(initialData.tipo) : '',
+      placeholder: 'Seleccione tipo',
+      defaultValue: initialData?.tipo ?? '',
+      options: [
+        { value: 'articulo',    label: 'Artículo' },
+        { value: 'comentario',  label: 'Comentario' },
+      ],
       rules: {
-        validations: [
-          { type: 'maxLength', value: 255 },
-        ],
+        validations: [{ type: 'required' }],
       },
     }),
-    InputX({
+    SelectX({
       name: 'seleccion',
-      label: 'Seleccion',
-      placeholder: 'Ingrese seleccion',
-      type: 'text',
-      defaultValue: initialData?.seleccion != null ? String(initialData.seleccion) : '',
+      label: 'Selección',
+      placeholder: 'Seleccione tipo de selección',
+      defaultValue: initialData?.seleccion ?? '',
+      options: [
+        { value: 'unica',    label: 'Única' },
+        { value: 'multiple', label: 'Múltiple' },
+      ],
       rules: {
-        validations: [
-          { type: 'maxLength', value: 255 },
-        ],
+        validations: [{ type: 'required' }],
       },
     }),
     InputX({
@@ -48,8 +52,7 @@ export function getGruposModificadoresFields(
       type: 'checkbox',
       defaultValue: initialData?.obligatorio != null ? String(initialData.obligatorio) : '',
       rules: {
-        validations: [
-        ],
+        validations: [],
       },
     }),
     InputX({
@@ -60,6 +63,7 @@ export function getGruposModificadoresFields(
       defaultValue: initialData?.min_seleccion != null ? String(initialData.min_seleccion) : '',
       rules: {
         validations: [
+          { type: 'required' },
         ],
         restrictions: [{ type: 'onlyNumbers' }],
       },
@@ -72,6 +76,7 @@ export function getGruposModificadoresFields(
       defaultValue: initialData?.max_seleccion != null ? String(initialData.max_seleccion) : '',
       rules: {
         validations: [
+          { type: 'required' },
         ],
         restrictions: [{ type: 'onlyNumbers' }],
       },

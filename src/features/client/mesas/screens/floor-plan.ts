@@ -1,4 +1,6 @@
 import { toast } from '../../shared/utils/toast';
+import { notifStore } from '../../shared/services/notificaciones.store';
+import { getUser } from '@/global/session.service';
 import type { MesasStore } from '../mesas.store';
 import type { Mesa } from '../mesas.types';
 
@@ -92,8 +94,10 @@ export class FloorPlanScreen {
           </div>`;
       })() : '';
 
+      const userId = getUser()?.id ?? 0;
+      const tieneEntrega = notifStore.tienePendientesMias(m.id, userId) ? 'tiene-entrega' : '';
       return `
-        <div class="mesa-fp mesa-${m.estado} ${extraClass}"
+        <div class="mesa-fp mesa-${m.estado} ${extraClass} ${tieneEntrega}"
           style="--top-count:${topCount}"
           data-mesa-id="${m.id}">
           <div class="sillas-top">${siTop}</div>

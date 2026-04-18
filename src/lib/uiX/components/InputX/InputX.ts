@@ -61,7 +61,14 @@ export class InputXElement extends HTMLElement {
   // Programmatically update the value (e.g. for pre-fill in edit forms)
   set value(val: string) {
     this._value = val;
-    if (this._inputEl) this._inputEl.value = val;
+    if (this._inputEl) {
+      if (this._inputEl.type === "checkbox") {
+        this._inputEl.checked = val === "true";
+        this._value = String(this._inputEl.checked);
+      } else {
+        this._inputEl.value = val;
+      }
+    }
   }
 
   get value(): string {
@@ -133,6 +140,7 @@ export class InputXElement extends HTMLElement {
     const disabled    = this.hasAttribute("disabled");
     const helperText  = this.getAttribute("helper-text") ?? "";
     const defaultVal  = this.getAttribute("default-value") ?? "";
+    const isCheckbox  = type === "checkbox";
 
     if (defaultVal) this._value = defaultVal;
 
@@ -160,11 +168,18 @@ export class InputXElement extends HTMLElement {
     input.className   = "inputx-field";
     input.placeholder = placeholder;
     input.disabled    = disabled;
-    input.value       = this._value;
     input.setAttribute("aria-invalid", "false");
+
+    if (isCheckbox) {
+      input.checked   = this._value === "true";
+      this._value     = String(input.checked);
+    } else {
+      input.value     = this._value;
+    }
 
     input.addEventListener("keydown", this._onKeyDown.bind(this));
     input.addEventListener("input",   this._onInput.bind(this));
+    input.addEventListener("change",  this._onChange.bind(this));
     input.addEventListener("blur",    this._onBlur.bind(this));
     input.addEventListener("paste",   this._onPaste.bind(this));
 
@@ -300,6 +315,23 @@ export class InputXElement extends HTMLElement {
     const rawValue = this._getRawValue();
     this.dispatchEvent(
       new CustomEvent("inputx-change", { detail: { value: newValue, rawValue }, bubbles: true })
+    );
+
+    if (this._effectiveValidateOn() === "change") {
+      this._touched = true;
+      const result = this._runValidation();
+      this._setErrors(result.isValid ? [] : result.errors);
+    }
+  }
+
+  private _onChange(e: Event): void {
+    const input = e.target as HTMLInputElement;
+    if (input.type !== "checkbox") return;
+
+    this._value = String(input.checked);
+
+    this.dispatchEvent(
+      new CustomEvent("inputx-change", { detail: { value: this._value, rawValue: this._value }, bubbles: true })
     );
 
     if (this._effectiveValidateOn() === "change") {

@@ -23,6 +23,7 @@ import {
   patchEstadoMesa, patchMesaPersonas, patchMesaData,
 } from './mesas.service';
 import { fmt } from '../shared/utils/format';
+import { notifStore } from '../shared/services/notificaciones.store';
 
 // ─── Orchestrador ────────────────────────────────────────────────────────────
 
@@ -58,6 +59,8 @@ class MesasPage {
   private _usuarioId    = 0;
   private _mesaAccion: Mesa | null = null;
   private _miRol        = '';
+  private _cuentaNombreNum = 0;
+  private _longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ─── Init ─────────────────────────────────────────────────────────────────
 
@@ -77,7 +80,9 @@ class MesasPage {
     this._connectSocket();
     this._loadMesas();
     this._wireEvents();
+    this._wireNotifDrawer();
     this._subscribeChannels();
+    this._updateNotifBadge();
   }
 
   private _applyTheme(): void {
@@ -157,6 +162,29 @@ class MesasPage {
         this._store.removePresencia(mesa_id, usuario_id);
         if (document.getElementById('screen-mesas')?.classList.contains('active')) {
           this._floorPlan.renderMesas();
+        }
+      });
+
+      // KDS batch listo → notificar al camarero
+      posSocket.onKdsBatchListo(payload => {
+        notifStore.agregar(payload);
+        this._updateNotifBadge();
+        this._floorPlan.renderMesas();
+        // Si el camarero está en el TPV de esta orden, actualizar estados de líneas
+        if (payload.orden_id === this._store.state.ordenId && payload.orden_linea_ids?.length) {
+          this._store.marcarLineasListas(payload.orden_linea_ids);
+          this._tpv.renderOrden();
+        }
+        toast(`🔔 ${payload.mesa} — pedido listo para recoger`, 'success');
+      });
+
+      // KDS lineas entregadas (confirmación del backend)
+      posSocket.onKdsLineasEntregadas(({ orden_id, orden_linea_ids }) => {
+        if (orden_id === this._store.state.ordenId && orden_linea_ids?.length) {
+          this._store.marcarLineasEntregadas(orden_linea_ids);
+          if (document.getElementById('screen-tpv')?.classList.contains('active')) {
+            this._tpv.renderOrden();
+          }
         }
       });
 
@@ -362,7 +390,27 @@ class MesasPage {
         posSocket.emitUsuarioEntro(mesaId);
         this._loadTPVScreen();
       } else {
-        toast('Esta mesa ya está en proceso de cobro en caja');
+        // Cola vacía (cobro falló o fue interrumpido) — cargar desde la API
+        const mesa = this._store.getMesa(mesaId)!;
+        this._store.setCargando(true);
+        getOrdenActivaMesa(mesaId)
+          .then(ordenes => {
+            const orden = ordenes[0];
+            if (!orden) {
+              toast('No se encontró orden activa para esta mesa');
+              this._store.setCargando(false);
+              return;
+            }
+            return getLineas(orden.id).then(lineas => {
+              const personas = mesa.personas ?? lineas.length;
+              this._store.openTPV(mesaId, mesa.nombre, personas, orden);
+              this._store.setLineas(lineas);
+              posSocket.emitUsuarioEntro(mesaId);
+              this._loadTPVScreen();
+            });
+          })
+          .catch(() => toast('Error al cargar la orden'))
+          .finally(() => this._store.setCargando(false));
       }
     } catch {
       toast('Esta mesa ya está en proceso de cobro en caja');
@@ -415,8 +463,9 @@ class MesasPage {
     this._store.setCargando(true);
     getImpuestosSucursal(this._sucursalId)
       .then(impuestos => {
-        console.log('[TPV] Impuestos sucursal:', impuestos);
         this._store.setImpuestos(impuestos);
+        // Re-renderizar totales ahora que las tasas están disponibles
+        this._tpv.renderTotales();
       })
       .catch(err => console.warn('[TPV] No se cargaron impuestos:', err));
 
@@ -624,6 +673,37 @@ class MesasPage {
       );
     });
 
+    // ── TPV: long press en badge de cuenta → modal nombre ──
+    document.getElementById('orden-lineas')?.addEventListener('pointerdown', e => {
+      const badge = (e.target as HTMLElement).closest<HTMLElement>('[data-ciclar]');
+      if (!badge) return;
+      this._longPressTimer = setTimeout(() => {
+        this._longPressTimer = null;
+        const lineaId = Number(badge.dataset.ciclar);
+        const linea   = this._store.state.lineas.find(l => l.id === lineaId);
+        if (!linea) return;
+        this._abrirModalCuentaNombre(linea.cuenta_num || 1);
+      }, 500);
+    });
+    document.getElementById('orden-lineas')?.addEventListener('pointerup', () => {
+      if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
+    });
+    document.getElementById('orden-lineas')?.addEventListener('pointermove', () => {
+      if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
+    });
+
+    // ── Modal nombre cuenta ──
+    document.querySelector('[data-cerrar-cuenta-nombre]')?.addEventListener('click', () => {
+      this._cerrarModalCuentaNombre();
+    });
+    document.querySelector('[data-confirmar-cuenta-nombre]')?.addEventListener('click', () => {
+      this._confirmarCuentaNombre();
+    });
+    document.getElementById('cuenta-nombre-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') this._confirmarCuentaNombre();
+      if (e.key === 'Escape') this._cerrarModalCuentaNombre();
+    });
+
     // ── TPV: orden (líneas) ──
     document.getElementById('orden-lineas')?.addEventListener('click', e => {
       const target = e.target as HTMLElement;
@@ -631,7 +711,14 @@ class MesasPage {
       const ciclar = target.closest<HTMLElement>('[data-ciclar]');
       if (ciclar) {
         e.stopPropagation();
-        this._store.ciclarCuenta(Number(ciclar.dataset.ciclar));
+        const lineaId = Number(ciclar.dataset.ciclar);
+        this._store.ciclarCuenta(lineaId);
+        // Persistir cuenta_num en BD si la línea ya existe
+        const linea = this._store.state.lineas.find(l => l.id === lineaId);
+        if (linea && linea.id > 0) {
+          const { ordenId } = this._store.state;
+          updateLinea(ordenId ?? 0, lineaId, { cuenta_num: linea.cuenta_num }).catch(() => {});
+        }
         this._tpv.renderOrden();
         return;
       }
@@ -784,14 +871,19 @@ class MesasPage {
     if (!lineas.length) { toast('La orden está vacía'); return; }
     if (!ordenId || !mesaId) return;
 
+    const btn = document.querySelector<HTMLButtonElement>('[data-pedir-cuenta]');
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.45'; }
+
     this._store.setCargando(true);
     marcarOrdenPorCobrar(ordenId)
       .then(() => {
+        const { cuentasNombres } = this._store.state;
         const ticket = {
           id: ordenId, mesaId, mesaLabel, numComensales,
           orden: { ...orden },
           lineas: lineas.map(l => ({ ...l })),
           splitMode, numCuentas,
+          cuentasNombres: { ...cuentasNombres },
           timestamp: Date.now(),
         };
 
@@ -814,7 +906,10 @@ class MesasPage {
           this._goTo('mesas');
         }, 800);
       })
-      .catch(() => toast('Error al solicitar la cuenta'))
+      .catch(() => {
+        toast('Error al solicitar la cuenta');
+        if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+      })
       .finally(() => this._store.setCargando(false));
   }
 
@@ -894,6 +989,141 @@ class MesasPage {
         toast('Error al guardar ' + art.nombre, 'error');
         this._tpv.renderOrden();
       });
+  }
+
+  // ─── Notificaciones de entrega ────────────────────────────────────────────
+
+  private _updateNotifBadge(): void {
+    const mias    = notifStore.contarMias(this._usuarioId);
+    const globales = notifStore.contarGlobales(this._usuarioId);
+    const btn     = document.getElementById('btn-notif');
+    const badge   = document.getElementById('notif-count');
+    const dot     = document.getElementById('notif-dot');
+    if (!btn || !badge) return;
+    if (mias > 0) {
+      badge.textContent = String(mias);
+      badge.style.display = 'flex';
+      btn.classList.add('has-notif');
+    } else {
+      badge.style.display = 'none';
+      btn.classList.remove('has-notif');
+    }
+    // Punto indicador para globales sin atender
+    if (dot) dot.style.display = globales > 0 ? 'block' : 'none';
+  }
+
+  private _openNotifDrawer(): void {
+    this._renderNotifDrawer();
+    document.getElementById('notif-overlay')!.style.display = 'block';
+    document.getElementById('notif-drawer')!.classList.add('open');
+  }
+
+  private _closeNotifDrawer(): void {
+    document.getElementById('notif-overlay')!.style.display = 'none';
+    document.getElementById('notif-drawer')!.classList.remove('open');
+  }
+
+  private _tabNotif: 'mias' | 'todas' = 'mias';
+
+  private _renderNotifDrawer(): void {
+    const list = document.getElementById('notif-list');
+    if (!list) return;
+
+    const mias     = notifStore.getMias(this._usuarioId);
+    const globales = notifStore.getGlobales(this._usuarioId);
+    const entregas = this._tabNotif === 'mias' ? mias : notifStore.getAll();
+
+    const fmtHora = (ts: number) =>
+      new Date(ts).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+
+    const renderItems = (items: typeof entregas) =>
+      items.length
+        ? items.map(e => `
+            <div class="notif-item ${e.usuario_id !== this._usuarioId ? 'notif-global' : ''}">
+              <div class="notif-item-header">
+                <span class="notif-item-mesa">🍽 ${e.mesa}</span>
+                <span class="notif-item-hora">${fmtHora(e.timestamp)}</span>
+              </div>
+              <ul class="notif-item-arts">
+                ${e.articulos.map(a => `<li><strong>${a.cantidad}x</strong>&nbsp;${a.nombre}</li>`).join('')}
+              </ul>
+              <button class="btn-recibido" data-recibido="${e.id}">✓ Marcar recibido</button>
+            </div>`).join('')
+        : '<div class="notif-empty">Sin entregas pendientes</div>';
+
+    list.innerHTML = `
+      <div class="notif-tabs">
+        <button class="notif-tab ${this._tabNotif === 'mias' ? 'active' : ''}" data-tab="mias">
+          Mis entregas${mias.length ? ` <span class="notif-tab-count">${mias.length}</span>` : ''}
+        </button>
+        <button class="notif-tab ${this._tabNotif === 'todas' ? 'active' : ''}" data-tab="todas">
+          Ver todas${globales.length ? ` <span class="notif-tab-count notif-tab-count-global">${globales.length}</span>` : ''}
+        </button>
+      </div>
+      <div class="notif-items">
+        ${renderItems(entregas)}
+      </div>
+    `;
+
+    // Tabs click
+    list.querySelectorAll<HTMLElement>('[data-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this._tabNotif = btn.dataset.tab as 'mias' | 'todas';
+        this._renderNotifDrawer();
+      });
+    });
+  }
+
+  private _wireNotifDrawer(): void {
+    document.getElementById('btn-notif')?.addEventListener('click', () => this._openNotifDrawer());
+    document.getElementById('notif-close')?.addEventListener('click', () => this._closeNotifDrawer());
+    document.getElementById('notif-overlay')?.addEventListener('click', () => this._closeNotifDrawer());
+    document.getElementById('notif-list')?.addEventListener('click', e => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-recibido]');
+      if (!btn) return;
+      const id = btn.dataset.recibido!;
+      const entrega = notifStore.getAll().find(x => x.id === id);
+      if (entrega?.orden_linea_ids?.length) {
+        posSocket.emitLineasEntregadas(entrega.orden_linea_ids);
+        // Actualizar local inmediatamente (optimista)
+        if (entrega.orden_id === this._store.state.ordenId) {
+          this._store.marcarLineasEntregadas(entrega.orden_linea_ids);
+          if (document.getElementById('screen-tpv')?.classList.contains('active')) {
+            this._tpv.renderOrden();
+          }
+        }
+      }
+      notifStore.marcarRecibida(id);
+      this._updateNotifBadge();
+      this._renderNotifDrawer();
+      this._floorPlan.renderMesas();
+    });
+  }
+
+  // ─── Modal nombre de cuenta ───────────────────────────────────────────────
+
+  private _abrirModalCuentaNombre(num: number): void {
+    this._cuentaNombreNum = num;
+    const titulo = document.getElementById('cuenta-nombre-titulo');
+    if (titulo) titulo.textContent = `Cuenta ${num}`;
+    const input = document.getElementById('cuenta-nombre-input') as HTMLInputElement | null;
+    if (input) {
+      input.value = this._store.state.cuentasNombres[num] ?? '';
+    }
+    document.getElementById('modal-cuenta-nombre')!.style.display = 'flex';
+    setTimeout(() => input?.focus(), 50);
+  }
+
+  private _cerrarModalCuentaNombre(): void {
+    document.getElementById('modal-cuenta-nombre')!.style.display = 'none';
+  }
+
+  private _confirmarCuentaNombre(): void {
+    const input = document.getElementById('cuenta-nombre-input') as HTMLInputElement | null;
+    const nombre = input?.value ?? '';
+    this._store.setCuentaNombre(this._cuentaNombreNum, nombre);
+    this._cerrarModalCuentaNombre();
+    this._tpv.renderOrden();
   }
 
   // ─── Canales inter-módulos ────────────────────────────────────────────────

@@ -186,6 +186,22 @@ export interface KdsOrdenCompletaPayload {
   mesa_nombre?: string;
 }
 
+export interface KdsBatchListoPayload {
+  id: string;
+  orden_id: number;
+  mesa_id: number | null;
+  mesa: string;
+  usuario_id: number | null;
+  articulos: { nombre: string; cantidad: number }[];
+  orden_linea_ids: number[];
+}
+
+export interface KdsLineasEntregadasPayload {
+  orden_id: number;
+  mesa_id: number | null;
+  orden_linea_ids: number[];
+}
+
 export interface OrdenLineasConfirmadasPayload {
   orden_id: number;
   lineas_enviadas: number[];
@@ -208,10 +224,9 @@ export interface CajaOrdenListaCobrarPayload {
 
 export interface CajaPagoRegistradoPayload {
   orden_id: number;
-  mesa_id: number;
-  forma_pago: string;
-  monto: number;
-  total_orden: number;
+  mesa_id: number | null;
+  monto_total: number;
+  estado_orden: string;
 }
 
 export interface CajaTurnoPayload {
@@ -258,6 +273,7 @@ export interface MesasState {
   lineaSeleccionada: LineaOrden | null;
   splitMode: boolean;
   numCuentas: number;
+  cuentasNombres: Record<number, string>;
 
   // Estado KDS — habilita "pedir cuenta"
   ordenCompleta: boolean;

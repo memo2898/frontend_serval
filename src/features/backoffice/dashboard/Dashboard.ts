@@ -22,6 +22,13 @@ const QUICK_ACCESS: QuickAccessItem[] = [
   { icon: 'fa-cog',                 label: 'Configuración',      href: '/configuracionsucursal', color: '#92400e' },
 ];
 
+const POS_ACCESS: QuickAccessItem[] = [
+  { icon: 'fa-concierge-bell', label: 'POS – Mesas',   href: '/pos/mesas',   color: '#7c3aed' },
+  { icon: 'fa-cash-register',  label: 'POS – Caja',    href: '/pos/caja',    color: '#059669' },
+  { icon: 'fa-utensils',       label: 'POS – Cocina',  href: '/pos/cocina',  color: '#d97706' },
+  { icon: 'fa-wine-glass-alt', label: 'POS – Barra',   href: '/pos/barra',   color: '#0891b2' },
+];
+
 export function Dashboard(container: HTMLElement): void {
   const user        = getUser();
   const role        = getSelectedRole();
@@ -57,6 +64,24 @@ export function Dashboard(container: HTMLElement): void {
         </h2>
         <div class="dash-grid">
           ${QUICK_ACCESS.map(item => `
+            <a href="${route(item.href)}" class="dash-card">
+              <div class="dash-card-icon" style="background:${item.color}1a; color:${item.color}">
+                <i class="fas ${item.icon}"></i>
+              </div>
+              <span class="dash-card-label">${item.label}</span>
+            </a>
+          `).join('')}
+        </div>
+      </section>
+
+      <!-- POS -->
+      <section class="dash-section">
+        <h2 class="dash-section-title">
+          <i class="fas fa-desktop"></i>
+          Punto de Venta (POS)
+        </h2>
+        <div class="dash-grid">
+          ${POS_ACCESS.map(item => `
             <a href="${route(item.href)}" class="dash-card">
               <div class="dash-card-icon" style="background:${item.color}1a; color:${item.color}">
                 <i class="fas ${item.icon}"></i>

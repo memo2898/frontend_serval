@@ -3,13 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ServalPOS — Caja</title>
+  <title>Serval — Caja</title>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="../shared/styles/client-tokens.css">
   <link rel="stylesheet" href="../shared/styles/client-layout.css">
   <link rel="stylesheet" href="./caja.css">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
   <style>
-    html, body { overflow: hidden; }
+    html, body { overflow: hidden; } 
     #screen-caja { background: var(--bg); }
   </style>
 </head>
@@ -21,7 +24,7 @@
 <div id="screen-caja" class="screen active">
 
   <div class="topbar" style="height:56px;min-height:56px;border-bottom-width:3px">
-    <span class="topbar-brand">ServalPOS</span>
+    <span class="topbar-brand">Serval</span>
     <span class="topbar-screen">Caja</span>
     <div class="topbar-spacer"></div>
     <span class="topbar-user" id="topbar-user">—</span>
@@ -38,7 +41,7 @@
       </div>
       <div class="queue-list" id="queue-list"></div>
       <div class="queue-empty" id="queue-empty">
-        <div style="font-size:40px;opacity:0.25">💳</div>
+        <i class="fa-solid fa-credit-card queue-empty-icon"></i>
         <div>Sin órdenes pendientes</div>
         <div style="font-size:11px;opacity:0.6;margin-top:4px">
           Las órdenes aparecen aquí cuando el camarero pide la cuenta
@@ -49,13 +52,20 @@
     <!-- Columna 2: Detalle -->
     <div class="caja-detalle" id="caja-detalle">
       <div class="detalle-empty" id="detalle-empty">
-        <div style="font-size:48px;opacity:0.18">🧾</div>
+        <i class="fa-solid fa-receipt detalle-empty-icon"></i>
         <div>Selecciona una orden</div>
       </div>
       <div id="detalle-content" style="display:none;flex:1;flex-direction:column;overflow:hidden">
         <div class="detalle-header">
-          <div class="detalle-orden-num" id="detalle-num">ORDEN #—</div>
-          <div class="detalle-meta"      id="detalle-meta">—</div>
+          <div class="detalle-header-top">
+            <div>
+              <div class="detalle-orden-num" id="detalle-num">ORDEN #—</div>
+              <div class="detalle-meta"      id="detalle-meta">—</div>
+            </div>
+            <button class="btn-imprimir" id="btn-imprimir" title="Imprimir cuenta">
+              <i class="fa-solid fa-print"></i> Imprimir
+            </button>
+          </div>
         </div>
         <div id="cuentas-tabs" style="display:none" class="cuentas-tabs"></div>
         <div class="cobro-lineas"  id="cobro-lineas"></div>
@@ -66,20 +76,24 @@
     <!-- Columna 3: Pago -->
     <div class="caja-pago" id="caja-pago-col">
       <div class="detalle-empty" id="pago-empty">
-        <div style="font-size:40px;opacity:0.18">💵</div>
+        <i class="fa-solid fa-money-bill-wave detalle-empty-icon"></i>
         <div style="font-size:13px">Selecciona una orden para cobrar</div>
       </div>
       <div id="pago-content" style="display:none;flex:1;flex-direction:column;overflow:hidden">
         <div class="pago-header">Formas de pago</div>
         <div class="formas-pago-grid" id="formas-pago-grid"></div>
         <div class="monto-section">
-          <div class="monto-label">Monto recibido</div>
-          <input type="number" class="monto-input" id="monto-pago" placeholder="0.00">
+          <div class="monto-label">Monto a aplicar</div>
+          <input type="number" class="monto-input" id="monto-pago" placeholder="0.00" min="0.01" step="0.01">
         </div>
-        <button class="btn-agregar-pago" id="btn-agregar-pago">+ Agregar pago</button>
+        <button class="btn-agregar-pago" id="btn-agregar-pago">
+          <i class="fa-solid fa-plus"></i> Agregar pago
+        </button>
         <div class="pagos-list"    id="pagos-list"></div>
         <div class="cobro-resumen" id="cobro-resumen"></div>
-        <button class="btn-confirmar" id="btn-confirmar" disabled>✅ Confirmar cobro</button>
+        <button class="btn-confirmar" id="btn-confirmar" disabled>
+          <i class="fa-solid fa-circle-check"></i> Confirmar cobro
+        </button>
       </div>
     </div>
 
@@ -89,10 +103,12 @@
 <!-- Modal cambio -->
 <div id="modal-cambio" class="cambio-modal" style="display:none">
   <div class="cambio-box">
-    <div class="cambio-icon">💵</div>
+    <div class="cambio-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
     <div class="cambio-title">Cambio a devolver</div>
     <div class="cambio-amount" id="cambio-amount">$0.00</div>
-    <button class="btn-cerrar-cambio" id="btn-cerrar-cambio">Cerrar y finalizar</button>
+    <button class="btn-cerrar-cambio" id="btn-cerrar-cambio">
+      <i class="fa-solid fa-check"></i> Cerrar y finalizar
+    </button>
   </div>
 </div>
 

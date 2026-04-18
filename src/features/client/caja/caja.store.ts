@@ -1,5 +1,5 @@
 import type {
-  CajaState, TicketCola, FormaPago, PagoAplicado, TotalesCuenta,
+  CajaState, TicketCola, FormaPago, PagoAplicado, TotalesCuenta, ImpuestoCaja,
 } from './caja.types';
 
 function createInitialState(): CajaState {
@@ -8,6 +8,8 @@ function createInitialState(): CajaState {
     ticketId: null, mesaId: null, mesaLabel: '',
     orden: null, lineas: [],
     numComensales: 1, splitMode: false, numCuentas: 1,
+    cuentasNombres: {},
+    impuestos: [],
     formasPago: [],
     formaSeleccionada: null,
     pagos: [],
@@ -36,6 +38,11 @@ export class CajaStore {
     this._notify();
   }
 
+  setImpuestos(impuestos: ImpuestoCaja[]): void {
+    this._state.impuestos = impuestos;
+    this._notify();
+  }
+
   setFormasPago(formas: FormaPago[]): void {
     this._state.formasPago = formas;
     this._notify();
@@ -52,10 +59,16 @@ export class CajaStore {
     this._state.numComensales   = ticket.numComensales || 1;
     this._state.splitMode       = ticket.splitMode || false;
     this._state.numCuentas      = ticket.numCuentas || 1;
+    this._state.cuentasNombres  = { ...(ticket.cuentasNombres ?? {}) };
     this._state.formaSeleccionada = null;
     this._state.pagos           = [];
     this._state.cuentaActivaCobro = 1;
     this._state.cuentasCobradas   = new Set();
+    this._notify();
+  }
+
+  setLineas(lineas: import('./caja.types').LineaCobro[]): void {
+    this._state.lineas = lineas.map(l => ({ ...l }));
     this._notify();
   }
 
@@ -72,12 +85,24 @@ export class CajaStore {
     this._state.pagos.push({
       forma_pago_id: forma.id,
       nombre: forma.nombre,
-      icono: forma.icono,
+      icono: forma.icono ?? '',
       monto,
       cuenta_num: this._state.cuentaActivaCobro,
     });
     this._notify();
     return true;
+  }
+
+  eliminarPago(index: number): void {
+    const activos = this.getPagosActivos();
+    const pago    = activos[index];
+    if (!pago) return;
+    // Eliminar la primera ocurrencia que coincida exactamente
+    const globalIdx = this._state.pagos.findIndex(
+      p => p.forma_pago_id === pago.forma_pago_id && p.monto === pago.monto && p.cuenta_num === pago.cuenta_num
+    );
+    if (globalIdx >= 0) this._state.pagos.splice(globalIdx, 1);
+    this._notify();
   }
 
   // ─── Split ───────────────────────────────────────────────────────────────────
@@ -104,16 +129,33 @@ export class CajaStore {
     const sub = this._state.lineas
       .filter(l => (l.cuenta_num || 1) === n)
       .reduce((s, l) => s + Number(l.subtotal_linea), 0);
-    const impuestos = Math.round(sub * 0.18 * 100) / 100;
+
+    const desglose = this._state.impuestos.map(i => ({
+      nombre:     i.nombre,
+      porcentaje: i.porcentaje,
+      monto:      Math.round(sub * (i.porcentaje / 100) * 100) / 100,
+    }));
+    const impuestos = Math.round(desglose.reduce((s, d) => s + d.monto, 0) * 100) / 100;
+
     return {
-      subtotal:   sub,
+      subtotal: sub,
       impuestos,
-      total:      Math.round((sub + impuestos) * 100) / 100,
+      desglose,
+      total:    Math.round((sub + impuestos) * 100) / 100,
     };
   }
 
   getTotalActivo(): number {
     if (this._state.splitMode) return this.getTotalCuenta(this._state.cuentaActivaCobro).total;
+    // Recalcular desde las tasas reales para no depender de orden.total (puede estar desactualizado)
+    if (this._state.impuestos.length && this._state.orden) {
+      const sub = this._state.orden.subtotal ?? 0;
+      const imp = Math.round(
+        this._state.impuestos.reduce((s, i) => s + Math.round(sub * (i.porcentaje / 100) * 100) / 100, 0)
+        * 100
+      ) / 100;
+      return Math.round((sub + imp) * 100) / 100;
+    }
     return this._state.orden?.total ?? 0;
   }
 
@@ -136,6 +178,7 @@ export class CajaStore {
     this._state.ticketId = null; this._state.mesaId = null; this._state.mesaLabel = '';
     this._state.orden = null; this._state.lineas = [];
     this._state.splitMode = false; this._state.numCuentas = 1;
+    this._state.cuentasNombres = {};
     this._state.formaSeleccionada = null; this._state.pagos = [];
     this._state.cuentaActivaCobro = 1; this._state.cuentasCobradas = new Set();
     this._notify();

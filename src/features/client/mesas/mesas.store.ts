@@ -18,11 +18,32 @@ function createInitialState(): MesasState {
     orden: null, lineas: [], lineasNuevasIds: new Set(),
     familias: [], familiaActiva: null, articulos: [],
     lineaSeleccionada: null,
-    splitMode: false, numCuentas: 1,
+    splitMode: false, numCuentas: 1, cuentasNombres: {},
     ordenCompleta: false,
     mergeMode: false, mergePrincipal: null, mergeSelected: [], unirTPVSelected: [],
     modalArticulo: null, modalMods: {}, modalSel: {},
   };
+}
+
+// ─── Persistencia de nombres de cuenta ───────────────────────────────────────
+
+const CUENTAS_NOMBRES_PREFIX = 'serval_cuentas_';
+
+function loadCuentasNombres(ordenId: number): Record<number, string> {
+  try {
+    const raw = localStorage.getItem(CUENTAS_NOMBRES_PREFIX + ordenId);
+    return raw ? (JSON.parse(raw) as Record<number, string>) : {};
+  } catch { return {}; }
+}
+
+function saveCuentasNombres(ordenId: number, nombres: Record<number, string>): void {
+  try {
+    if (Object.keys(nombres).length === 0) {
+      localStorage.removeItem(CUENTAS_NOMBRES_PREFIX + ordenId);
+    } else {
+      localStorage.setItem(CUENTAS_NOMBRES_PREFIX + ordenId, JSON.stringify(nombres));
+    }
+  } catch { /* ignorar */ }
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -64,7 +85,7 @@ export class MesasStore {
   setMesas(mesas: Mesa[]): void                   { this._state.mesas = mesas; this._notify(); }
   setFamilias(f: Familia[]): void                 { this._state.familias = f; this._notify(); }
   setArticulos(a: Articulo[]): void               { this._state.articulos = a; this._notify(); }
-  setImpuestos(i: ImpuestoSucursal[]): void       { this._state.impuestos = i; this._notify(); }
+  setImpuestos(i: ImpuestoSucursal[]): void       { this._state.impuestos = i; this._recalcular(); this._notify(); }
 
   setZonaActiva(id: number): void {
     this._state.zonaActiva = id;
@@ -124,6 +145,7 @@ export class MesasStore {
     this._state.lineaSeleccionada  = null;
     this._state.splitMode          = false;
     this._state.numCuentas         = 1;
+    this._state.cuentasNombres     = loadCuentasNombres(orden.id);
     this._state.ordenCompleta      = false;
     this._notify();
   }
@@ -243,6 +265,22 @@ export class MesasStore {
     this._notify();
   }
 
+  marcarLineasListas(ids: number[]): void {
+    const set = new Set(ids);
+    this._state.lineas = this._state.lineas.map(l =>
+      set.has(l.id) ? { ...l, estado: 'lista' as const } : l
+    );
+    this._notify();
+  }
+
+  marcarLineasEntregadas(ids: number[]): void {
+    const set = new Set(ids);
+    this._state.lineas = this._state.lineas.map(l =>
+      set.has(l.id) ? { ...l, estado: 'entregada' as const } : l
+    );
+    this._notify();
+  }
+
   eliminarLinea(lineaId: number): void {
     this._state.lineas = this._state.lineas.filter(l => l.id !== lineaId);
     this._state.lineasNuevasIds.delete(lineaId);
@@ -263,7 +301,7 @@ export class MesasStore {
   ciclarCuenta(lineaId: number): void {
     const linea = this._state.lineas.find(l => l.id === lineaId);
     if (!linea) return;
-    const MAX = 6;
+    const MAX = Math.max(this._state.numComensales, 1);
     const next = (linea.cuenta_num || 1) + 1;
     if (next > this._state.numCuentas && this._state.numCuentas < MAX) {
       this._state.numCuentas = next;
@@ -274,11 +312,25 @@ export class MesasStore {
     this._notify();
   }
 
+  setCuentaNombre(num: number, nombre: string): void {
+    if (nombre.trim()) {
+      this._state.cuentasNombres[num] = nombre.trim();
+    } else {
+      delete this._state.cuentasNombres[num];
+    }
+    if (this._state.ordenId) {
+      saveCuentasNombres(this._state.ordenId, this._state.cuentasNombres);
+    }
+    this._notify();
+  }
+
   toggleSplit(): void {
     this._state.splitMode = !this._state.splitMode;
     if (!this._state.splitMode) {
       this._state.lineas.forEach(l => { l.cuenta_num = 1; });
       this._state.numCuentas = 1;
+      this._state.cuentasNombres = {};
+      if (this._state.ordenId) saveCuentasNombres(this._state.ordenId, {});
     }
     this._notify();
   }
@@ -417,9 +469,11 @@ export class MesasStore {
     this._state.orden            = null;
     this._state.lineas           = [];
     this._state.lineasNuevasIds  = new Set();
+    if (this._state.ordenId) saveCuentasNombres(this._state.ordenId, {});
     this._state.lineaSeleccionada = null;
     this._state.splitMode        = false;
     this._state.numCuentas       = 1;
+    this._state.cuentasNombres   = {};
     this._state.ordenCompleta    = false;
     this._notify();
   }

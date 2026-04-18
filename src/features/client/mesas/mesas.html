@@ -25,6 +25,11 @@
     <span class="topbar-brand">Serval</span>
     <div class="topbar-spacer"></div>
     <span class="topbar-user" id="topbar-user">—</span>
+    <button class="btn-notif" id="btn-notif" aria-label="Entregas pendientes">
+      <i class="fa-solid fa-bell"></i>
+      <span class="notif-count" id="notif-count" style="display:none">0</span>
+      <span class="notif-dot" id="notif-dot" style="display:none"></span>
+    </button>
     <button class="btn-exit" id="btn-exit-mesas">Salir</button>
   </div>
   <div class="zonas-tabs" id="zonas-tabs"></div>
@@ -148,6 +153,32 @@
       <button class="btn-modal-cancel" data-cerrar-unir-tpv>Cancelar</button>
       <button class="btn-modal-add" id="btn-confirmar-unir-tpv" disabled>Unir mesas</button>
     </div>
+  </div>
+</div>
+
+<!-- Modal nombre de cuenta -->
+<div id="modal-cuenta-nombre" class="comensales-modal" style="display:none">
+  <div class="comensales-box">
+    <div class="comensales-title" id="cuenta-nombre-titulo">Cuenta 1</div>
+    <div class="comensales-sub">¿A nombre de quién va esta cuenta?</div>
+    <input type="text" id="cuenta-nombre-input" class="cuenta-nombre-input"
+           maxlength="30" placeholder="Ej: Aurelio…" autocomplete="off">
+    <div class="comensales-actions">
+      <button class="btn-cancel-com"  data-cerrar-cuenta-nombre>Cancelar</button>
+      <button class="btn-confirm-com" data-confirmar-cuenta-nombre>Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ NOTIFICACIONES DRAWER ══════════════ -->
+<div id="notif-overlay" class="notif-overlay" style="display:none"></div>
+<div id="notif-drawer" class="notif-drawer" aria-hidden="true">
+  <div class="notif-drawer-header">
+    <span class="notif-drawer-title">Entregas pendientes</span>
+    <button class="notif-drawer-close" id="notif-close"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div id="notif-list" class="notif-list">
+    <div class="notif-empty">Sin entregas pendientes</div>
   </div>
 </div>
 

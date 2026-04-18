@@ -1,7 +1,8 @@
 export interface FormaPago {
   id: number;
   nombre: string;
-  icono: string;
+  tipo: string;
+  icono?: string;
 }
 
 export interface PagoAplicado {
@@ -10,6 +11,7 @@ export interface PagoAplicado {
   icono: string;
   monto: number;
   cuenta_num: number;
+  referencia?: string;
 }
 
 export interface LineaCobro {
@@ -45,6 +47,7 @@ export interface TicketCola {
   lineas: LineaCobro[];
   splitMode: boolean;
   numCuentas: number;
+  cuentasNombres?: Record<number, string>;
   timestamp: number;
 }
 
@@ -52,6 +55,12 @@ export interface TotalesCuenta {
   subtotal: number;
   impuestos: number;
   total: number;
+  desglose: Array<{ nombre: string; porcentaje: number; monto: number }>;
+}
+
+export interface ImpuestoCaja {
+  nombre: string;
+  porcentaje: number;
 }
 
 export interface CajaState {
@@ -65,6 +74,9 @@ export interface CajaState {
   numComensales: number;
   splitMode: boolean;
   numCuentas: number;
+  cuentasNombres: Record<number, string>;
+  // Impuestos
+  impuestos: ImpuestoCaja[];
   // Cobro
   formasPago: FormaPago[];
   formaSeleccionada: FormaPago | null;

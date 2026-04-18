@@ -1,5 +1,10 @@
 export function fmt(num: number): string {
-  return '$' + Number(num).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const rounded = Math.round(Number(num) * 100) / 100;
+  // Mostrar 2 decimales solo si hay centavos; sin centavos queda limpio
+  const str = rounded % 1 === 0
+    ? rounded.toFixed(0)
+    : rounded.toFixed(2);
+  return '$' + str.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 export function tiempoStr(ms: number): string {

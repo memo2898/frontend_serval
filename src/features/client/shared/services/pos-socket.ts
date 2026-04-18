@@ -6,6 +6,8 @@ import type {
   MesaEstadoCambioPayload,
   KdsNuevaLineaPayload,
   KdsOrdenCompletaPayload,
+  KdsBatchListoPayload,
+  KdsLineasEntregadasPayload,
   CajaOrdenListaCobrarPayload,
   CajaPagoRegistradoPayload,
   CajaTurnoPayload,
@@ -26,6 +28,8 @@ interface ClientToServerEvents {
   'orden:linea_sincronizada':  (data: OrdenLineaSincronizadaPayload) => void;
   'kds:linea_en_preparacion':  (data: { kds_orden_id: number }) => void;
   'kds:linea_lista':           (data: { kds_orden_id: number }) => void;
+  'kds:batch_lista':           (data: { kds_orden_ids: number[] }) => void;
+  'kds:lineas_entregadas':     (data: { orden_linea_ids: number[] }) => void;
 }
 
 // Servidor → Cliente
@@ -36,6 +40,8 @@ interface ServerToClientEvents {
   'mesa:estado_cambio':        (data: MesaEstadoCambioPayload) => void;
   'kds:nueva_linea':           (data: KdsNuevaLineaPayload) => void;
   'kds:orden_completa':        (data: KdsOrdenCompletaPayload) => void;
+  'kds:batch_listo':           (data: KdsBatchListoPayload) => void;
+  'kds:lineas_entregadas':     (data: KdsLineasEntregadasPayload) => void;
   'orden:lineas_confirmadas':  (data: OrdenLineasConfirmadasPayload) => void;
   'orden:linea_sincronizada':  (data: OrdenLineaSincronizadaPayload) => void;
   'caja:orden_lista_cobrar':   (data: CajaOrdenListaCobrarPayload) => void;
@@ -118,6 +124,14 @@ export class PosSocketService {
     this._socket?.emit('kds:linea_lista', { kds_orden_id: kdsOrdenId });
   }
 
+  emitBatchLista(kdsOrdenIds: number[]): void {
+    this._socket?.emit('kds:batch_lista', { kds_orden_ids: kdsOrdenIds });
+  }
+
+  emitLineasEntregadas(ordenLineaIds: number[]): void {
+    this._socket?.emit('kds:lineas_entregadas', { orden_linea_ids: ordenLineaIds });
+  }
+
   // ─── Suscripciones (Servidor → Cliente) ──────────────────────────────────
   // Cada método devuelve una función de cleanup para desuscribirse.
 
@@ -149,6 +163,16 @@ export class PosSocketService {
   onKdsOrdenCompleta(cb: (data: KdsOrdenCompletaPayload) => void): () => void {
     this._socket?.on('kds:orden_completa', cb);
     return () => this._socket?.off('kds:orden_completa', cb);
+  }
+
+  onKdsBatchListo(cb: (data: KdsBatchListoPayload) => void): () => void {
+    this._socket?.on('kds:batch_listo', cb);
+    return () => this._socket?.off('kds:batch_listo', cb);
+  }
+
+  onKdsLineasEntregadas(cb: (data: KdsLineasEntregadasPayload) => void): () => void {
+    this._socket?.on('kds:lineas_entregadas', cb);
+    return () => this._socket?.off('kds:lineas_entregadas', cb);
   }
 
   onCajaOrdenListaCobrar(cb: (data: CajaOrdenListaCobrarPayload) => void): () => void {

@@ -78,7 +78,7 @@ export class KdsModule {
     const tb = document.getElementById('kds-topbar');
     if (!tb) return;
     tb.innerHTML = `
-      <span class="topbar-brand">ServalPOS</span>
+      <span class="topbar-brand">Serval</span>
       <span class="topbar-sep">|</span>
       <span class="topbar-title">${this._config.titulo}</span>
       <div class="topbar-spacer"></div>
@@ -257,8 +257,8 @@ export class KdsModule {
         // Marcar todas las líneas en preparación
         c.lineas.forEach(l => posSocket.emitLineaEnPreparacion(l.kds_orden_id));
       } else {
-        // Marcar todas las líneas como listas
-        c.lineas.forEach(l => posSocket.emitLineaLista(l.kds_orden_id));
+        // Emitir todos los IDs del batch en un solo evento — sin race condition
+        posSocket.emitBatchLista(c.lineas.map(l => l.kds_orden_id));
       }
       toast(`Comanda ${c.numero} — ${nuevoEstado === 'en_preparacion' ? 'en preparación' : 'lista ✓'}`, 'info');
     } else {
