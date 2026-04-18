@@ -481,17 +481,22 @@ class CajaPage {
       </div>
     `).join('');
 
-    const exacto = Math.abs(pagado - total) < 0.01;
+    const exacto    = Math.abs(pagado - total) < 0.01;
+    const totalCero = total < 0.005;
     let resumenHtml = `
       <div class="resumen-row"><span class="label">Total</span><span class="val">${fmt(total)}</span></div>
-      <div class="resumen-row"><span class="label">Pagado</span><span class="val">${fmt(pagado)}</span></div>
     `;
-    if (pendiente > 0.005) {
-      resumenHtml += `<div class="resumen-row"><span class="label">Falta</span><span class="val pendiente">-${fmt(pendiente)}</span></div>`;
-    } else if (exceso > 0.005) {
-      resumenHtml += `<div class="resumen-row"><span class="label">Exceso</span><span class="val" style="color:var(--red)">+${fmt(exceso)}</span></div>`;
-    } else if (pagado > 0) {
-      resumenHtml += `<div class="resumen-row"><span class="label" style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Exacto</span><span class="val" style="color:var(--green)">${fmt(pagado)}</span></div>`;
+    if (totalCero) {
+      resumenHtml += `<div class="resumen-row"><span class="label" style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Sin cargo</span><span class="val" style="color:var(--green)">$0.00</span></div>`;
+    } else {
+      resumenHtml += `<div class="resumen-row"><span class="label">Pagado</span><span class="val">${fmt(pagado)}</span></div>`;
+      if (pendiente > 0.005) {
+        resumenHtml += `<div class="resumen-row"><span class="label">Falta</span><span class="val pendiente">-${fmt(pendiente)}</span></div>`;
+      } else if (exceso > 0.005) {
+        resumenHtml += `<div class="resumen-row"><span class="label">Exceso</span><span class="val" style="color:var(--red)">+${fmt(exceso)}</span></div>`;
+      } else if (pagado > 0) {
+        resumenHtml += `<div class="resumen-row"><span class="label" style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Exacto</span><span class="val" style="color:var(--green)">${fmt(pagado)}</span></div>`;
+      }
     }
     document.getElementById('cobro-resumen')!.innerHTML = resumenHtml;
 
@@ -504,8 +509,8 @@ class CajaPage {
       : '<i class="fa-solid fa-circle-check"></i> Confirmar cobro';
 
     const btn = document.getElementById('btn-confirmar') as HTMLButtonElement;
-    // Solo habilitar cuando el monto es exacto (ni falta ni sobra)
-    btn.disabled = !exacto || pagado === 0;
+    // Habilitar si: monto exacto (con pago) O si la cuenta no tiene cargo
+    btn.disabled = !totalCero && (!exacto || pagado === 0);
     btn.innerHTML = btnLabel;
   }
 
