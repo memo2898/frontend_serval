@@ -431,6 +431,26 @@
 }
 .familia-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(var(--accent-rgb),0.08); font-weight: 600; }
 
+.articulos-search {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-bottom: 1px solid var(--border);
+  background: var(--surface); flex-shrink: 0;
+}
+.articulos-search i { color: var(--text-muted); font-size: 13px; flex-shrink: 0; }
+.articulos-search input {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px; font-size: 13px; color: var(--text);
+  font-family: inherit; outline: none; transition: border-color 0.15s;
+}
+.articulos-search input:focus { border-color: var(--accent); }
+.articulos-search input::placeholder { color: var(--text-muted); }
+.search-clear-btn {
+  background: none; border: none; cursor: pointer; padding: 4px 6px;
+  color: var(--text-muted); font-size: 13px; flex-shrink: 0; line-height: 1;
+  border-radius: 4px; transition: color 0.15s;
+}
+.search-clear-btn:hover { color: var(--text); }
+
 .articulos-grid {
   display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 10px; padding: 14px; overflow-y: auto; flex: 1; align-content: start;

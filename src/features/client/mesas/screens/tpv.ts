@@ -22,15 +22,19 @@ export class TpvScreen {
     `).join('');
   }
 
-  renderArticulos(): void {
+  renderArticulos(search = ''): void {
     const { articulos } = this._store.state;
     const el = document.getElementById('articulos-grid');
     if (!el) return;
-    if (!articulos.length) {
-      el.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><i class="fa-solid fa-utensils"></i></div><span>Sin artículos</span></div>';
+    const term = search.trim().toLowerCase();
+    const lista = term
+      ? articulos.filter(a => a.nombre.toLowerCase().includes(term))
+      : articulos;
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><i class="fa-solid fa-utensils"></i></div><span>' + (term ? 'Sin resultados' : 'Sin artículos') + '</span></div>';
       return;
     }
-    el.innerHTML = articulos.map(a => {
+    el.innerHTML = lista.map(a => {
       const iconoGris = `<i class="fa-regular fa-image" style="font-size:32px;color:var(--text-muted)"></i>`;
       const media = a.imagen
         ? `<img src="${a.imagen}" alt="${a.nombre}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">${iconoGris.replace('style="', 'style="display:none;')}`

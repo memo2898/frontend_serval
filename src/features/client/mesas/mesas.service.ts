@@ -49,6 +49,10 @@ export const getArticulos = (familiaId: number) =>
   http.get<Paginado<Articulo> | Articulo[]>(`${BASE}/articulos?familia_id=${familiaId}&estado=activo`)
     .then(unwrap<Articulo>);
 
+export const getAllArticulos = () =>
+  http.get<Paginado<Articulo> | Articulo[]>(`${BASE}/articulos?estado=activo`)
+    .then(unwrap<Articulo>);
+
 interface RawModificador {
   id: number;
   grupo_modificador_id: number;

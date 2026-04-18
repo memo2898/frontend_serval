@@ -15,7 +15,7 @@ import { ModificadoresModal } from './modals/modificadores.modal';
 import { UnirMesaModal } from './modals/unir-mesa.modal';
 import type { Mesa, Orden, LineaOrden } from './mesas.types';
 import {
-  getZonas, getMesasByZona, getFamilias, getArticulos, getModificadores,
+  getZonas, getMesasByZona, getFamilias, getArticulos, getAllArticulos, getModificadores,
   getImpuestosSucursal,
   createOrden, getOrdenActivaMesa, getUltimaOrdenMesa, getLineas,
   createLinea, updateLinea, deleteLinea,
@@ -75,6 +75,7 @@ class MesasPage {
 
   private _sucursalId   = 0;
   private _usuarioId    = 0;
+  private _allArticulos: import('./mesas.types').Articulo[] = [];
   private _mesaAccion: Mesa | null = null;
   private _miRol        = '';
   private _cuentaNombreNum = 0;
@@ -502,6 +503,16 @@ class MesasPage {
     const labelEl = document.getElementById('tpv-mesa-label');
     if (labelEl) labelEl.textContent = 'Mesa ' + mesaLabel;
 
+    // Resetear búsqueda al abrir un nuevo TPV
+    this._allArticulos = [];
+    const searchInput = document.getElementById('articulos-search-input') as HTMLInputElement | null;
+    if (searchInput) searchInput.value = '';
+    const clearBtn = document.getElementById('articulos-search-clear') as HTMLElement | null;
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    // Cargar todos los artículos en paralelo para la búsqueda cross-familia
+    getAllArticulos().then(arts => { this._allArticulos = arts; }).catch(() => {});
+
     this._store.setCargando(true);
     getImpuestosSucursal(this._sucursalId)
       .then(impuestos => {
@@ -665,10 +676,39 @@ class MesasPage {
       this._goTo('mesas');
     });
 
+    // ── TPV: buscador de artículos ──
+    const normalize = (s: string) =>
+      s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+    const applySearch = (term: string) => {
+      const clearBtn = document.getElementById('articulos-search-clear') as HTMLElement | null;
+      if (clearBtn) clearBtn.style.display = term ? '' : 'none';
+      if (term.trim()) {
+        const q = normalize(term.trim());
+        this._store.setArticulos(this._allArticulos.filter(a => normalize(a.nombre).includes(q)));
+        this._tpv.renderArticulos();
+      } else {
+        this._loadArticulos();
+      }
+    };
+
+    document.getElementById('articulos-search-input')?.addEventListener('input', e => {
+      applySearch((e.target as HTMLInputElement).value);
+    });
+
+    document.getElementById('articulos-search-clear')?.addEventListener('click', () => {
+      const input = document.getElementById('articulos-search-input') as HTMLInputElement | null;
+      if (input) { input.value = ''; input.focus(); }
+      applySearch('');
+    });
+
     // ── TPV: familias ──
     document.getElementById('familias-tabs')?.addEventListener('click', e => {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-familia]');
       if (!btn) return;
+      const input = document.getElementById('articulos-search-input') as HTMLInputElement | null;
+      if (input) input.value = '';
+      applySearch('');
       this._store.setFamiliaActiva(Number(btn.dataset.familia));
       this._loadArticulos();
     });
