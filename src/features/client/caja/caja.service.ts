@@ -1,6 +1,6 @@
 import { http } from '@/http';
 import { SERVER_ROUTE } from '@/config';
-import type { TicketCola, PagoAplicado, LineaCobro, ImpuestoCaja, OrdenDespachada } from './caja.types';
+import type { TicketCola, PagoAplicado, LineaCobro, ImpuestoCaja, OrdenDespachada, OrdenProxima } from './caja.types';
 import { CAJA_QUEUE_KEY } from '../shared/services/pos-channel';
 
 const BASE = `${SERVER_ROUTE}/api`;
@@ -206,6 +206,26 @@ export const fetchOrdenesCobradas = async (
       subtotal:     Number(o.subtotal ?? 0),
       total:        Number(o.total ?? 0),
       fechaCierre:  o.fecha_cierre ?? o.agregado_en ?? '',
+    }));
+};
+
+// ─── Órdenes próximas (activas, aún no en cola de cobro) ─────────────────────
+
+export const fetchOrdenesProximas = async (sucursalId: number): Promise<OrdenProxima[]> => {
+  interface Paginado<T> { data: T[] }
+  const raw = await http.get<Paginado<RawOrden> | RawOrden[]>(
+    `${BASE}/ordenes?estado=abierta&sucursal_id=${sucursalId}`,
+  );
+  const list = Array.isArray(raw) ? raw : (raw?.data ?? []);
+  return list
+    .filter(o => o.id != null)
+    .map(o => ({
+      id:          o.id,
+      mesaLabel:   o.mesa?.nombre ?? `Mesa ${o.mesa_id ?? '?'}`,
+      numeroOrden: o.numero_orden ?? o.id,
+      subtotal:    Number(o.subtotal ?? 0),
+      total:       Number(o.total ?? 0),
+      agregadoEn:  o.agregado_en ?? '',
     }));
 };
 

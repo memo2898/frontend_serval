@@ -74,6 +74,15 @@ export interface OrdenDespachada {
   fechaCierre: string;
 }
 
+export interface OrdenProxima {
+  id: number;
+  mesaLabel: string;
+  numeroOrden: number;
+  subtotal: number;
+  total: number;
+  agregadoEn: string;
+}
+
 export interface CajaState {
   queue: TicketCola[];
   // Ticket activo

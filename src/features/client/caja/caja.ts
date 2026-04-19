@@ -1,4 +1,4 @@
-import { checkRoleAccess } from '@/global/guards_auth';
+import { checkRoleAccess, isSuperAdmin } from '@/global/guards_auth';
 import { doLogout } from '@/global/logOut';
 const _allowed = checkRoleAccess(['cajero']);
 
@@ -16,9 +16,9 @@ import {
   getQueue, removeFromQueue, confirmarCobro, getFormasPago, fetchLineasOrden,
   getSucursalInfo, getImpuestosCaja, tipoToFaIcon, fetchOrdenesEnCola,
   updateLineaCuenta, updateLineaCaja, crearLineaOrden, saveCuentasNombres,
-  fetchOrdenesCobradas,
+  fetchOrdenesCobradas, fetchOrdenesProximas,
 } from './caja.service';
-import type { TicketCola, OrdenDespachada, LineaCobro } from './caja.types';
+import type { TicketCola, OrdenDespachada, OrdenProxima, LineaCobro } from './caja.types';
 
 // ─── Orchestrador ────────────────────────────────────────────────────────────
 
@@ -31,6 +31,7 @@ class CajaPage {
   private _logoEmpresa   = '';
   private _cuentaNombreNum = 0;
   private _historialOrdenes: OrdenDespachada[] = [];
+  private _proximasOrdenes: OrdenProxima[] = [];
 
   init(): void {
     this._applyTheme();
@@ -511,7 +512,7 @@ class CajaPage {
       : '<i class="fa-solid fa-circle-check"></i> Confirmar cobro';
 
     const btn = document.getElementById('btn-confirmar') as HTMLButtonElement;
-    btn.disabled = !exacto || pagado === 0;
+    btn.disabled = isSuperAdmin() ? false : (!exacto || pagado === 0);
     btn.innerHTML = btnLabel;
   }
 
@@ -744,6 +745,52 @@ class CajaPage {
 
   private _cerrarHistorial(): void {
     document.getElementById('modal-historial')!.style.display = 'none';
+  }
+
+  // ─── Próximas órdenes ─────────────────────────────────────────────────────
+
+  private _abrirProximas(): void {
+    document.getElementById('modal-proximas')!.style.display = 'flex';
+    this._cargarProximas();
+  }
+
+  private _cerrarProximas(): void {
+    document.getElementById('modal-proximas')!.style.display = 'none';
+  }
+
+  private _cargarProximas(): void {
+    const bodyEl  = document.getElementById('proximas-body')!;
+    const refBtn  = document.getElementById('btn-refrescar-proximas') as HTMLButtonElement;
+    bodyEl.innerHTML = '<div class="historial-empty"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px;opacity:0.4"></i></div>';
+    if (refBtn) refBtn.disabled = true;
+
+    fetchOrdenesProximas(this._sucursalId)
+      .then(ordenes => {
+        this._proximasOrdenes = ordenes;
+        this._renderProximas(ordenes);
+      })
+      .catch(() => {
+        bodyEl.innerHTML = '<div class="historial-empty">Error al cargar las órdenes.</div>';
+      })
+      .finally(() => { if (refBtn) refBtn.disabled = false; });
+  }
+
+  private _renderProximas(ordenes: OrdenProxima[]): void {
+    const bodyEl = document.getElementById('proximas-body')!;
+    if (!ordenes.length) {
+      bodyEl.innerHTML = '<div class="historial-empty"><i class="fa-solid fa-utensils" style="font-size:32px;opacity:0.2;margin-bottom:10px"></i><div>No hay órdenes activas en este momento</div></div>';
+      return;
+    }
+    bodyEl.innerHTML = ordenes.map(o => {
+      const numStr = String(o.numeroOrden).padStart(4, '0');
+      const desde  = o.agregadoEn ? tiempoDesde(new Date(o.agregadoEn).getTime()) : '—';
+      return `<div class="historial-row">
+        <span class="historial-row-num">#${numStr}</span>
+        <span class="historial-row-mesa">${o.mesaLabel}</span>
+        <span class="historial-row-hora"><i class="fa-regular fa-clock"></i> ${desde}</span>
+        <span class="historial-row-total" style="color:var(--text-muted)">${fmt(o.total)}</span>
+      </div>`;
+    }).join('');
   }
 
   private _buscarHistorial(): void {
@@ -1124,6 +1171,14 @@ class CajaPage {
     document.getElementById('btn-exit')?.addEventListener('click', () => {
       posSocket.disconnect();
       doLogout();
+    });
+
+    // Próximas órdenes
+    document.getElementById('btn-proximas')?.addEventListener('click', () => this._abrirProximas());
+    document.getElementById('btn-cerrar-proximas')?.addEventListener('click', () => this._cerrarProximas());
+    document.getElementById('btn-refrescar-proximas')?.addEventListener('click', () => this._cargarProximas());
+    document.getElementById('modal-proximas')?.addEventListener('click', e => {
+      if ((e.target as HTMLElement).id === 'modal-proximas') this._cerrarProximas();
     });
 
     // Historial
