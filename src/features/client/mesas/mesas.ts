@@ -422,6 +422,7 @@ class MesasPage {
             const personas = mesa.personas ?? lineas.length;
             this._store.openTPV(mesaId, mesa.nombre, personas, orden);
             this._store.setLineas(lineas);
+            this._store.restoreSplitFromLineas();
             posSocket.emitUsuarioEntro(mesaId);
             this._loadTPVScreen();
           });
@@ -1301,13 +1302,15 @@ class MesasPage {
   private async _aplicarSplitModalResult(result: SplitConfirmResult): Promise<void> {
     const { ordenId, mesaId, lineas } = this._store.state;
 
+    // Capturar cuenta_num originales antes de que applySplitResult mute los objetos
+    const cuentaNumAntes = new Map(lineas.map(l => [l.id, l.cuenta_num ?? 1]));
+
     // 1. Aplicar al store (actualiza lineas, splitMode, numCuentas, cuentasNombres)
     this._store.applySplitResult(result);
 
     // 2. Persistir en BD solo las líneas cuyo cuenta_num cambió
     result.lineas.forEach(r => {
-      const orig = lineas.find(l => l.id === r.id);
-      if (orig && orig.cuenta_num !== r.cuenta_num && r.id > 0) {
+      if (r.id > 0 && cuentaNumAntes.get(r.id) !== r.cuenta_num) {
         updateLinea(ordenId ?? 0, r.id, { cuenta_num: r.cuenta_num })
           .catch(() => {});
       }
