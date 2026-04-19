@@ -143,16 +143,28 @@
 .btn-confirmar:disabled { opacity: 0.3; cursor: not-allowed; background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
 .btn-confirmar:not(:disabled):active { opacity: 0.85; }
 
-/* ─── Botón historial en queue-header ───────────────────────────────────────── */
-.btn-historial {
+/* ─── Botones queue-header (próximas + historial) ───────────────────────────── */
+.queue-header-btns {
+  display: flex; gap: 6px; margin-top: 8px;
+}
+.btn-historial, .btn-proximas {
   display: flex; align-items: center; gap: 5px;
-  padding: 5px 9px; margin-top: 8px;
+  padding: 5px 9px;
   border-radius: var(--radius); border: 1px solid var(--border);
   background: var(--surface2); color: var(--text-muted);
   font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
-  transition: all 0.15s; width: 100%; justify-content: center;
+  transition: all 0.15s; flex: 1; justify-content: center;
 }
 .btn-historial:hover { background: var(--surface3); color: var(--text); }
+.btn-proximas:hover  { background: var(--surface3); color: var(--accent); border-color: var(--accent); }
+
+/* ─── Modal próximas ─────────────────────────────────────────────────────────── */
+.proximas-panel { max-width: 480px; }
+.proximas-subtitulo {
+  padding: 8px 20px 10px;
+  font-size: 11px; color: var(--text-dim);
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
 
 /* ─── Modal historial overlay ────────────────────────────────────────────────── */
 .historial-overlay {

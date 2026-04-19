@@ -1,4 +1,5 @@
 import { fmt } from '../../shared/utils/format';
+import { isSuperAdmin } from '@/global/guards_auth';
 import type { MesasStore } from '../mesas.store';
 
 export class TpvScreen {
@@ -136,7 +137,7 @@ export class TpvScreen {
     //    (el camarero debe marcar como entregado antes de pedir la cuenta)
     const hayNuevasSinEnviar    = lineasNuevasIds.size > 0 || lineas.some(l => !l.enviado_a_cocina);
     const hayListasSinEntregar  = lineas.some(l => l.estado === 'lista');
-    const canPedirCuenta = lineas.length > 0 && !hayNuevasSinEnviar && ordenCompleta && !hayListasSinEntregar;
+    const canPedirCuenta = isSuperAdmin() || (lineas.length > 0 && !hayNuevasSinEnviar && ordenCompleta && !hayListasSinEntregar);
     const btnCobrar = document.querySelector<HTMLButtonElement>('[data-pedir-cuenta]');
     if (btnCobrar) {
       btnCobrar.disabled = !canPedirCuenta;
