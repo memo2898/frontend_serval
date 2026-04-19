@@ -3,6 +3,7 @@ import { toast } from '../shared/utils/toast';
 import { doLogout } from '@/global/logOut';
 import { posSocket } from '../shared/services/pos-socket';
 import type { Comanda, EstadoComanda, KdsConfig, TipoServicio } from './kds.types';
+import { MenuModal } from './menu-modal';
 
 // ─── Labels helpers ───────────────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ export class KdsModule {
   private _filtroActivo: string;
   private _tickTimer: ReturnType<typeof setInterval> | null = null;
   private _pollTimer: ReturnType<typeof setInterval> | null = null;
+  private _menuModal: MenuModal | null = null;
 
   constructor(config: KdsConfig) {
     this._config = config;
@@ -41,6 +43,7 @@ export class KdsModule {
   // ─── Mount ──────────────────────────────────────────────────────────────────
 
   mount(): void {
+    this._menuModal = new MenuModal(this._config.sucursalId);
     this._applyTheme();
     this._buildTopbar();
     this._buildFiltros();
@@ -87,9 +90,11 @@ export class KdsModule {
       <span class="topbar-stat stat-prep" id="s-prep">0 en preparación</span>
       <span class="topbar-stat stat-list" id="s-list">0 listos</span>
       <span class="topbar-clock" id="reloj">00:00:00</span>
+      <button class="btn-menu-kds" id="kds-btn-menu"><i class="fa-solid fa-book-open"></i> Menú</button>
       <button class="btn-exit" id="kds-btn-exit">Salir</button>
     `;
     document.getElementById('kds-btn-exit')?.addEventListener('click', () => doLogout());
+    document.getElementById('kds-btn-menu')?.addEventListener('click', () => this._menuModal?.open());
   }
 
   private _buildFiltros(): void {
