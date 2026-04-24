@@ -748,15 +748,7 @@ class CajaPage {
     const { mesaId, ticketId, pagos, orden, impuestos } = this._store.state;
     if (!mesaId || !ticketId) return;
 
-    const subtotalBase = orden?.subtotal ?? 0;
-    const desgloseSnapshot = impuestos.map(i => ({
-      nombre:     i.nombre,
-      porcentaje: i.porcentaje,
-      base:       subtotalBase,
-      monto:      Math.round(subtotalBase * (i.porcentaje / 100) * 100) / 100,
-    }));
-
-    confirmarCobro(ticketId, pagos, desgloseSnapshot)
+    confirmarCobro(ticketId, pagos)
       .catch((err: Error) => {
         console.error('[Caja] Error al cobrar:', err?.message ?? err);
         toast('Error al cobrar: ' + (err?.message ?? 'ver consola'), 'error');

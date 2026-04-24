@@ -131,14 +131,12 @@ export const crearLineaOrden = async (ordenId: number, data: {
 export const confirmarCobro = (
   ordenId: number,
   pagos: PagoAplicado[],
-  impuestosDesglose?: Array<{ nombre: string; porcentaje: number; base: number; monto: number }>,
 ) =>
   http.post(`${BASE}/ordenes/${ordenId}/cobrar`, {
     pagos: pagos.map(({ forma_pago_id, monto, cuenta_num, referencia }) => ({
       forma_pago_id, monto, cuenta_num,
       ...(referencia ? { referencia } : {}),
     })),
-    impuestos_desglose: impuestosDesglose ?? [],
   });
 
 export const getFormasPago = () =>
