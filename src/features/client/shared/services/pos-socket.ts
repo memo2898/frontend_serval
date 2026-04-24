@@ -26,6 +26,7 @@ interface ClientToServerEvents {
   'mesa:usuario_salio':        (data: { mesa_id: number }) => void;
   'mesa:mesas_unidas':         (data: { principal_id: number; mesas_ids: number[] }) => void;
   'mesa:orden_movida':         (data: { source_mesa_id: number; target_mesa_id: number; personas: number }) => void;
+  'mesa:liberada':             (data: { mesa_id: number; mesas_unidas_ids?: number[] }) => void;
   'orden:enviar_a_cocina':     (data: { orden_id: number; linea_ids: number[] }) => void;
   'orden:linea_sincronizada':  (data: OrdenLineaSincronizadaPayload) => void;
   'orden:split_actualizado':   (data: OrdenSplitActualizadoPayload) => void;
@@ -122,6 +123,10 @@ export class PosSocketService {
 
   emitMesasUnidas(principalId: number, mesasIds: number[]): void {
     this._socket?.emit('mesa:mesas_unidas', { principal_id: principalId, mesas_ids: mesasIds });
+  }
+
+  emitMesaLiberada(mesaId: number, mesasUnidasIds: number[] = []): void {
+    this._socket?.emit('mesa:liberada', { mesa_id: mesaId, mesas_unidas_ids: mesasUnidasIds });
   }
 
   emitOrdenMovida(sourceMesaId: number, targetMesaId: number, personas: number): void {

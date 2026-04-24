@@ -752,8 +752,10 @@ class MesasPage {
       if (!lineas.length && ordenId && estadoSeguro) {
         updateOrden(ordenId, { estado: 'cancelada' }).catch(() => {});
         if (mesaId) {
+          const unidas = this._store.state.mesas.filter(m => m.mesa_principal_id === mesaId).map(m => m.id);
           patchEstadoMesa(mesaId, 'libre').catch(() => {});
           this._liberarMesaConUnidas(mesaId);
+          posSocket.emitMesaLiberada(mesaId, unidas);
         }
       }
       if (mesaId) posSocket.emitUsuarioSalio(mesaId);
@@ -1202,9 +1204,11 @@ class MesasPage {
     cancelar
       .then(() => {
         if (mesaId) {
+          const unidas = this._store.state.mesas.filter(m => m.mesa_principal_id === mesaId).map(m => m.id);
           patchEstadoMesa(mesaId, 'libre').catch(() => {});
           posSocket.emitUsuarioSalio(mesaId);
           this._liberarMesaConUnidas(mesaId);
+          posSocket.emitMesaLiberada(mesaId, unidas);
         }
         this._store.resetTPV();
         this._goTo('mesas');
