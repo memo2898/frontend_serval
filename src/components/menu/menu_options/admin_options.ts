@@ -181,6 +181,7 @@ export const ADMIN_OPTIONS: MenuItem[] = [
     href: '#',
     submenu: [
       { text: 'Ventas', href: '/reportes' },
+      { text: 'Auditoría', href: '/auditoria' },
     ],
   },
 

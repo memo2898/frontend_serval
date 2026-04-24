@@ -10,5 +10,8 @@ export const getReporteVentas = (filtros: ReporteVentasFiltros): Promise<Reporte
     fecha_fin: filtros.fecha_fin,
     sucursal_id: String(filtros.sucursal_id),
   });
+  if (filtros.area && filtros.area !== 'total') {
+    params.set('area', filtros.area);
+  }
   return http.get<ReporteVentas>(`${BASE}/reportes/ventas?${params}`);
 };

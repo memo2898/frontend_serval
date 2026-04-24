@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Serval — Cajero Gestor</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../shared/styles/client-tokens.css">
+  <link rel="stylesheet" href="../shared/styles/client-layout.css">
+  <link rel="stylesheet" href="./cajero-gestor.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <style>
+    html, body { overflow: hidden; }
+    #screen-cajero-gestor { background: var(--bg); }
+  </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div id="screen-cajero-gestor" class="screen active">
+
+  <!-- ── Topbar ────────────────────────────────────────────────────────── -->
+  <div class="topbar" style="height:56px;min-height:56px;border-bottom-width:3px">
+    <span class="topbar-brand">Serval</span>
+    <span class="topbar-screen" id="topbar-screen-label">Caja</span>
+    <div class="topbar-spacer"></div>
+    <div class="conn-indicator online" id="conn-indicator">
+      <span class="conn-dot"></span>
+      <span id="conn-label">Online</span>
+    </div>
+    <span class="topbar-user" id="topbar-user">—</span>
+    <button class="btn-exit" id="btn-exit">Salir</button>
+  </div>
+
+  <!-- ── Tab bar ───────────────────────────────────────────────────────── -->
+  <div class="cg-tab-bar">
+    <button class="cg-tab-btn active" data-tab="caja">
+      <i class="fa-solid fa-cash-register"></i> Cobrar
+    </button>
+    <button class="cg-tab-btn" data-tab="pedidos">
+      <i class="fa-solid fa-utensils"></i> Tomar Pedidos
+    </button>
+    <button class="cg-tab-btn" data-tab="resumen">
+      <i class="fa-solid fa-chart-bar"></i> Resumen
+    </button>
+  </div>
+
+  <!-- ══════════════ TAB: CAJA ══════════════ -->
+  <div id="tab-caja" class="cg-tab-panel">
+    <div class="caja-layout">
+
+      <div class="caja-queue">
+        <div class="queue-header">
+          <div class="queue-title">Por cobrar</div>
+          <div class="queue-count" id="queue-count">Sin órdenes</div>
+          <div class="queue-header-btns">
+            <button class="btn-proximas" id="btn-proximas">
+              <i class="fa-solid fa-eye"></i> Próximas
+            </button>
+            <button class="btn-historial" id="btn-historial">
+              <i class="fa-solid fa-clock-rotate-left"></i> Historial
+            </button>
+          </div>
+        </div>
+        <div class="queue-list" id="queue-list"></div>
+        <div class="queue-empty" id="queue-empty">
+          <i class="fa-solid fa-credit-card queue-empty-icon"></i>
+          <div>Sin órdenes pendientes</div>
+          <div style="font-size:11px;opacity:0.6;margin-top:4px">
+            Las órdenes aparecen aquí cuando se pide la cuenta
+          </div>
+        </div>
+      </div>
+
+      <div class="caja-detalle" id="caja-detalle">
+        <div class="detalle-empty" id="detalle-empty">
+          <i class="fa-solid fa-receipt detalle-empty-icon"></i>
+          <div>Selecciona una orden</div>
+        </div>
+        <div id="detalle-content" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+          <div class="detalle-header">
+            <div class="detalle-header-top">
+              <div>
+                <div class="detalle-orden-num" id="detalle-num">ORDEN #—</div>
+                <div class="detalle-meta" id="detalle-meta">—</div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center">
+                <button class="btn-split-caja" id="btn-split-caja" title="Dividir cuenta">
+                  <i class="fa-solid fa-divide"></i> Dividir
+                </button>
+                <div id="print-buttons">
+                  <button class="btn-imprimir" id="btn-imprimir">
+                    <i class="fa-solid fa-print"></i> Imprimir
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="cuentas-tabs" style="display:none" class="cuentas-tabs"></div>
+          <div class="cobro-lineas" id="cobro-lineas"></div>
+          <div class="cobro-totales" id="cobro-totales"></div>
+        </div>
+      </div>
+
+      <div class="caja-pago" id="caja-pago-col">
+        <div class="detalle-empty" id="pago-empty">
+          <i class="fa-solid fa-money-bill-wave detalle-empty-icon"></i>
+          <div style="font-size:13px">Selecciona una orden para cobrar</div>
+        </div>
+        <div id="pago-content" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+          <div class="pago-header">Formas de pago</div>
+          <div class="formas-pago-grid" id="formas-pago-grid"></div>
+          <div class="monto-section">
+            <div class="monto-label">Monto recibido</div>
+            <input type="number" class="monto-input" id="monto-recibido" placeholder="0.00" min="0" step="0.01">
+            <div id="cambio-preview" class="cambio-preview" style="display:none">
+              <span id="cambio-preview-label">Cambio:</span> <span id="cambio-preview-val"></span>
+            </div>
+          </div>
+          <div class="monto-section">
+            <div class="monto-label">Monto a aplicar</div>
+            <input type="number" class="monto-input" id="monto-pago" placeholder="0.00" min="0.01" step="0.01">
+          </div>
+          <button class="btn-agregar-pago" id="btn-agregar-pago">
+            <i class="fa-solid fa-plus"></i> Agregar pago
+          </button>
+          <div class="pagos-list" id="pagos-list"></div>
+          <div class="cobro-resumen" id="cobro-resumen"></div>
+          <button class="btn-confirmar" id="btn-confirmar" disabled>
+            <i class="fa-solid fa-circle-check"></i> Confirmar cobro
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════ TAB: PEDIDOS ══════════════ -->
+  <div id="tab-pedidos" class="cg-tab-panel" style="display:none">
+    <div class="pedidos-layout">
+
+      <!-- Columna mesas -->
+      <div class="p-mesas-col">
+        <div class="p-mesas-header">
+          <button class="btn-mostrador" id="btn-mostrador">
+            <i class="fa-solid fa-plus"></i> Mostrador
+          </button>
+          <button class="btn-refrescar-mesas" id="btn-refrescar-mesas" title="Refrescar mesas">
+            <i class="fa-solid fa-rotate"></i>
+          </button>
+        </div>
+        <div id="p-mesas-list" class="p-mesas-list">
+          <div class="p-mesas-loading">
+            <i class="fa-solid fa-spinner fa-spin"></i> Cargando mesas…
+          </div>
+        </div>
+      </div>
+
+      <!-- TPV panel -->
+      <div class="p-tpv-panel">
+
+        <!-- Estado vacío -->
+        <div id="p-tpv-empty" class="p-tpv-empty">
+          <i class="fa-solid fa-arrow-left" style="font-size:22px;opacity:0.2;margin-bottom:12px"></i>
+          <div style="font-size:14px;font-weight:600;color:var(--text-muted)">Selecciona una mesa</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:4px">o abre un pedido de mostrador</div>
+        </div>
+
+        <!-- Contenido TPV -->
+        <div id="p-tpv-content" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+
+          <!-- Header: destino + camarero -->
+          <div class="p-tpv-header" id="p-tpv-header">
+            <div style="display:flex;flex-direction:column;gap:5px;flex:1;min-width:0">
+              <div class="p-tpv-destino" id="p-tpv-destino">—</div>
+              <button class="p-camarero-btn" id="p-camarero-btn">
+                <i class="fa-solid fa-user"></i>
+                <span id="p-camarero-label">Sin asignar</span>
+                <i class="fa-solid fa-chevron-down" style="font-size:10px;opacity:0.5;margin-left:auto"></i>
+              </button>
+            </div>
+            <button class="p-btn-cerrar-tpv" id="p-btn-cerrar-tpv" title="Cerrar" style="align-self:flex-start">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <!-- Cuerpo del TPV: catálogo + orden -->
+          <div class="p-tpv-body">
+
+            <!-- Catálogo -->
+            <div class="p-catalog">
+              <div class="p-familias-tabs" id="p-familias-tabs"></div>
+              <div class="articulos-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="p-articulos-search-input" placeholder="Buscar artículo…" autocomplete="off">
+                <button id="p-articulos-search-clear" class="search-clear-btn" style="display:none" title="Limpiar">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <div class="p-articulos-grid" id="p-articulos-grid">
+                <div class="p-loading">
+                  <i class="fa-solid fa-spinner fa-spin"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Orden -->
+            <div class="p-order-col">
+              <div class="p-orden-header" id="p-orden-header" style="display:none">
+                <div class="p-orden-header-num" id="p-orden-header-num">ORDEN #—</div>
+                <div class="p-orden-header-info" id="p-orden-header-info">—</div>
+              </div>
+              <div id="p-orden-lineas">
+                <div class="p-orden-empty">
+                  <i class="fa-solid fa-utensils" style="font-size:28px;opacity:0.15"></i>
+                  <div>Toca un artículo para agregar</div>
+                </div>
+              </div>
+              <div class="p-order-footer">
+                <div class="p-tpv-total" id="p-tpv-total" style="display:none">
+                  <span class="p-total-label">Por enviar</span>
+                  <span class="p-total-val" id="p-total-val">$0.00</span>
+                </div>
+                <button class="p-btn-enviar" id="p-btn-enviar" disabled>
+                  <i class="fa-solid fa-fire-burner"></i> Enviar a Cocina
+                </button>
+                <button class="p-btn-pedir-cuenta" id="p-btn-pedir-cuenta" disabled style="display:none">
+                  <i class="fa-solid fa-receipt"></i> Pedir Cuenta
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════ TAB: RESUMEN ══════════════ -->
+  <div id="tab-resumen" class="cg-tab-panel" style="display:none">
+    <div class="resumen-layout">
+
+      <!-- Filtros primero -->
+      <div class="rs-filtros">
+        <span class="rs-filtros-label">Rango de fechas:</span>
+        <input type="date" id="rs-desde" class="rs-date-input">
+        <span style="color:var(--text-dim)">—</span>
+        <input type="date" id="rs-hasta" class="rs-date-input">
+        <button id="rs-btn-buscar" class="rs-btn-buscar">
+          <i class="fa-solid fa-magnifying-glass"></i> Buscar
+        </button>
+        <button id="rs-btn-hoy" class="rs-btn-hoy">Hoy</button>
+      </div>
+
+      <!-- Stats debajo -->
+      <div class="rs-stats-bar">
+        <div class="rs-stat-card green">
+          <div class="rs-stat-label"><i class="fa-solid fa-circle-check"></i> Cobrado</div>
+          <div class="rs-stat-val" id="rs-stat-cobrado">$0.00</div>
+          <div class="rs-stat-count" id="rs-count-cobrado">0 órdenes</div>
+        </div>
+        <div class="rs-stat-card orange">
+          <div class="rs-stat-label"><i class="fa-solid fa-clock"></i> Por cobrar</div>
+          <div class="rs-stat-val" id="rs-stat-porcobrar">$0.00</div>
+          <div class="rs-stat-count" id="rs-count-porcobrar">0 órdenes</div>
+        </div>
+      </div>
+
+      <!-- Lista de órdenes -->
+      <div class="rs-ordenes-wrap">
+        <div id="rs-ordenes-list" class="rs-ordenes-list">
+          <div class="rs-empty" id="rs-empty">
+            <i class="fa-solid fa-chart-bar" style="font-size:32px;opacity:0.15;margin-bottom:10px"></i>
+            <div>Selecciona un rango y presiona Buscar</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal nombre de cuenta (caja) -->
+<div id="modal-cuenta-nombre-caja" class="cambio-modal" style="display:none">
+  <div class="cambio-box" style="max-width:340px;width:90%">
+    <div class="cambio-title" id="cuenta-nombre-caja-titulo" style="font-size:16px;margin-bottom:8px">Cuenta 1</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px">¿A nombre de quién va esta cuenta?</div>
+    <input type="text" id="cuenta-nombre-caja-input" maxlength="30" placeholder="Ej: Aurelio…" autocomplete="off"
+           style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:inherit;font-size:14px;outline:none;margin-bottom:12px">
+    <div style="display:flex;gap:8px">
+      <button id="btn-cerrar-cuenta-nombre-caja" style="flex:1;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);font-family:inherit;cursor:pointer">Cancelar</button>
+      <button id="btn-confirmar-cuenta-nombre-caja" style="flex:1;padding:10px;background:var(--accent);border:none;border-radius:var(--radius);color:#fff;font-family:inherit;font-weight:600;cursor:pointer">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal cambio -->
+<div id="modal-cambio" class="cambio-modal" style="display:none">
+  <div class="cambio-box">
+    <div class="cambio-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
+    <div class="cambio-title">Cambio a devolver</div>
+    <div class="cambio-amount" id="cambio-amount">$0.00</div>
+    <button class="btn-cerrar-cambio" id="btn-cerrar-cambio">
+      <i class="fa-solid fa-check"></i> Cerrar y finalizar
+    </button>
+  </div>
+</div>
+
+<!-- Modal próximas -->
+<div id="modal-proximas" class="historial-overlay" style="display:none">
+  <div class="historial-panel proximas-panel">
+    <div class="historial-header">
+      <div class="historial-title"><i class="fa-solid fa-eye"></i> Próximas a cobrar</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="btn-refrescar-proximas" class="btn-buscar-historial" style="padding:6px 12px;font-size:12px">
+          <i class="fa-solid fa-rotate"></i> Refrescar
+        </button>
+        <button id="btn-cerrar-proximas" class="historial-close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+    <div class="proximas-subtitulo">Órdenes abiertas en mesa — aún no han pedido la cuenta</div>
+    <div id="proximas-body" class="historial-body">
+      <div class="historial-empty"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px;opacity:0.4"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal historial -->
+<div id="modal-historial" class="historial-overlay" style="display:none">
+  <div class="historial-panel">
+    <div class="historial-header">
+      <div class="historial-title"><i class="fa-solid fa-clock-rotate-left"></i> Órdenes Despachadas</div>
+      <button id="btn-cerrar-historial" class="historial-close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="historial-filtros">
+      <div class="historial-filtro-grupo">
+        <label class="historial-label">Desde</label>
+        <input type="date" id="historial-desde" class="historial-date-input">
+      </div>
+      <div class="historial-filtro-grupo">
+        <label class="historial-label">Hasta</label>
+        <input type="date" id="historial-hasta" class="historial-date-input">
+      </div>
+      <button id="btn-buscar-historial" class="btn-buscar-historial">
+        <i class="fa-solid fa-magnifying-glass"></i> Buscar
+      </button>
+    </div>
+    <div class="historial-acciones" id="historial-acciones" style="display:none">
+      <span class="historial-count" id="historial-count">0 órdenes</span>
+      <button id="btn-reimprimir-todas" class="btn-reimprimir-todas">
+        <i class="fa-solid fa-print"></i> Reimprimir todas
+      </button>
+    </div>
+    <div id="historial-body" class="historial-body">
+      <div class="historial-empty" id="historial-empty">
+        <i class="fa-solid fa-receipt" style="font-size:32px;opacity:0.2;margin-bottom:10px"></i>
+        <div>Ingresa un rango de fechas y presiona Buscar</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal selector de camarero -->
+<div id="modal-camarero" class="cambio-modal" style="display:none">
+  <div class="cambio-box" style="max-width:360px;width:90%">
+    <div class="cambio-title" style="font-size:15px;margin-bottom:12px">
+      <i class="fa-solid fa-user" style="margin-right:6px"></i> Responsable del pedido
+    </div>
+    <div id="modal-camarero-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;margin-bottom:12px"></div>
+    <button id="btn-cerrar-modal-camarero" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);font-family:inherit;cursor:pointer">Cancelar</button>
+  </div>
+</div>
+
+<script type="module" src="./cajero-gestor.ts"></script>
+</body>
+</html>

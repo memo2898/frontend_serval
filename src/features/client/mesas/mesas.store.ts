@@ -18,7 +18,7 @@ function createInitialState(): MesasState {
     orden: null, lineas: [], lineasNuevasIds: new Set(),
     familias: [], familiaActiva: null, articulos: [],
     lineaSeleccionada: null,
-    splitMode: false, numCuentas: 1, cuentasNombres: {},
+    splitMode: false, numCuentas: 1, cuentasNombres: {}, cuentaFiltroTPV: null,
     ordenCompleta: false,
     mergeMode: false, mergePrincipal: null, mergeSelected: [], unirTPVSelected: [],
     modalArticulo: null, modalMods: {}, modalSel: {},
@@ -103,6 +103,12 @@ export class MesasStore {
     this._notify();
   }
 
+  updateMesaActiva(mesaId: number, mesaLabel: string): void {
+    this._state.mesaId    = mesaId;
+    this._state.mesaLabel = mesaLabel;
+    this._notify();
+  }
+
   // ─── Presencias ──────────────────────────────────────────────────────────────
 
   setPresencias(list: MesaPresenciaPayload[]): void {
@@ -146,6 +152,7 @@ export class MesasStore {
     this._state.splitMode          = false;
     this._state.numCuentas         = 1;
     this._state.cuentasNombres     = loadCuentasNombres(orden.id);
+    this._state.cuentaFiltroTPV    = null;
     this._state.ordenCompleta      = false;
     this._notify();
   }
@@ -328,6 +335,11 @@ export class MesasStore {
     } else {
       linea.cuenta_num = next > this._state.numCuentas ? 1 : next;
     }
+    this._notify();
+  }
+
+  setCuentaFiltroTPV(n: number | null): void {
+    this._state.cuentaFiltroTPV = n;
     this._notify();
   }
 
@@ -518,6 +530,7 @@ export class MesasStore {
     this._state.splitMode        = false;
     this._state.numCuentas       = 1;
     this._state.cuentasNombres   = {};
+    this._state.cuentaFiltroTPV  = null;
     this._state.ordenCompleta    = false;
     this._notify();
   }

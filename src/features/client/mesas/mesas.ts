@@ -1,6 +1,8 @@
 import { checkRoleAccess } from '@/global/guards_auth';
 import { doLogout } from '@/global/logOut';
+import { initAdminBubble } from '@/components/admin-bubble/admin-bubble';
 const _allowed = checkRoleAccess(['camarero']);
+initAdminBubble();
 
 import { getUser, getSucursalId, getSelectedRole } from '@/global/session.service';
 import { route } from '@/global/saveRoutes';
@@ -13,6 +15,7 @@ import { TpvScreen } from './screens/tpv';
 import { ComensalesModal } from './modals/comensales.modal';
 import { ModificadoresModal } from './modals/modificadores.modal';
 import { UnirMesaModal } from './modals/unir-mesa.modal';
+import { MoverOrdenModal } from './modals/mover-orden.modal';
 import type { Mesa, Orden, LineaOrden } from './mesas.types';
 import {
   getZonas, getMesasByZona, getFamilias, getArticulos, getAllArticulos, getModificadores,
@@ -71,6 +74,12 @@ class MesasPage {
     },
   );
 
+  private readonly _moverOrdenModal = new MoverOrdenModal(
+    this._store,
+    (targetMesaId, targetNombre) => this._moverOrdenAMesa(targetMesaId, targetNombre),
+    getMesasByZona,
+  );
+
   private readonly _splitModal = new SplitModal();
 
   private _sucursalId   = 0;
@@ -80,6 +89,11 @@ class MesasPage {
   private _miRol        = '';
   private _cuentaNombreNum = 0;
   private _longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  private _splitTimer:     ReturnType<typeof setTimeout> | null = null;
+  private _accionLineaId:  number | null = null;
+  private _fpLongPressTimer:   ReturnType<typeof setTimeout> | null = null;
+  private _fpLongPressConsumed = false;
+  private _fpMesaAvanzada: Mesa | null = null;
 
   // ─── Init ─────────────────────────────────────────────────────────────────
 
@@ -113,8 +127,9 @@ class MesasPage {
   // ─── Liberación de mesa (con separación automática de unidas) ────────────
 
   private _liberarMesaConUnidas(mesaId: number): void {
-    // Liberar la mesa principal
+    // Liberar la mesa principal en store y en BD
     this._store.patchMesa(mesaId, { estado: 'libre', personas: 0, mesa_principal_id: undefined });
+    patchMesaData(mesaId, { estado: 'libre', personas: 0 }).catch(() => {});
 
     // Buscar y liberar todas las mesas secundarias vinculadas a esta
     const unidas = this._store.state.mesas.filter(m => m.mesa_principal_id === mesaId);
@@ -162,12 +177,16 @@ class MesasPage {
       posSocket.onCajaPagoRegistrado(({ mesa_id }) => {
         if (mesa_id == null) return;
         this._liberarMesaConUnidas(mesa_id);
+        notifStore.marcarPorMesa(mesa_id);
+        this._updateNotifBadge();
         toast('Mesa liberada — pago registrado', 'success');
       });
 
       // caja:orden_anulada
       posSocket.onCajaOrdenAnulada(({ mesa_id }) => {
         this._liberarMesaConUnidas(mesa_id);
+        notifStore.marcarPorMesa(mesa_id);
+        this._updateNotifBadge();
         toast('Orden anulada');
       });
 
@@ -208,6 +227,11 @@ class MesasPage {
           this._tpv.renderOrden();
         }
         toast(`🔔 ${payload.mesa} — pedido listo para recoger`, 'success');
+      });
+
+      // Split actualizado por el cajero en tiempo real → reflejar en el TPV del mesero
+      posSocket.onOrdenSplitActualizado(({ orden_id, split_mode, num_cuentas, cuentas_nombres, lineas }) => {
+        this._aplicarSplitExterno(orden_id, split_mode, num_cuentas, cuentas_nombres, lineas);
       });
 
       // KDS lineas entregadas (confirmación del backend)
@@ -602,9 +626,43 @@ class MesasPage {
       const badge = (e.target as HTMLElement).closest<HTMLElement>('[data-presencia-badge]');
       if (badge) { this._togglePresenciaPopover(badge); return; }
 
+      if (this._fpLongPressConsumed) { this._fpLongPressConsumed = false; return; }
+
       const fp = (e.target as HTMLElement).closest<HTMLElement>('[data-mesa-id]');
       if (!fp) return;
       this._floorPlan.handleMesaClick(Number(fp.dataset.mesaId));
+    });
+
+    // ── Floor plan long-press → opciones avanzadas de mesa ──
+    document.getElementById('mesas-grid')?.addEventListener('pointerdown', e => {
+      const fp = (e.target as HTMLElement).closest<HTMLElement>('[data-mesa-id]');
+      if (!fp) return;
+      const mesa = this._store.getMesa(Number(fp.dataset.mesaId));
+      if (!mesa || (mesa.estado !== 'ocupada' && mesa.estado !== 'por_cobrar')) return;
+      this._fpLongPressTimer = setTimeout(() => {
+        this._fpLongPressTimer = null;
+        this._fpLongPressConsumed = true;
+        this._abrirOpcionesAvanzadasMesa(mesa);
+      }, 600);
+    });
+    const _fpCancelLongPress = () => {
+      if (this._fpLongPressTimer) { clearTimeout(this._fpLongPressTimer); this._fpLongPressTimer = null; }
+    };
+    document.getElementById('mesas-grid')?.addEventListener('pointerup',     _fpCancelLongPress);
+    document.getElementById('mesas-grid')?.addEventListener('pointercancel', _fpCancelLongPress);
+    document.getElementById('mesas-grid')?.addEventListener('pointermove',   _fpCancelLongPress);
+
+    // ── Opciones avanzadas de mesa (floor plan long-press) ──
+    document.getElementById('btn-fp-mover-mesa')?.addEventListener('click', () => {
+      const mesa = this._fpMesaAvanzada;
+      this._cerrarOpcionesAvanzadasMesa();
+      if (!mesa) return;
+      this._moverOrdenModal.openFromFloorPlan(mesa.id, (targetMesaId, targetNombre) => {
+        this._ejecutarMoverMesaDesdeFloorPlan(mesa.id, targetMesaId, targetNombre);
+      });
+    });
+    document.getElementById('btn-fp-cerrar-opciones')?.addEventListener('click', () => {
+      this._cerrarOpcionesAvanzadasMesa();
     });
 
     // ── Cerrar popover al hacer clic fuera ──
@@ -687,9 +745,11 @@ class MesasPage {
 
     // ── TPV: volver a mesas ──
     document.querySelector('[data-back-mesas]')?.addEventListener('click', () => {
-      const { mesaId, lineas, ordenId } = this._store.state;
-      // Si no hay nada digitado, liberar y cancelar la orden vacía automáticamente
-      if (!lineas.length && ordenId) {
+      const { mesaId, lineas, ordenId, orden } = this._store.state;
+      // Solo cancelar/liberar si la orden está en estado 'pendiente' Y no hay líneas
+      // (evita cancelar órdenes ya enviadas a cocina cuando el store aún carga)
+      const estadoSeguro = !orden || orden.estado === 'abierta';
+      if (!lineas.length && ordenId && estadoSeguro) {
         updateOrden(ordenId, { estado: 'cancelada' }).catch(() => {});
         if (mesaId) {
           patchEstadoMesa(mesaId, 'libre').catch(() => {});
@@ -726,6 +786,15 @@ class MesasPage {
       const input = document.getElementById('articulos-search-input') as HTMLInputElement | null;
       if (input) { input.value = ''; input.focus(); }
       applySearch('');
+    });
+
+    // ── TPV: chips de cuenta (filtro de líneas) ──
+    document.getElementById('tpv-cuentas-chips')?.addEventListener('click', e => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-filtro-cuenta]');
+      if (!btn) return;
+      const val = btn.dataset.filtroCuenta;
+      this._store.setCuentaFiltroTPV(val === 'all' ? null : Number(val));
+      this._tpv.renderOrden();
     });
 
     // ── TPV: familias ──
@@ -795,9 +864,36 @@ class MesasPage {
     });
     document.getElementById('orden-lineas')?.addEventListener('pointerup', () => {
       if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
+      if (this._splitTimer)     { clearTimeout(this._splitTimer);     this._splitTimer = null; }
     });
     document.getElementById('orden-lineas')?.addEventListener('pointermove', () => {
       if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
+      if (this._splitTimer)     { clearTimeout(this._splitTimer);     this._splitTimer = null; }
+    });
+
+    // ── TPV: long press en línea de orden → modal acciones avanzadas ──
+    document.getElementById('orden-lineas')?.addEventListener('pointerdown', e => {
+      const target = e.target as HTMLElement;
+      if (target.closest('[data-ciclar],[data-nota-linea],[data-qty],[data-delete]')) return;
+      const lineaEl = target.closest<HTMLElement>('[data-linea-select]');
+      if (!lineaEl) return;
+      const lineaId = Number(lineaEl.dataset.lineaSelect);
+      const linea   = this._store.state.lineas.find(l => l.id === lineaId);
+      if (!linea) return;
+      this._splitTimer = setTimeout(() => {
+        this._splitTimer = null;
+        this._abrirAccionesLinea(lineaId);
+      }, 600);
+    });
+
+    // ── Modal acciones avanzadas de línea ──
+    document.getElementById('btn-cerrar-acciones-linea')?.addEventListener('click', () => {
+      this._cerrarAccionesLinea();
+    });
+    document.getElementById('btn-accion-separar')?.addEventListener('click', () => {
+      const id = this._accionLineaId;
+      this._cerrarAccionesLinea();
+      if (id) this._splitLinea(id);
     });
 
     // ── Modal nota de línea ──
@@ -907,6 +1003,7 @@ class MesasPage {
     // ── TPV: acciones ──
     document.querySelector('[data-enviar-cocina]')?.addEventListener('click', () => this._enviarCocina());
     document.querySelector('[data-pedir-cuenta]')?.addEventListener('click', () => this._pedirCuenta());
+    // document.querySelector('[data-imprimir-cuenta]')?.addEventListener('click', () => this._imprimirCuenta());
     document.getElementById('btn-split')?.addEventListener('click', () => this._openSplitModal());
     document.querySelector('[data-liberar-mesa]')?.addEventListener('click', () => this._liberarMesaVacia());
 
@@ -925,6 +1022,8 @@ class MesasPage {
     // ── Modal unir TPV ──
     document.querySelector('[data-abrir-unir-tpv]')?.addEventListener('click', () => this._unirModal.open());
     document.querySelector('[data-cerrar-unir-tpv]')?.addEventListener('click', () => this._unirModal.close());
+    document.querySelector('[data-mover-orden]')?.addEventListener('click', () => this._moverOrdenModal.open());
+    document.getElementById('btn-cerrar-mover-orden')?.addEventListener('click', () => this._moverOrdenModal.close());
     document.getElementById('btn-confirmar-unir-tpv')?.addEventListener('click', () => this._unirModal.confirm());
     document.getElementById('unir-mesas-grid')?.addEventListener('click', e => {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-unir]');
@@ -1019,6 +1118,74 @@ class MesasPage {
       .finally(() => this._store.setCargando(false));
   }
 
+  private _abrirAccionesLinea(lineaId: number): void {
+    const linea = this._store.state.lineas.find(l => l.id === lineaId);
+    if (!linea) return;
+    this._accionLineaId = lineaId;
+    const modal = document.getElementById('modal-acciones-linea');
+    const titulo = document.getElementById('acciones-linea-titulo');
+    const sub    = document.getElementById('acciones-linea-sub');
+    const btnSeparar = document.getElementById('btn-accion-separar') as HTMLButtonElement | null;
+    if (titulo) titulo.textContent = `${linea.cantidad}x ${linea.nombre_articulo}`;
+    if (sub)    sub.textContent    = 'Acciones avanzadas';
+    if (btnSeparar) btnSeparar.disabled = linea.cantidad <= 1;
+    if (modal) modal.style.display = 'flex';
+  }
+
+  private _cerrarAccionesLinea(): void {
+    const modal = document.getElementById('modal-acciones-linea');
+    if (modal) modal.style.display = 'none';
+    this._accionLineaId = null;
+  }
+
+  private async _splitLinea(lineaId: number): Promise<void> {
+    const { ordenId, mesaId } = this._store.state;
+    const linea = this._store.state.lineas.find(l => l.id === lineaId);
+    if (!linea || linea.cantidad <= 1 || !ordenId) return;
+
+    const n = linea.cantidad;
+    const mods = linea.modificadores.map((m: any) => ({
+      modificador_id: m.modificador_id,
+      precio_extra:   m.precio_extra,
+    }));
+
+    try {
+      // Actualizar original a cantidad 1
+      await updateLinea(ordenId, lineaId, {
+        cantidad:       1,
+        subtotal_linea: linea.precio_unitario,
+      });
+      this._store.cambiarCantidad(lineaId, -(n - 1));
+
+      // Crear las N-1 líneas restantes
+      for (let i = 1; i < n; i++) {
+        const nueva = await createLinea(ordenId, {
+          articulo_id:     linea.articulo_id,
+          cantidad:        1,
+          precio_unitario: linea.precio_unitario,
+          subtotal_linea:  linea.precio_unitario,
+          cuenta_num:      linea.cuenta_num,
+          notas_linea:     linea.notas_linea,
+          modificadores:   mods,
+        });
+        this._store.sincronizarLineaExterna({
+          ...nueva,
+          nombre_articulo: linea.nombre_articulo,
+          modificadores:   linea.modificadores,
+        });
+      }
+
+      if (ordenId && mesaId) {
+        posSocket.emitLineaSincronizada({ orden_id: ordenId, mesa_id: mesaId, accion: 'update', linea: { ...linea, cantidad: 1 } });
+      }
+
+      toast(`${linea.nombre_articulo} separado en ${n} ítems`, 'success');
+      this._tpv.renderOrden();
+    } catch {
+      toast('Error al separar el artículo', 'error');
+    }
+  }
+
   private _liberarMesaVacia(): void {
     const { lineas, ordenId, mesaId } = this._store.state;
     if (lineas.length) {
@@ -1047,6 +1214,132 @@ class MesasPage {
       .catch(() => toast('Error al liberar la mesa', 'error'))
       .finally(() => this._store.setCargando(false));
   }
+
+  private _moverOrdenAMesa(targetMesaId: number, targetMesaNombre: string): void {
+    const { ordenId, mesaId, numComensales, mesas } = this._store.state;
+    if (!ordenId || !mesaId) return;
+
+    // Only block if mesa is in current zone's state AND known to be non-libre (stale check)
+    const targetMesaLocal = mesas.find(m => m.id === targetMesaId);
+    if (targetMesaLocal && targetMesaLocal.estado !== 'libre') {
+      toast('La mesa destino ya no está disponible', 'error');
+      return;
+    }
+
+    toast('Moviendo orden...', 'info');
+
+    Promise.all([
+      updateOrden(ordenId, { mesa_id: targetMesaId } as any),
+      patchEstadoMesa(mesaId, 'libre'),
+      patchMesaPersonas(targetMesaId, numComensales),
+    ])
+      .then(() => {
+        patchEstadoMesa(targetMesaId, 'ocupada').catch(() => {});
+        this._store.patchMesa(mesaId, { estado: 'libre', personas: 0 });
+        this._store.patchMesa(targetMesaId, { estado: 'ocupada', personas: numComensales });
+        posSocket.emitOrdenMovida(mesaId, targetMesaId, numComensales);
+        this._store.updateMesaActiva(targetMesaId, targetMesaNombre);
+        const labelEl = document.getElementById('tpv-mesa-label');
+        if (labelEl) labelEl.textContent = 'Mesa ' + targetMesaNombre;
+        toast(`Orden movida a ${targetMesaNombre} ✓`, 'success');
+        this._tpv.renderOrden();
+      })
+      .catch(() => toast('Error al mover la orden. Intenta de nuevo.', 'error'));
+  }
+
+  /* private _imprimirCuenta(): void {
+    const { orden, lineas, mesaLabel, splitMode, numCuentas, cuentasNombres, impuestos } = this._store.state;
+    if (!lineas.length) { toast('La orden está vacía'); return; }
+
+    const numOrden = orden?.numero_orden?.toString().padStart(4, '0') ?? '—';
+    const ahora    = new Date().toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' });
+
+    const fmtLineas = (cuentaNum: number | null) => {
+      const src = cuentaNum == null ? lineas : lineas.filter(l => (l.cuenta_num || 1) === cuentaNum);
+      return src.map(l => {
+        const mods = l.modificadores?.map((m: any) => '└ ' + m.nombre_modificador).join(' · ') ?? '';
+        return `<tr>
+          <td>${l.cantidad}x</td>
+          <td>${l.nombre_articulo}${mods ? '<br><small>' + mods + '</small>' : ''}</td>
+          <td class="r">${fmt(l.subtotal_linea)}</td>
+        </tr>`;
+      }).join('');
+    };
+
+    const calcTotales = (cuentaNum: number | null) => {
+      const src  = cuentaNum == null ? lineas : lineas.filter(l => (l.cuenta_num || 1) === cuentaNum);
+      const sub  = Math.round(src.reduce((s: number, l: any) => s + Number(l.subtotal_linea), 0) * 100) / 100;
+      const tasas = impuestos.filter((i: any) => i.impuesto != null);
+      const desglose = tasas.map((i: any) => ({
+        nombre: i.nombre, porcentaje: i.porcentaje,
+        monto: Math.round(sub * (i.porcentaje / 100) * 100) / 100,
+      }));
+      const impTotal = Math.round(desglose.reduce((s: number, d: any) => s + d.monto, 0) * 100) / 100;
+      const total    = Math.round((sub + impTotal) * 100) / 100;
+      const impRows  = desglose.map((d: any) =>
+        `<tr><td colspan="2">${d.nombre} ${d.porcentaje}%</td><td class="r">${fmt(d.monto)}</td></tr>`
+      ).join('') || `<tr><td colspan="2">Impuestos</td><td class="r">${fmt(impTotal)}</td></tr>`;
+      const label    = cuentaNum == null ? 'TOTAL' : `Total C${cuentaNum}`;
+      return `
+        <tr class="sep"><td colspan="3"></td></tr>
+        <tr><td colspan="2">Subtotal</td><td class="r">${fmt(sub)}</td></tr>
+        ${impRows}
+        <tr class="grand"><td colspan="2">${label}</td><td class="r">${fmt(total)}</td></tr>`;
+    };
+
+    let cuerpo = '';
+    if (splitMode && numCuentas > 1) {
+      for (let n = 1; n <= numCuentas; n++) {
+        const nombre = cuentasNombres[n] ? ` — ${cuentasNombres[n]}` : '';
+        cuerpo += `<tr class="cuenta-header"><td colspan="3">Cuenta ${n}${nombre}</td></tr>`;
+        cuerpo += fmtLineas(n);
+        cuerpo += calcTotales(n);
+        if (n < numCuentas) cuerpo += '<tr class="cut"><td colspan="3">· · · · · · · · · ·</td></tr>';
+      }
+    } else {
+      cuerpo = fmtLineas(null) + calcTotales(null);
+    }
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>Cuenta Mesa ${mesaLabel}</title>
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { font-family: 'Courier New', monospace; font-size: 12px; color: #000; width: 80mm; padding: 6mm; }
+      h1 { font-size: 16px; text-align: center; margin-bottom: 2px; }
+      .prov { text-align:center; font-size:11px; font-weight:700; letter-spacing:1px; color:#666; border:1px dashed #999; padding:2px 6px; margin:4px auto; display:inline-block; }
+      .sub { text-align: center; font-size: 11px; margin-bottom: 4px; color: #555; }
+      .sep-line { border-top: 1px dashed #000; margin: 6px 0; }
+      table { width: 100%; border-collapse: collapse; }
+      td { padding: 2px 0; vertical-align: top; }
+      td:first-child { width: 26px; }
+      td.r { text-align: right; white-space: nowrap; }
+      .cuenta-header td { font-weight: bold; padding-top: 6px; border-bottom: 1px solid #000; }
+      tr.sep td { padding: 3px 0; border-top: 1px dashed #aaa; }
+      tr.grand td { font-weight: bold; font-size: 14px; padding-top: 4px; border-top: 2px solid #000; }
+      tr.cut td { text-align: center; padding: 6px 0; color: #aaa; }
+      small { font-size: 10px; color: #555; }
+      .footer { text-align: center; margin-top: 10px; font-size: 11px; color: #555; }
+      @media print { body { width: 100%; } }
+    </style></head><body>
+    <div style="text-align:center">
+      <h1>Serval</h1>
+      <div style="text-align:center"><span class="prov">CUENTA PROVISIONAL</span></div>
+    </div>
+    <div class="sub">Mesa ${mesaLabel}</div>
+    <div class="sub" style="font-weight:bold;font-size:13px;">Orden #${numOrden}</div>
+    <div class="sub">Emisión: ${ahora}</div>
+    <div class="sep-line"></div>
+    <table><tbody>${cuerpo}</tbody></table>
+    <div class="footer">Este comprobante no es válido como factura</div>
+    </body></html>`;
+
+    const w = window.open('', '_blank', 'width=400,height=600');
+    if (!w) { toast('Permite las ventanas emergentes para imprimir'); return; }
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); w.close(); }, 400);
+  } */
 
   private _pedirCuenta(): void {
     const { lineas, ordenId, mesaId, mesaLabel, numComensales, orden, splitMode, numCuentas } = this._store.state;
@@ -1359,7 +1652,22 @@ class MesasPage {
     if (mesaId) posSocket.emitUsuarioEntro(mesaId);
   }
 
-  // ─── Emisión split en tiempo real ────────────────────────────────────────────
+  // ─── Sincronización de split en tiempo real ───────────────────────────────────
+
+  /** Aplica un split recibido externamente (cajero) si corresponde a la orden activa en el TPV. */
+  private _aplicarSplitExterno(
+    ordenId: number,
+    _splitMode: boolean,
+    numCuentas: number,
+    cuentasNombres: Record<number, string>,
+    lineas: Array<{ id: number; cuenta_num: number }>,
+  ): void {
+    if (this._store.state.ordenId !== ordenId) return;
+    this._store.applySplitResult({ lineas, numCuentas, cuentasNombres });
+    if (document.getElementById('screen-tpv')?.classList.contains('active')) {
+      this._tpv.renderOrden();
+    }
+  }
 
   /** Emite el estado actual de split por socket y BroadcastChannel si la orden es por_cobrar. */
   private _emitirSplitSiPorCobrar(): void {
@@ -1487,31 +1795,94 @@ class MesasPage {
   private _abrirModalMoverMesa(): void {
     this._cerrarModalAccionCuenta();
     const modal = document.getElementById('modal-mover-mesa');
-    if (!modal) return;
+    const grid  = document.getElementById('mover-mesa-grid');
+    if (!modal || !grid) return;
 
-    // Mostrar solo mesas ocupadas/por_cobrar (con orden activa) excepto la actual
     const { mesaId } = this._store.state;
-    const mesas = this._store.state.mesas.filter(m =>
-      m.id !== mesaId && (m.estado === 'ocupada' || m.estado === 'por_cobrar'),
-    );
+    grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;grid-column:1/-1">Cargando mesas…</div>';
+    modal.style.display = 'flex';
 
-    const grid = document.getElementById('mover-mesa-grid');
-    if (grid) {
-      grid.innerHTML = mesas.length
-        ? mesas.map(m => `
+    // Fetch mesas de todas las zonas para no limitarse a la zona activa
+    Promise.all(
+      this._store.state.zonas.map(zona =>
+        getMesasByZona(zona.id).then(mesas => ({ zona, mesas })),
+      ),
+    ).then(grupos => {
+      const lineas: string[] = [];
+      for (const { zona, mesas } of grupos) {
+        const ocupadas = mesas.filter(m =>
+          m.id !== mesaId && (m.estado === 'ocupada' || m.estado === 'por_cobrar'),
+        );
+        if (!ocupadas.length) continue;
+        lineas.push(`<div style="grid-column:1/-1;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px">${zona.nombre}</div>`);
+        for (const m of ocupadas) {
+          lineas.push(`
             <button class="btn-mover-mesa-item" data-mover-mesa="${m.id}">
               <span style="font-weight:700">${m.nombre}</span>
               <span style="font-size:11px;color:var(--text-muted)">${m.estado === 'por_cobrar' ? 'Por cobrar' : 'Ocupada'}</span>
-            </button>`).join('')
-        : '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px">Sin mesas disponibles</div>';
-    }
-
-    modal.style.display = 'flex';
+            </button>`);
+        }
+      }
+      grid.innerHTML = lineas.length
+        ? lineas.join('')
+        : '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px;grid-column:1/-1">Sin mesas disponibles</div>';
+    });
   }
 
   private _cerrarModalMoverMesa(): void {
     const modal = document.getElementById('modal-mover-mesa');
     if (modal) modal.style.display = 'none';
+  }
+
+  // ─── Opciones avanzadas de mesa (long-press floor plan) ──────────────────────
+
+  private _abrirOpcionesAvanzadasMesa(mesa: Mesa): void {
+    this._fpMesaAvanzada = mesa;
+    const titleEl = document.getElementById('opciones-mesa-fp-title');
+    if (titleEl) titleEl.textContent = 'Mesa ' + mesa.nombre;
+    document.getElementById('modal-opciones-mesa-fp')!.style.display = 'flex';
+  }
+
+  private _cerrarOpcionesAvanzadasMesa(): void {
+    document.getElementById('modal-opciones-mesa-fp')!.style.display = 'none';
+    this._fpMesaAvanzada = null;
+  }
+
+  private _ejecutarMoverMesaDesdeFloorPlan(sourceMesaId: number, targetMesaId: number, targetNombre: string): void {
+    const sourceMesa = this._store.getMesa(sourceMesaId);
+    const targetMesaLocal = this._store.getMesa(targetMesaId);
+    // Only block if mesa is found locally AND known non-libre (stale check)
+    if (targetMesaLocal && targetMesaLocal.estado !== 'libre') {
+      toast('La mesa destino ya no está disponible', 'error');
+      return;
+    }
+
+    toast('Moviendo mesa...', 'info');
+    this._store.setCargando(true);
+
+    getOrdenActivaMesa(sourceMesaId)
+      .then(ordenes => {
+        const orden = ordenes[0];
+        if (!orden) {
+          toast('No hay orden activa en esta mesa', 'error');
+          return;
+        }
+        const personas = sourceMesa?.personas ?? 0;
+        return Promise.all([
+          updateOrden(orden.id, { mesa_id: targetMesaId } as any),
+          patchEstadoMesa(sourceMesaId, 'libre'),
+          patchMesaPersonas(targetMesaId, personas),
+        ]).then(() => {
+          patchEstadoMesa(targetMesaId, 'ocupada').catch(() => {});
+          this._store.patchMesa(sourceMesaId, { estado: 'libre', personas: 0 });
+          this._store.patchMesa(targetMesaId, { estado: 'ocupada', personas });
+          posSocket.emitOrdenMovida(sourceMesaId, targetMesaId, personas);
+          this._floorPlan.renderMesas();
+          toast(`Mesa movida a ${targetNombre} ✓`, 'success');
+        });
+      })
+      .catch(() => toast('Error al mover la mesa', 'error'))
+      .finally(() => this._store.setCargando(false));
   }
 
   private _moverLineaAMesa(lineaId: number, targetMesaId: number): void {
@@ -1555,10 +1926,12 @@ class MesasPage {
   // ─── Canales inter-módulos ────────────────────────────────────────────────
 
   private _subscribeChannels(): void {
-    // Escuchar mesa liberada desde caja (mismo tab, fallback a socket)
+    // Escuchar mensajes de caja (mismo dispositivo, distinta pestaña)
     mesasChannel.on(msg => {
       if (msg.tipo === 'mesa_liberada') {
         this._liberarMesaConUnidas(msg.mesaId);
+      } else if (msg.tipo === 'split_actualizado') {
+        this._aplicarSplitExterno(msg.ordenId, msg.splitMode, msg.numCuentas, msg.cuentasNombres, msg.lineas);
       }
     });
 

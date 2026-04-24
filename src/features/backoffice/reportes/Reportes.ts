@@ -1,6 +1,6 @@
 import './reportes.css';
 import { getReporteVentas } from './reportes.service';
-import type { ReporteVentas } from './reportes.types';
+import type { AreaReporte, ReporteVentas } from './reportes.types';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(n);
@@ -141,12 +141,19 @@ function renderReport(container: HTMLElement, data: ReporteVentas) {
 export function Reportes(container: HTMLElement) {
   const today = new Date().toISOString().slice(0, 10);
   const firstOfYear = `${new Date().getFullYear()}-01-01`;
+  let areaActiva: AreaReporte = 'total';
 
   container.innerHTML = `
     <div class="rep-wrapper">
       <div class="rep-header">
         <i class="fas fa-chart-bar"></i>
         <h1>Reportes de Ventas</h1>
+      </div>
+
+      <div class="rep-area-tabs">
+        <button class="rep-area-tab active" data-area="total"><i class="fas fa-layer-group"></i> Total</button>
+        <button class="rep-area-tab" data-area="cocina"><i class="fas fa-fire-burner"></i> Cocina</button>
+        <button class="rep-area-tab" data-area="barra"><i class="fas fa-martini-glass"></i> Barra</button>
       </div>
 
       <div class="rep-filters">
@@ -171,6 +178,15 @@ export function Reportes(container: HTMLElement) {
     </div>
   `;
 
+  // ── Tabs de área ────────────────────────────────────────────────────────────
+  container.querySelectorAll<HTMLButtonElement>('.rep-area-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      container.querySelectorAll('.rep-area-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      areaActiva = tab.dataset.area as AreaReporte;
+    });
+  });
+
   const btnBuscar = container.querySelector<HTMLButtonElement>('#rep-btn-buscar')!;
 
   const buscar = async () => {
@@ -188,7 +204,7 @@ export function Reportes(container: HTMLElement) {
     result.innerHTML = `<div class="rep-message loading"><i class="fas fa-spinner fa-spin"></i> Cargando reporte...</div>`;
 
     try {
-      const data = await getReporteVentas({ fecha_inicio, fecha_fin, sucursal_id });
+      const data = await getReporteVentas({ fecha_inicio, fecha_fin, sucursal_id, area: areaActiva });
       renderReport(container, data);
     } catch (err: any) {
       result.innerHTML = `<div class="rep-message error"><i class="fas fa-exclamation-circle"></i> ${err.message ?? 'Error al cargar el reporte.'}</div>`;

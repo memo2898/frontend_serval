@@ -25,6 +25,7 @@ interface ClientToServerEvents {
   'mesa:usuario_entro':        (data: { mesa_id: number; personas?: number }) => void;
   'mesa:usuario_salio':        (data: { mesa_id: number }) => void;
   'mesa:mesas_unidas':         (data: { principal_id: number; mesas_ids: number[] }) => void;
+  'mesa:orden_movida':         (data: { source_mesa_id: number; target_mesa_id: number; personas: number }) => void;
   'orden:enviar_a_cocina':     (data: { orden_id: number; linea_ids: number[] }) => void;
   'orden:linea_sincronizada':  (data: OrdenLineaSincronizadaPayload) => void;
   'orden:split_actualizado':   (data: OrdenSplitActualizadoPayload) => void;
@@ -71,20 +72,28 @@ export class PosSocketService {
     if (this._socket?.connected) return;
 
     this._socket = io(`${SERVER_ROUTE}/pos`, {
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
       auth: { token, sucursal_id: sucursalId, rol: rol ?? '' },
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 10000,
+      timeout: 20000,
     });
 
     this._socket.on('connect', () => {
       console.log('[POS Socket] Conectado', this._socket?.id);
+      document.dispatchEvent(new CustomEvent('pos-socket:connected'));
     });
 
     this._socket.on('disconnect', (reason) => {
       console.warn('[POS Socket] Desconectado:', reason);
+      document.dispatchEvent(new CustomEvent('pos-socket:disconnected', { detail: { reason } }));
     });
 
     this._socket.on('connect_error', (err) => {
       console.error('[POS Socket] Error de conexión:', err.message);
+      document.dispatchEvent(new CustomEvent('pos-socket:error', { detail: { message: err.message } }));
     });
   }
 
@@ -113,6 +122,10 @@ export class PosSocketService {
 
   emitMesasUnidas(principalId: number, mesasIds: number[]): void {
     this._socket?.emit('mesa:mesas_unidas', { principal_id: principalId, mesas_ids: mesasIds });
+  }
+
+  emitOrdenMovida(sourceMesaId: number, targetMesaId: number, personas: number): void {
+    this._socket?.emit('mesa:orden_movida', { source_mesa_id: sourceMesaId, target_mesa_id: targetMesaId, personas });
   }
 
   emitLineaSincronizada(data: OrdenLineaSincronizadaPayload): void {

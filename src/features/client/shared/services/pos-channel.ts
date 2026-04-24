@@ -6,6 +6,7 @@ export type PosMessageCaja =
 
 export type PosMessageMesas =
   | { tipo: 'mesa_liberada'; mesaId: number }
+  | { tipo: 'split_actualizado'; ordenId: number; splitMode: boolean; numCuentas: number; cuentasNombres: Record<number, string>; lineas: Array<{ id: number; cuenta_num: number }> }
 
 export type PosChannelName = 'pos_caja' | 'pos_mesas';
 

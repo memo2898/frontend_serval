@@ -73,15 +73,18 @@
         <div class="orden-header-num" id="orden-num">ORDEN #—</div>
         <div class="orden-header-info" id="orden-info">—</div>
       </div>
+      <div class="tpv-cuentas-chips" id="tpv-cuentas-chips" style="display:none"></div>
       <div class="orden-lineas" id="orden-lineas"></div>
       <div class="orden-totales" id="orden-totales"></div>
       <div class="orden-actions">
         <button class="btn-cocina" data-enviar-cocina><i class="fa-solid fa-fire-flame-curved"></i> Enviar cocina</button>
         <button class="btn-cobrar" data-pedir-cuenta><i class="fa-solid fa-receipt"></i> Pedir cuenta</button>
+        <!-- <button class="btn-imprimir-cuenta" data-imprimir-cuenta title="Imprimir cuenta provisional"><i class="fa-solid fa-print"></i></button> -->
       </div>
       <div style="padding: 0 12px 10px; display:flex; gap:8px;">
         <button class="btn-split" id="btn-split" style="flex:1"><i class="fa-solid fa-divide"></i> Dividir cuenta</button>
         <button class="btn-split" data-abrir-unir-tpv style="flex:1"><i class="fa-solid fa-link"></i> Unir mesa</button>
+        <button class="btn-split" data-mover-orden title="Mover orden a otra mesa"><i class="fa-solid fa-arrow-right-arrow-left"></i></button>
       </div>
       <div style="padding: 0 12px 12px;">
         <button class="btn-liberar-mesa" data-liberar-mesa style="width:100%"><i class="fa-solid fa-door-open"></i> Liberar mesa</button>
@@ -103,6 +106,20 @@
     <div class="modal-footer">
       <button class="btn-modal-cancel" data-cerrar-mods>Cancelar</button>
       <button class="btn-modal-add" id="btn-agregar-modal" disabled>Agregar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal opciones avanzadas de mesa (long-press floor plan) -->
+<div id="modal-opciones-mesa-fp" class="comensales-modal" style="display:none">
+  <div class="comensales-box">
+    <div class="comensales-title" id="opciones-mesa-fp-title">Mesa —</div>
+    <div class="comensales-sub">Opciones avanzadas</div>
+    <div class="accion-menu">
+      <button class="btn-confirm-com" id="btn-fp-mover-mesa">
+        <i class="fa-solid fa-arrow-right-arrow-left"></i> &nbsp;Mover mesa a otra
+      </button>
+      <button class="btn-cancel-com" id="btn-fp-cerrar-opciones" style="margin-top:4px">Cancelar</button>
     </div>
   </div>
 </div>
@@ -208,6 +225,20 @@
   </div>
 </div>
 
+<!-- Modal acciones avanzadas de línea (long press) -->
+<div id="modal-acciones-linea" class="comensales-modal" style="display:none">
+  <div class="comensales-box">
+    <div class="comensales-title" id="acciones-linea-titulo">Artículo</div>
+    <div class="comensales-sub" id="acciones-linea-sub">Acciones avanzadas</div>
+    <div class="accion-menu">
+      <button class="btn-confirm-com" id="btn-accion-separar">
+        <i class="fa-solid fa-scissors"></i>&nbsp; Separar en ítems individuales
+      </button>
+      <button class="btn-cancel-com" id="btn-cerrar-acciones-linea" style="margin-top:4px">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal mover artículo a otra mesa -->
 <div id="modal-mover-mesa" class="modal-overlay" style="display:none">
   <div class="modal-box">
@@ -218,6 +249,20 @@
     <div class="unir-mesas-grid" id="mover-mesa-grid" style="max-height:280px;overflow-y:auto"></div>
     <div class="modal-footer">
       <button class="btn-modal-cancel" id="btn-cerrar-mover-mesa">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal mover orden completa a otra mesa -->
+<div id="modal-mover-orden" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">Mover orden a otra mesa</div>
+      <div class="modal-subtitle">La mesa actual quedará libre automáticamente</div>
+    </div>
+    <div class="unir-mesas-grid" id="mover-orden-grid" style="max-height:300px;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" id="btn-cerrar-mover-orden">Cancelar</button>
     </div>
   </div>
 </div>

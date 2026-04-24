@@ -64,9 +64,11 @@ const URL_MAPPINGS: Record<string, string> = {
         '/reservaciones': '/src/features/backoffice/reservaciones/index.html',
   '/sucursalimpuestos': '/src/features/backoffice/sucursalimpuestos/index.html',
   '/reportes': '/src/features/backoffice/reportes/index.html',
+  '/auditoria': '/src/features/backoffice/auditoria/index.html',
   "/404": "/src/features/404/index.html",
   // ── POS / Client modules ──────────────────────────────────────────────────
-  "/pos/mesas": "/src/features/client/mesas/mesas.html",
+  "/pos/mesas":          "/src/features/client/mesas/mesas.html",
+  "/pos/cajero-gestor": "/src/features/client/cajero-gestor/cajero-gestor.html",
   "/pos/reservaciones": "/src/features/client/reservaciones/reservaciones.html",
   "/pos/caja": "/src/features/client/caja/caja.html",
   "/pos/cocina": "/src/features/client/cocina/cocina.html",

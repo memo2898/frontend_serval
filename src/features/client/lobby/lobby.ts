@@ -15,12 +15,13 @@ interface SucursalOpcion {
 // ─── Iconos de rol ────────────────────────────────────────────────────────────
 
 const ROLE_ICONS: Record<string, string> = {
-  administrador: 'fa-user-shield',
-  encargado:     'fa-user-tie',
-  cajero:        'fa-cash-register',
-  camarero:      'fa-concierge-bell',
-  cocinero:      'fa-utensils',
-  bartender:     'fa-wine-glass-alt',
+  administrador:   'fa-user-shield',
+  encargado:       'fa-user-tie',
+  cajero:          'fa-cash-register',
+  'cajero-gestor': 'fa-cash-register',
+  camarero:        'fa-concierge-bell',
+  cocinero:        'fa-utensils',
+  bartender:       'fa-wine-glass-alt',
 };
 
 function getIconForRole(nombre: string): string {

@@ -1,6 +1,8 @@
 import { checkRoleAccess, isSuperAdmin } from '@/global/guards_auth';
 import { doLogout } from '@/global/logOut';
+import { initAdminBubble } from '@/components/admin-bubble/admin-bubble';
 const _allowed = checkRoleAccess(['cajero']);
+initAdminBubble();
 
 import { SplitModal } from '../shared/components/split-modal';
 import type { SplitConfirmResult } from '../shared/components/split-modal';
@@ -25,13 +27,14 @@ import type { TicketCola, OrdenDespachada, OrdenProxima, LineaCobro } from './ca
 class CajaPage {
   private readonly _store      = new CajaStore();
   private readonly _splitModal = new SplitModal();
-  private _sucursalId    = 0;
-  private _nombreEmpresa = '';
-  private _nombreSucursal = '';
-  private _logoEmpresa   = '';
+  private _sucursalId       = 0;
+  private _nombreEmpresa    = '';
+  private _nombreSucursal   = '';
+  private _logoEmpresa      = '';
+  private _direccionSucursal = '';
+  private _rncEmpresa        = '';
   private _cuentaNombreNum = 0;
   private _historialOrdenes: OrdenDespachada[] = [];
-  private _proximasOrdenes: OrdenProxima[] = [];
 
   init(): void {
     this._applyTheme();
@@ -51,8 +54,10 @@ class CajaPage {
 
     // Cargar empresa + logo desde la API
     getSucursalInfo(this._sucursalId).then(info => {
-      if (info.empresa?.nombre) this._nombreEmpresa = info.empresa.nombre;
-      if (info.empresa?.logo)   this._logoEmpresa   = info.empresa.logo;
+      if (info.empresa?.nombre)            this._nombreEmpresa     = info.empresa.nombre;
+      if (info.empresa?.logo)              this._logoEmpresa       = info.empresa.logo;
+      if (info.direccion)                  this._direccionSucursal = info.direccion;
+      if (info.empresa?.numero_documento)  this._rncEmpresa        = info.empresa.numero_documento;
     }).catch(() => {});
 
     // Cargar impuestos reales de la sucursal
@@ -293,6 +298,8 @@ class CajaPage {
   private _selectTicket(mesaId: number): void {
     const ticket = this._store.state.queue.find(t => t.mesaId === mesaId);
     if (!ticket) return;
+    // Guardar pagos del ticket actual antes de cambiar
+    this._persistirPagosEnProceso();
     this._store.selectTicket(ticket);
 
     // Siempre refrescar líneas desde la BD al seleccionar:
@@ -470,6 +477,30 @@ class CajaPage {
       input.value = pendiente > 0 ? String(Math.round(pendiente * 100) / 100) : '';
       input.classList.remove('overpay');
     }
+    const recibido = document.getElementById('monto-recibido') as HTMLInputElement;
+    if (recibido) recibido.value = '';
+    const preview = document.getElementById('cambio-preview');
+    if (preview) preview.style.display = 'none';
+  }
+
+  private _updateCambioPreview(): void {
+    const recibido = parseFloat((document.getElementById('monto-recibido') as HTMLInputElement)?.value ?? '');
+    const aplicar  = parseFloat((document.getElementById('monto-pago') as HTMLInputElement)?.value ?? '');
+    const preview  = document.getElementById('cambio-preview');
+    const val      = document.getElementById('cambio-preview-val');
+    const label    = document.getElementById('cambio-preview-label');
+    if (!preview || !val) return;
+    if (recibido > 0 && aplicar > 0) {
+      const diff = Math.round((recibido - aplicar) * 100) / 100;
+      if (Math.abs(diff) > 0.005) {
+        val.textContent = fmt(Math.abs(diff));
+        if (label) label.textContent = diff > 0 ? 'Cambio:' : 'Falta:';
+        preview.style.color = diff < 0 ? 'var(--red)' : '';
+        preview.style.display = 'block';
+        return;
+      }
+    }
+    preview.style.display = 'none';
   }
 
   private _renderCobro(): void {
@@ -607,6 +638,12 @@ class CajaPage {
     const sucursalHtml = this._nombreSucursal
       ? `<div class="sub sucursal">${this._nombreSucursal}</div>`
       : '';
+    const direccionHtml = this._direccionSucursal
+      ? `<div class="sub">${this._direccionSucursal}</div>`
+      : '';
+    const rncHtml = this._rncEmpresa
+      ? `<div class="sub">RNC: ${this._rncEmpresa}</div>`
+      : '';
 
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
     <title>Cuenta Mesa ${mesaLabel}</title>
@@ -635,6 +672,8 @@ class CajaPage {
     ${logoHtml}
     ${empresaHtml}
     ${sucursalHtml}
+    ${direccionHtml}
+    ${rncHtml}
     <div class="sub">Mesa ${mesaLabel}</div>
     <div class="sub" style="font-weight:bold;font-size:13px;">Orden #${numOrden}</div>
     <div class="sub">Digitado: ${digitadoEn}</div>
@@ -677,6 +716,15 @@ class CajaPage {
       }
     }
 
+    const recibido = parseFloat((document.getElementById('monto-recibido') as HTMLInputElement)?.value ?? '');
+    const aplicar  = parseFloat((document.getElementById('monto-pago') as HTMLInputElement)?.value ?? '');
+    const cambio   = Math.round((recibido - aplicar) * 100) / 100;
+    if (recibido > 0 && aplicar > 0 && cambio > 0.005) {
+      const el = document.getElementById('cambio-amount');
+      if (el) el.textContent = fmt(cambio);
+      document.getElementById('modal-cambio')!.style.display = 'flex';
+      return;
+    }
     this._finalizarCobro();
   }
 
@@ -697,10 +745,18 @@ class CajaPage {
   private _finalizarCobro(): void {
     document.getElementById('modal-cambio')!.style.display = 'none';
 
-    const { mesaId, ticketId, pagos } = this._store.state;
+    const { mesaId, ticketId, pagos, orden, impuestos } = this._store.state;
     if (!mesaId || !ticketId) return;
 
-    confirmarCobro(ticketId, pagos)
+    const subtotalBase = orden?.subtotal ?? 0;
+    const desgloseSnapshot = impuestos.map(i => ({
+      nombre:     i.nombre,
+      porcentaje: i.porcentaje,
+      base:       subtotalBase,
+      monto:      Math.round(subtotalBase * (i.porcentaje / 100) * 100) / 100,
+    }));
+
+    confirmarCobro(ticketId, pagos, desgloseSnapshot)
       .catch((err: Error) => {
         console.error('[Caja] Error al cobrar:', err?.message ?? err);
         toast('Error al cobrar: ' + (err?.message ?? 'ver consola'), 'error');
@@ -766,7 +822,6 @@ class CajaPage {
 
     fetchOrdenesProximas(this._sucursalId)
       .then(ordenes => {
-        this._proximasOrdenes = ordenes;
         this._renderProximas(ordenes);
       })
       .catch(() => {
@@ -882,9 +937,11 @@ class CajaPage {
 
   private _generarTicketHistorial(items: Array<{ orden: OrdenDespachada; lineas: LineaCobro[] }>): void {
     const { impuestos: tasas } = this._store.state;
-    const logoHtml    = this._logoEmpresa ? `<img src="${this._logoEmpresa}" alt="logo" style="max-width:80px;max-height:60px;object-fit:contain;display:block;margin:0 auto 6px;">` : '';
-    const empresaHtml = this._nombreEmpresa ? `<h1>${this._nombreEmpresa}</h1>` : '<h1>Serval</h1>';
+    const logoHtml     = this._logoEmpresa ? `<img src="${this._logoEmpresa}" alt="logo" style="max-width:80px;max-height:60px;object-fit:contain;display:block;margin:0 auto 6px;">` : '';
+    const empresaHtml  = this._nombreEmpresa ? `<h1>${this._nombreEmpresa}</h1>` : '<h1>Serval</h1>';
     const sucursalHtml = this._nombreSucursal ? `<div class="sub sucursal">${this._nombreSucursal}</div>` : '';
+    const direccionHtml = this._direccionSucursal ? `<div class="sub">${this._direccionSucursal}</div>` : '';
+    const rncHtml       = this._rncEmpresa ? `<div class="sub">RNC: ${this._rncEmpresa}</div>` : '';
     const ahora = new Date().toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' });
 
     const ticketsCuerpo = items.map(({ orden, lineas }, idx) => {
@@ -936,7 +993,7 @@ class CajaPage {
 
       const separator = idx < items.length - 1 ? '<div class="page-cut"></div>' : '';
       return `<div class="ticket">
-        ${logoHtml}${empresaHtml}${sucursalHtml}
+        ${logoHtml}${empresaHtml}${sucursalHtml}${direccionHtml}${rncHtml}
         <div class="sub">Mesa ${orden.mesaLabel}</div>
         <div class="sub" style="font-weight:bold;font-size:13px;">Orden #${numOrden}</div>
         <div class="sub">Cobrado: ${cobradoEn}</div>
@@ -1086,15 +1143,18 @@ class CajaPage {
     );
     this._store.setQueue(queue);
     localStorage.setItem(CAJA_QUEUE_KEY, JSON.stringify(queue));
-    // Notificar al módulo mesas (mismo dispositivo) por si alguien re-abre el TPV
-    cajaChannel.send({
-      tipo: 'split_actualizado',
+    const splitPayload = {
+      tipo: 'split_actualizado' as const,
       ordenId: ticketId,
       splitMode,
       numCuentas,
       cuentasNombres,
       lineas: lineas.map(l => ({ id: l.id, cuenta_num: l.cuenta_num || 1 })),
-    });
+    };
+    // Notificar a otras instancias de caja (mismo dispositivo)
+    cajaChannel.send(splitPayload);
+    // Notificar al módulo mesas (mismo dispositivo, distinta pestaña)
+    mesasChannel.send(splitPayload);
   }
 
   private _wireEvents(): void {
@@ -1134,8 +1194,9 @@ class CajaPage {
       }
       input.classList.remove('overpay');
       this._store.agregarPago(monto);
+      this._persistirPagosEnProceso();
       this._renderCobro();
-      this._setMontoPago();   // actualiza el campo con el nuevo pendiente
+      this._setMontoPago();
     });
 
     document.getElementById('pagos-list')?.addEventListener('click', e => {
@@ -1143,10 +1204,13 @@ class CajaPage {
       if (!btn) return;
       const idx = Number(btn.dataset.remove);
       this._store.eliminarPago(idx);
+      this._persistirPagosEnProceso();
       this._renderCobro();
       this._setMontoPago();
     });
 
+    document.getElementById('monto-recibido')?.addEventListener('input', () => this._updateCambioPreview());
+    document.getElementById('monto-pago')?.addEventListener('input', () => this._updateCambioPreview());
     document.getElementById('btn-confirmar')?.addEventListener('click', () => this._confirmarCobro());
     document.getElementById('btn-cerrar-cambio')?.addEventListener('click', () => this._finalizarCobro());
 
@@ -1239,6 +1303,18 @@ class CajaPage {
     this._renderCuentasTabs();
     this._renderCobroLineas();
     this._actualizarQueueConSplitActual();
+    // Emitir por socket para sincronizar meseros en otros dispositivos
+    const { ticketId, mesaId, splitMode, numCuentas, cuentasNombres, lineas } = this._store.state;
+    if (ticketId && mesaId) {
+      posSocket.emitSplitActualizado({
+        orden_id:        ticketId,
+        mesa_id:         mesaId,
+        split_mode:      splitMode,
+        num_cuentas:     numCuentas,
+        cuentas_nombres: { ...cuentasNombres },
+        lineas:          lineas.map(l => ({ id: l.id, cuenta_num: l.cuenta_num || 1 })),
+      });
+    }
   }
 
   private _subscribeChannels(): void {

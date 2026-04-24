@@ -70,6 +70,12 @@ export const notifStore = {
   tienePendientesMesa: (mesaId: number): boolean =>
     _entregas.some(e => e.mesa_id === mesaId),
 
+  marcarPorMesa(mesaId: number): void {
+    const antes = _entregas.length;
+    _entregas = _entregas.filter(e => e.mesa_id !== mesaId);
+    if (_entregas.length !== antes) { _save(_entregas); notify(); }
+  },
+
   onChange(fn: Listener): () => void {
     _listeners.add(fn);
     return () => _listeners.delete(fn);

@@ -3,9 +3,11 @@ import { getSucursalId } from '@/global/session.service';
 import { route } from '@/global/saveRoutes';
 import { KdsModule } from '../kds/KdsModule';
 import { resolveDestinoId } from '../kds/kds.service';
+import { initAdminBubble } from '@/components/admin-bubble/admin-bubble';
 
 const _sucursalId = getSucursalId();
 if (!_sucursalId) location.replace(route('/lobby'));
+initAdminBubble();
 
 if (_sucursalId && checkRoleAccess(['bartender'])) {
   resolveDestinoId(_sucursalId, 'barra').then(destinoId => {

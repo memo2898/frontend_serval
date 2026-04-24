@@ -1,7 +1,10 @@
+export type AreaReporte = 'total' | 'cocina' | 'barra';
+
 export interface ReporteVentasFiltros {
   fecha_inicio: string;
   fecha_fin: string;
   sucursal_id: number;
+  area?: AreaReporte;
 }
 
 export interface ImpuestoDetalle {

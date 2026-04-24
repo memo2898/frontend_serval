@@ -283,6 +283,7 @@ export interface MesasState {
   splitMode: boolean;
   numCuentas: number;
   cuentasNombres: Record<number, string>;
+  cuentaFiltroTPV: number | null;
 
   // Estado KDS — habilita "pedir cuenta"
   ordenCompleta: boolean;

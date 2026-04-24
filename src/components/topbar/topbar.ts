@@ -3,6 +3,7 @@
 import './topbar.css';
 import { Notifications } from '@/components/notifications/notifications';
 import type { Notification } from '@/components/notifications/notifications';
+import { initAdminBubble } from '@/components/admin-bubble/admin-bubble';
 
 export function initTopbar(initialNotifications: Notification[] = []): void {
   const bodySide = document.getElementById('bodySide');
@@ -32,4 +33,6 @@ export function initTopbar(initialNotifications: Notification[] = []): void {
 
   // Montar notificaciones dentro de actionsSection
   Notifications(actionsSection, initialNotifications);
+
+  initAdminBubble();
 }

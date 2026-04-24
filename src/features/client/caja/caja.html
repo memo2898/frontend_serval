@@ -99,6 +99,13 @@
         <div class="pago-header">Formas de pago</div>
         <div class="formas-pago-grid" id="formas-pago-grid"></div>
         <div class="monto-section">
+          <div class="monto-label">Monto recibido</div>
+          <input type="number" class="monto-input" id="monto-recibido" placeholder="0.00" min="0" step="0.01">
+          <div id="cambio-preview" class="cambio-preview" style="display:none">
+            <span id="cambio-preview-label">Cambio:</span> <span id="cambio-preview-val"></span>
+          </div>
+        </div>
+        <div class="monto-section">
           <div class="monto-label">Monto a aplicar</div>
           <input type="number" class="monto-input" id="monto-pago" placeholder="0.00" min="0.01" step="0.01">
         </div>

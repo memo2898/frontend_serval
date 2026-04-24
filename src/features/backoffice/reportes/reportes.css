@@ -4,6 +4,38 @@
   gap: 24px;
 }
 
+/* ── Tabs de área ── */
+.rep-area-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.rep-area-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rep-area-tab:hover {
+  border-color: #6366f1;
+  color: #6366f1;
+}
+
+.rep-area-tab.active {
+  border-color: #6366f1;
+  background: #6366f1;
+  color: #fff;
+}
+
 .rep-header {
   display: flex;
   align-items: center;

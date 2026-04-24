@@ -22,6 +22,18 @@ export function getUsuariosFields(
         ],
       },
     }),
+    SelectX({
+      name: 'rol_id',
+      label: 'Rol',
+      placeholder: 'Seleccionar rol...',
+      options: options.rolesOptions ?? [],
+      defaultValue: initialData?.rol_id != null ? String(initialData.rol_id) : '',
+      rules: {
+        validations: [
+          { type: 'required', message: 'Rol es obligatorio' },
+        ],
+      },
+    }),
     InputX({
       name: 'nombre',
       label: 'Nombre',

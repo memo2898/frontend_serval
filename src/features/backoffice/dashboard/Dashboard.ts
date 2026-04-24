@@ -23,10 +23,11 @@ const QUICK_ACCESS: QuickAccessItem[] = [
 ];
 
 const POS_ACCESS: QuickAccessItem[] = [
-  { icon: 'fa-concierge-bell', label: 'POS – Mesas',   href: '/pos/mesas',   color: '#7c3aed' },
-  { icon: 'fa-cash-register',  label: 'POS – Caja',    href: '/pos/caja',    color: '#059669' },
-  { icon: 'fa-utensils',       label: 'POS – Cocina',  href: '/pos/cocina',  color: '#d97706' },
-  { icon: 'fa-wine-glass-alt', label: 'POS – Barra',   href: '/pos/barra',   color: '#0891b2' },
+  { icon: 'fa-concierge-bell', label: 'POS – Mesas',          href: '/pos/mesas',          color: '#7c3aed' },
+  { icon: 'fa-cash-register',  label: 'POS – Caja',           href: '/pos/caja',           color: '#059669' },
+  { icon: 'fa-cash-register',  label: 'POS – Cajero Gestor',  href: '/pos/cajero-gestor',  color: '#0d9488' },
+  { icon: 'fa-utensils',       label: 'POS – Cocina',         href: '/pos/cocina',         color: '#d97706' },
+  { icon: 'fa-wine-glass-alt', label: 'POS – Barra',          href: '/pos/barra',          color: '#0891b2' },
 ];
 
 export function Dashboard(container: HTMLElement): void {

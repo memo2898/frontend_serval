@@ -3,11 +3,12 @@ export { isSuperAdmin };
 import { route } from './saveRoutes';
 
 const ROLE_DEFAULT_ROUTES: Record<string, string> = {
-  camarero:  '/pos/mesas',
-  cocinero:  '/pos/cocina',
-  cajero:    '/pos/caja',
-  bartender: '/pos/barra',
-  encargado: '/tipodocumentos',
+  camarero:        '/pos/mesas',
+  cocinero:        '/pos/cocina',
+  cajero:          '/pos/caja',
+  'cajero-gestor': '/pos/cajero-gestor',
+  bartender:       '/pos/barra',
+  encargado:       '/tipodocumentos',
 };
 
 export function isBackofficeRole(): boolean {

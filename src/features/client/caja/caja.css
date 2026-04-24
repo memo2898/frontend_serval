@@ -2,7 +2,10 @@
 .caja-layout {
   display: grid;
   grid-template-columns: 260px 1fr 340px;
+  grid-template-rows: 1fr;
   flex: 1; overflow: hidden;
+  height: 100%;
+  min-height: 0;
 }
 
 /* ─── Columna 1: Cola ────────────────────────────────────────────────────────── */
@@ -255,6 +258,9 @@
 /* ─── Empty states (iconos FA) ───────────────────────────────────────────────── */
 .queue-empty-icon   { font-size: 36px; opacity: 0.2; color: var(--text); }
 .detalle-empty-icon { font-size: 42px; opacity: 0.15; color: var(--text); }
+
+/* ─── Cambio preview (inline) ────────────────────────────────────────────────── */
+.cambio-preview { margin-top: 8px; padding: 10px 14px; background: rgba(0,144,76,0.08); border: 1px solid rgba(0,144,76,0.25); border-radius: var(--radius); color: var(--green); font-size: 14px; font-weight: 700; font-family: 'JetBrains Mono', monospace; text-align: right; }
 
 /* ─── Modal cambio ───────────────────────────────────────────────────────────── */
 .cambio-modal  { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; }

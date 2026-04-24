@@ -40,7 +40,9 @@ export class FloorPlanScreen {
     const el = document.getElementById('mesas-grid');
     if (!el) return;
 
-    const visible = mesas.filter(m => m.zona_id === zonaActiva);
+    const visible = mesas
+      .filter(m => m.zona_id === zonaActiva)
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, undefined, { numeric: true, sensitivity: 'base' }));
 
     if (!visible.length) {
       el.innerHTML = `<p class="mesas-empty">No hay mesas registradas en esta zona</p>`;
